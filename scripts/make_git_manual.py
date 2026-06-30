@@ -4,44 +4,88 @@ A .docx is an Office Open XML package (a zip containing XML parts), so we build
 the minimal set of parts by hand. No third-party packages required.
 """
 
+import os
 import zipfile
 from xml.sax.saxutils import escape
 
-OUT = "Git_Manual_Hotel_Booking_Ops.docx"
+# Always write to the project root (the parent of this scripts/ folder),
+# regardless of the current working directory.
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(_ROOT, "Git_Manual_Hotel_Booking_Ops.docx")
 
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 
-def run(text, *, bold=False, mono=False, color=None):
+# Shared palette
+INK = "1F3864"       # deep navy for titles
+ACCENT = "2E74B5"    # medium blue for headings / rules
+MUTED = "595959"     # soft grey for secondary text
+CODE_FILL = "F4F6F8" # very light blue-grey for code boxes
+CODE_TEXT = "24292E" # near-black for code
+NOTE_FILL = "EAF1FB" # light blue tint for info callout
+WARN_FILL = "FCE9E9" # light red tint for caution callout
+
+
+def run(text, *, bold=False, mono=False, color=None, italic=False, size=None):
     rpr = []
     if bold:
         rpr.append("<w:b/>")
+    if italic:
+        rpr.append("<w:i/>")
     if mono:
         rpr.append('<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas"/>')
         rpr.append('<w:sz w:val="20"/>')
+        if not color:
+            color = CODE_TEXT
+    if size:
+        rpr.append(f'<w:sz w:val="{size}"/>')
     if color:
         rpr.append(f'<w:color w:val="{color}"/>')
     rpr_xml = f"<w:rPr>{''.join(rpr)}</w:rPr>" if rpr else ""
     return f'<w:r>{rpr_xml}<w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
 
 
-def para(runs="", style=None, *, spacing_after=120):
+def br():
+    return "<w:r><w:br/></w:r>"
+
+
+def para(runs="", style=None, *, spacing_after=160, spacing_before=0, line=276):
     ppr = []
     if style:
         ppr.append(f'<w:pStyle w:val="{style}"/>')
-    ppr.append(f'<w:spacing w:after="{spacing_after}"/>')
+    ppr.append(
+        f'<w:spacing w:before="{spacing_before}" w:after="{spacing_after}" '
+        f'w:line="{line}" w:lineRule="auto"/>'
+    )
     ppr_xml = f"<w:pPr>{''.join(ppr)}</w:pPr>"
     if isinstance(runs, str):
-        runs = run(runs) if runs else ""
+        # Already-built run XML (e.g. from run()/heading()) is passed through
+        # as-is; plain text gets wrapped in a single run.
+        if runs and not runs.startswith("<w:"):
+            runs = run(runs)
     return f"<w:p>{ppr_xml}{runs}</w:p>"
 
 
 def heading(text, level=1):
-    return para(run(text, bold=True), style=f"Heading{level}", spacing_after=80)
+    # Accent rule under each section heading for visual separation.
+    bdr = (
+        '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" '
+        f'w:color="{ACCENT}"/></w:pBdr>'
+    )
+    ppr = (
+        f'<w:pPr><w:pStyle w:val="Heading{level}"/>{bdr}'
+        '<w:spacing w:before="360" w:after="140" w:line="276" w:lineRule="auto"/>'
+        '</w:pPr>'
+    )
+    return f"<w:p>{ppr}{run(text, bold=True)}</w:p>"
 
 
 def title(text):
-    return para(run(text, bold=True), style="Title", spacing_after=160)
+    return para(run(text, bold=True), style="Title", spacing_after=60)
+
+
+def subtitle(text):
+    return para(run(text, italic=True, color=MUTED, size=24), spacing_after=240)
 
 
 def bullet(text):
@@ -49,25 +93,58 @@ def bullet(text):
     return (
         '<w:p><w:pPr><w:pStyle w:val="ListParagraph"/>'
         '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>'
-        '<w:spacing w:after="60"/></w:pPr>'
+        '<w:spacing w:after="90" w:line="276" w:lineRule="auto"/></w:pPr>'
         f"{body}</w:p>"
     )
 
 
+def callout(runs, *, fill, accent):
+    """A padded, shaded, left-accented box for notes and warnings."""
+    body = "".join(runs) if isinstance(runs, list) else (
+        runs if runs.startswith("<w:") else run(runs)
+    )
+    ppr = (
+        "<w:pPr>"
+        '<w:pBdr>'
+        f'<w:top w:val="single" w:sz="4" w:space="6" w:color="{fill}"/>'
+        f'<w:left w:val="single" w:sz="24" w:space="8" w:color="{accent}"/>'
+        f'<w:bottom w:val="single" w:sz="4" w:space="6" w:color="{fill}"/>'
+        f'<w:right w:val="single" w:sz="4" w:space="6" w:color="{fill}"/>'
+        '</w:pBdr>'
+        f'<w:shd w:val="clear" w:color="auto" w:fill="{fill}"/>'
+        '<w:spacing w:before="120" w:after="200" w:line="276" w:lineRule="auto"/>'
+        '<w:ind w:left="144" w:right="144"/>'
+        "</w:pPr>"
+    )
+    return f"<w:p>{ppr}{body}</w:p>"
+
+
 def code_block(lines):
-    """Each command on its own shaded, monospaced paragraph."""
+    """A single bordered, padded box with each command on its own line."""
     out = []
     n = len(lines)
     for i, line in enumerate(lines):
-        shd = '<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>'
-        # group spacing so consecutive code lines look like one block
-        before = "40" if i == 0 else "0"
-        after = "40" if i == n - 1 else "0"
+        shd = f'<w:shd w:val="clear" w:color="auto" w:fill="{CODE_FILL}"/>'
+        # Build a continuous border: top on first line, bottom on last,
+        # sides on every line so it reads as one box.
+        borders = ['<w:pBdr>']
+        if i == 0:
+            borders.append('<w:top w:val="single" w:sz="4" w:space="6" w:color="D5DCE4"/>')
+        borders.append('<w:left w:val="single" w:sz="4" w:space="8" w:color="D5DCE4"/>')
+        borders.append('<w:right w:val="single" w:sz="4" w:space="8" w:color="D5DCE4"/>')
+        if i == n - 1:
+            borders.append('<w:bottom w:val="single" w:sz="4" w:space="6" w:color="D5DCE4"/>')
+        borders.append('</w:pBdr>')
+        before = "120" if i == 0 else "0"
+        after = "120" if i == n - 1 else "0"
         ppr = (
-            f"<w:pPr><w:spacing w:before='{before}' w:after='{after}' w:line='240' w:lineRule='auto'/>"
+            f"<w:pPr>{''.join(borders)}"
+            f"<w:spacing w:before='{before}' w:after='{after}' w:line='264' w:lineRule='auto'/>"
+            f'<w:ind w:left="144" w:right="144"/>'
             f"{shd}</w:pPr>"
         )
         out.append(f"<w:p>{ppr}{run(line, mono=True)}</w:p>")
+    # A small spacer paragraph after the box so following text isn't cramped.
     return "".join(out)
 
 
@@ -75,9 +152,14 @@ body_parts = []
 B = body_parts.append
 
 B(title("Git Manual"))
-B(para(run("Project: Hotel Booking Ops", bold=True)))
-B(para("Remote: https://github.com/MamSanora/hotel-booking-ops.git"))
-B(para("This manual covers the everyday Git workflow for keeping your local folder in sync with your GitHub repository."))
+B(subtitle("Everyday workflow for keeping your local folder in sync with GitHub"))
+B(callout(
+    [
+        run("Project:  ", bold=True), run("Hotel Booking Ops"), br(),
+        run("Remote:  ", bold=True), run("https://github.com/MamSanora/hotel-booking-ops.git"),
+    ],
+    fill=NOTE_FILL, accent=ACCENT,
+))
 
 # 1
 B(heading("1. One-Time Setup (already done for this project)", 1))
@@ -163,8 +245,14 @@ B(code_block([
     "git revert <commit>              # safely undo a pushed commit",
     "git reset --soft HEAD~1          # undo last commit, keep changes staged",
 ]))
-B(para(run("Caution:", bold=True, color="C00000")))
-B(para('Avoid "git reset --hard" and "git push --force" unless you are sure — they can permanently delete work.'))
+B(callout(
+    [
+        run("Caution:  ", bold=True, color="C00000"),
+        run('Avoid "git reset --hard" and "git push --force" unless you are sure '
+            "— they can permanently delete work."),
+    ],
+    fill=WARN_FILL, accent="C00000",
+))
 
 # 9
 B(heading("9. Recommended Workflow for This Project", 1))
@@ -204,14 +292,20 @@ styles_xml = (
     f'<w:styles xmlns:w="{W}">'
     '<w:docDefaults><w:rPrDefault><w:rPr>'
     '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/>'
-    '</w:rPr></w:rPrDefault></w:docDefaults>'
+    f'<w:color w:val="333333"/>'
+    '</w:rPr></w:rPrDefault>'
+    '<w:pPrDefault><w:pPr>'
+    '<w:spacing w:after="160" w:line="276" w:lineRule="auto"/>'
+    '</w:pPr></w:pPrDefault></w:docDefaults>'
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'
     '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>'
-    '<w:rPr><w:sz w:val="56"/><w:color w:val="1F3864"/></w:rPr></w:style>'
+    f'<w:qFormat/><w:rPr><w:b/><w:color w:val="{INK}"/><w:sz w:val="60"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/>'
-    '<w:rPr><w:sz w:val="30"/><w:color w:val="1F3864"/></w:rPr></w:style>'
+    '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
+    f'<w:rPr><w:b/><w:color w:val="{INK}"/><w:sz w:val="30"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/>'
-    '<w:rPr><w:sz w:val="26"/><w:color w:val="2E74B5"/></w:rPr></w:style>'
+    '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
+    '<w:rPr><w:b/><w:color w:val="2E74B5"/><w:sz w:val="26"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/></w:style>'
     "</w:styles>"
 )
