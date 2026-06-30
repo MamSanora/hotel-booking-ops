@@ -1,59 +1,158 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Hotel Booking Ops V5
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 12 hotel booking & operations application.
 
-## About Laravel
+> A more detailed, printable version of this guide is available as
+> [`Hotel_Booking_Ops_Setup_Guide.docx`](./Hotel_Booking_Ops_Setup_Guide.docx) in the project root.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Backend:** PHP 8.2+, Laravel 12, Livewire 3, Sanctum
+- **Frontend:** Vite 7, Tailwind CSS 3, Alpine.js
+- **Database:** MySQL (via XAMPP) or SQLite
+- **Tooling:** Composer, npm, Pest (tests), Pint (formatting)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Why the repo looks "incomplete" after cloning
 
-## Learning Laravel
+After cloning you will **not** see `vendor/`, `node_modules/`, or a `.env` file.
+This is intentional — they are listed in `.gitignore` and are regenerated locally
+from the files that *are* committed.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Missing item     | How it is restored          | Source of truth                  |
+| ---------------- | --------------------------- | -------------------------------- |
+| `vendor/`        | `composer install`          | `composer.json` / `composer.lock` |
+| `node_modules/`  | `npm install`               | `package.json` / `package-lock.json` |
+| `public/build/`  | `npm run build`             | Vite + your source assets        |
+| `.env`           | copy from `.env.example`    | `.env.example`                   |
+| App key          | `php artisan key:generate`  | generated locally                |
+| `public/storage` | `php artisan storage:link`  | symlink to `storage/app/public`  |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Prerequisites
 
-## Laravel Sponsors
+- PHP 8.2 or higher (XAMPP provides this)
+- Composer
+- Node.js 18+ and npm
+- MySQL (bundled with XAMPP) or SQLite
+- Git
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Quick Start (recommended)
 
-### Premium Partners
+The project ships with a `setup` script in `composer.json` that automates everything:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+git clone <your-repo-url>
+cd Hotel_Booking_Ops_V5
+composer setup
+```
 
-## Contributing
+`composer setup` runs, in order:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```text
+composer install         # restore PHP dependencies (vendor/)
+copy .env.example .env    # create the environment file
+php artisan key:generate  # generate the APP_KEY
+php artisan migrate       # build the database schema
+npm install               # restore JS dependencies (node_modules/)
+npm run build             # compile assets into public/build/
+```
 
-## Code of Conduct
+> **Configure your database first** (see below). The `migrate` step fails if the
+> database connection isn't set up.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Manual Setup (step by step)
 
-## Security Vulnerabilities
+```bash
+# 1. Install PHP dependencies
+composer install
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 2. Create your environment file
+copy .env.example .env      # Windows
+cp .env.example .env        # macOS / Linux
 
-## License
+# 3. Generate the application key
+php artisan key:generate
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# 4. Configure the database in .env (see below), then:
+php artisan migrate
+# or, to also load demo/seed data:
+php artisan migrate --seed
+
+# 5. Install and compile front-end assets
+npm install
+npm run build
+
+# 6. Link the public storage folder (for uploaded images, etc.)
+php artisan storage:link
+```
+
+## Database Configuration
+
+Open `.env` and set your database connection. For a typical XAMPP / MySQL setup,
+create an empty database in phpMyAdmin first, then set:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=hotel_booking_ops
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Prefer SQLite (no server needed)? Set `DB_CONNECTION=sqlite` and create the file:
+
+```bash
+type nul > database\database.sqlite   # Windows
+touch database/database.sqlite          # macOS / Linux
+```
+
+## Running the App
+
+Run the PHP server, queue worker, and Vite dev server together:
+
+```bash
+composer dev
+```
+
+Or start pieces individually:
+
+- `php artisan serve` — web server at http://127.0.0.1:8000
+- `npm run dev` — Vite dev server with hot reloading for assets
+- `php artisan queue:listen` — process background jobs
+
+## Useful Commands
+
+| Command                              | What it does                          |
+| ------------------------------------ | ------------------------------------- |
+| `composer setup`                     | Full one-shot setup of a fresh clone  |
+| `composer dev`                       | Run server + queue + Vite together    |
+| `composer test`                      | Run the Pest test suite               |
+| `php artisan migrate:fresh --seed`   | Wipe & rebuild DB with seed data      |
+| `php artisan optimize:clear`         | Clear cached config/routes/views      |
+| `./vendor/bin/pint`                  | Auto-format PHP code to project style |
+| `npm run build`                      | Recompile front-end assets            |
+
+## After Pulling New Changes
+
+When you pull updates from GitHub, re-run these in case dependencies or the
+schema changed:
+
+```bash
+composer install
+npm install
+php artisan migrate
+```
+
+## Troubleshooting
+
+| Symptom                                          | Likely cause & fix                                         |
+| ------------------------------------------------ | ---------------------------------------------------------- |
+| "No application encryption key has been specified" | Run `php artisan key:generate`.                          |
+| `SQLSTATE` / database connection error           | Check `.env` DB settings and that MySQL is running.        |
+| Vite manifest not found                          | Run `npm install` then `npm run build`.                    |
+| Styles / images not loading                      | Run `php artisan storage:link` and rebuild assets.         |
+| Class not found after pulling changes            | Run `composer install` and `composer dump-autoload`.       |
+
+---
+
+Built with [Laravel](https://laravel.com). See the [Laravel documentation](https://laravel.com/docs) for framework details.

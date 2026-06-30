@@ -14,8 +14,18 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                playfair: ['"Playfair Display"', 'serif'],
             },
+            colors: {
+                hotel: {
+                    gold: '#c8a96e',
+                    'gold-hover': '#b8935a',
+                    dark: '#1a1a2e',
+                    accent: '#16213e',
+                    light: '#f8f5f0',
+                }
+            }
         },
     },
 

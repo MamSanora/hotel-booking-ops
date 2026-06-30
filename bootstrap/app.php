@@ -12,10 +12,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
         $middleware->alias([
-            'admin' => \App\Http\Middleware\Admin::class,
+            // ── Multi-Guard Auth Middleware ──────────────────────────────────
+            // Each middleware protects routes for its respective user type
+            // using a dedicated session guard.
+
+            // Guests use the default 'auth' middleware (web guard → GuestAuth).
+            // Admins must be authenticated via the dedicated 'admin' guard.
+            'auth.admin' => \App\Http\Middleware\AuthAdmin::class,
+
+            // Staff (receptionists) must be authenticated via the 'staff' guard.
+            // Renamed from 'auth.receptionist' to match the renamed guard/table.
+            'auth.staff' => \App\Http\Middleware\AuthStaff::class,
         ]);
+
+        // When an unauthenticated guest visits a protected route (e.g. /guest/dashboard),
+        // redirect them to the guest login page instead of the default /login.
+        $middleware->redirectGuestsTo(
+            fn (\Illuminate\Http\Request $request) => route('guest.login')
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
