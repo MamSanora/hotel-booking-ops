@@ -80,6 +80,8 @@ Route::prefix('guest')->name('guest.')->group(function () {
         // Booking actions owned by the guest
         Route::get('/bookings/{booking}',         [RoomController::class, 'showBooking'])->name('booking.show');
         Route::patch('/bookings/{booking}/cancel', [RoomController::class, 'cancel'])->name('booking.cancel');
+        Route::post('/bookings/{booking}/room-service', [RoomController::class, 'storeRoomService'])->name('booking.room-service.store');
+        Route::get('/bookings/{booking}/invoice',  [RoomController::class, 'invoice'])->name('booking.invoice');
     });
 });
 

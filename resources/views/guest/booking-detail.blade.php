@@ -187,12 +187,103 @@
             @endif
         </div>
 
+        @if($status === 'checked-in')
+        {{-- Room Service Section --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-[#f0ebe2] overflow-hidden mb-6">
+            <div class="p-6 border-b border-[#f0ebe2] flex justify-between items-center bg-gradient-to-r from-hotel-dark to-hotel-accent text-white">
+                <div>
+                    <h2 class="font-playfair text-xl font-bold mb-1">Room Service</h2>
+                    <p class="text-white/70 text-sm">Request amenities or report issues directly to reception.</p>
+                </div>
+                <i class="bi bi-bell-fill text-3xl opacity-50"></i>
+            </div>
+            
+            <div class="p-6">
+                <form method="POST" action="{{ route('guest.booking.room-service.store', $booking) }}">
+                    @csrf
+                    
+                    @if(isset($catalogItems) && $catalogItems->isNotEmpty())
+                    <div class="mb-5">
+                        <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-3">Select Items</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            @foreach($catalogItems as $item)
+                            <div class="flex items-center justify-between border border-gray-200 rounded-lg p-3 hover:border-hotel-gold transition-colors bg-gray-50/50">
+                                <span class="text-sm font-medium text-gray-700">{{ $item->item_name }}</span>
+                                <input type="number" name="items[{{ $item->id }}]" min="0" max="10" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold">
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+                    
+                    <div class="mb-5">
+                        <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-2">Special Notes / Complaints</label>
+                        <textarea name="guest_notes" rows="3" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 outline-none resize-none placeholder-gray-400" placeholder="e.g. Please bring extra towels, or AC is not working well..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-6 py-2.5 rounded-xl transition-colors inline-flex items-center">
+                        <i class="bi bi-send-fill mr-2"></i> Send Request
+                    </button>
+                </form>
+            </div>
+            
+            @if(isset($roomServices) && $roomServices->isNotEmpty())
+            <div class="bg-gray-50 border-t border-[#f0ebe2] p-6">
+                <h3 class="font-semibold text-sm uppercase text-gray-500 tracking-wider mb-4">Past Requests</h3>
+                <div class="space-y-3">
+                    @foreach($roomServices as $rs)
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex gap-2 items-center">
+                                @if($rs->request_status === 'pending')
+                                    <span class="bg-amber-100 text-amber-700 text-[0.7rem] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Pending</span>
+                                @elseif($rs->request_status === 'confirmed')
+                                    <span class="bg-blue-100 text-blue-700 text-[0.7rem] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Confirmed</span>
+                                @elseif($rs->request_status === 'completed')
+                                    <span class="bg-emerald-100 text-emerald-700 text-[0.7rem] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Completed</span>
+                                @else
+                                    <span class="bg-gray-100 text-gray-700 text-[0.7rem] font-bold px-2 py-0.5 rounded uppercase tracking-wider">{{ $rs->request_status }}</span>
+                                @endif
+                                <span class="text-xs text-gray-400">{{ $rs->created_at->diffForHumans() }}</span>
+                            </div>
+                        </div>
+                        
+                        @if($rs->requestedItems->isNotEmpty())
+                        <div class="text-sm text-gray-700 mb-1">
+                            <strong>Items:</strong> 
+                            {{ $rs->requestedItems->map(fn($ri) => $ri->amount_per_item . 'x ' . ($ri->catalog->item_name ?? 'Item'))->join(', ') }}
+                        </div>
+                        @endif
+                        
+                        @if($rs->guest_notes)
+                        <div class="text-sm text-gray-600 italic">"{{ $rs->guest_notes }}"</div>
+                        @endif
+                        
+                        @if($rs->response)
+                        <div class="mt-3 pt-3 border-t border-gray-100 bg-amber-50/50 p-2 rounded text-sm text-amber-800 border-l-2 border-l-amber-400">
+                            <strong>Reception Reply:</strong> {{ $rs->response }}
+                        </div>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+        @endif
+
         {{-- Action Buttons --}}
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-4 mb-10">
             <a href="{{ route('guest.dashboard') }}"
                class="inline-flex items-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold px-6 py-3 rounded-xl transition-colors duration-200">
                 <i class="bi bi-grid mr-2"></i> My Bookings
             </a>
+            @if($status !== 'pending' && $status !== 'cancelled')
+            <a href="{{ route('guest.booking.invoice', $booking) }}" target="_blank"
+               class="inline-flex items-center bg-white border border-gray-200 hover:bg-gray-50 text-hotel-dark font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-sm">
+                <i class="bi bi-receipt mr-2"></i> View Invoice
+            </a>
+            @endif
             @if($status === 'pending')
             <a href="{{ route('payment.show', $booking) }}"
                class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-6 py-3 rounded-xl transition-all duration-200">

@@ -378,6 +378,11 @@ class DemoDataSeeder extends Seeder
             $total++;
         }
 
+        // Ensure room statuses are set to occupied for all checked-in bookings
+        \App\Models\Room::whereHas('bookings', function($q) {
+            $q->where('booking_status', 'checked-in');
+        })->update(['current_status' => 'occupied']);
+
         $checkedInCount = Booking::where('booking_status', 'checked-in')->count();
         $this->command->info("     ✓ {$checkedInCount} rooms currently occupied");
     }

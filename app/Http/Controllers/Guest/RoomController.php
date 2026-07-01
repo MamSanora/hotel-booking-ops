@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Guest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
+use App\Models\ItemsCatalog;
 use App\Models\Room;
+use App\Models\RoomService;
+use App\Models\RequestedItem;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -140,8 +143,14 @@ class RoomController extends Controller
         abort_if($booking->guest_id !== $guestId, 403);
 
         $booking->load(['room', 'transactions']);
+        
+        $catalogItems = ItemsCatalog::orderBy('category')->get();
+        $roomServices = RoomService::where('booking_id', $booking->id)
+                            ->with('requestedItems.catalog')
+                            ->latest()
+                            ->get();
 
-        return view('guest.booking-detail', compact('booking'));
+        return view('guest.booking-detail', compact('booking', 'catalogItems', 'roomServices'));
     }
 
     /**
@@ -161,5 +170,66 @@ class RoomController extends Controller
         $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
 
         return back()->with('success', "Booking {$booking->referenceNumber()} has been cancelled.");
+    }
+
+    /**
+     * Store a room service request from the guest dashboard.
+     */
+    public function storeRoomService(Request $request, Booking $booking): RedirectResponse
+    {
+        $guestId = Auth::user()->guest_id;
+        abort_if($booking->guest_id !== $guestId, 403);
+        
+        if ($booking->booking_status !== Booking::STATUS_CHECKED_IN) {
+            return back()->with('error', 'You must be checked in to request room service.');
+        }
+
+        $validated = $request->validate([
+            'guest_notes' => 'nullable|string|max:500',
+            'items'       => 'nullable|array',
+            'items.*'     => 'integer|min:1|max:10',
+        ]);
+
+        if (empty($validated['items']) && empty($validated['guest_notes'])) {
+            return back()->with('error', 'Please select at least one item or provide a note.');
+        }
+
+        DB::transaction(function () use ($booking, $validated) {
+            $service = RoomService::create([
+                'booking_id'     => $booking->id,
+                'request_type'   => RoomService::TYPE_REQUEST,
+                'guest_notes'    => $validated['guest_notes'] ?? null,
+                'request_status' => RoomService::STATUS_PENDING,
+            ]);
+
+            if (!empty($validated['items'])) {
+                foreach ($validated['items'] as $catalogId => $quantity) {
+                    RequestedItem::create([
+                        'request_id'      => $service->id,
+                        'catalog_id'      => $catalogId,
+                        'amount_per_item' => $quantity,
+                    ]);
+                }
+            }
+        });
+
+        return back()->with('success', 'Your request has been sent to Reception.');
+    }
+
+    /**
+     * Display printable invoice for a booking.
+     */
+    public function invoice(Booking $booking): View
+    {
+        $guestId = Auth::user()->guest_id;
+        abort_if($booking->guest_id !== $guestId, 403);
+
+        if ($booking->booking_status === Booking::STATUS_PENDING) {
+            abort(403, 'Invoice not available yet.');
+        }
+
+        $booking->load(['room', 'guest', 'transactions', 'roomServices.requestedItems.catalog']);
+
+        return view('guest.invoice', compact('booking'));
     }
 }
