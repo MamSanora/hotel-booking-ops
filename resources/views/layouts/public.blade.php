@@ -58,11 +58,8 @@
             <div class="flex items-center justify-between">
                 
                 <!-- Brand Logo -->
-                <a href="{{ url('/') }}" class="flex items-center gap-2 text-hotel-gold hover:text-hotel-gold-hover transition duration-200">
-                    <i class="bi bi-building text-2xl"></i>
-                    <span class="font-playfair text-2xl font-bold tracking-wide">
-                        Dara Meas <span class="text-white font-light">Hotel</span>
-                    </span>
+                <a href="{{ url('/') }}" class="flex items-center">
+                    <img src="{{ asset('images/logo.png') }}" alt="Dara Meas Hotel" class="h-10 w-auto object-contain">
                 </a>
 
                 <!-- Desktop Navigation Links -->

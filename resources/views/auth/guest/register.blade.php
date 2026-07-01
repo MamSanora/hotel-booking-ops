@@ -21,14 +21,8 @@
 
         {{-- Logo --}}
         <div class="relative z-10">
-            <a href="{{ url('/') }}" class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-hotel-gold rounded-lg flex items-center justify-center">
-                    <i class="bi bi-building text-hotel-dark text-xl font-bold"></i>
-                </div>
-                <div>
-                    <div class="font-[Playfair_Display] text-white font-bold text-xl leading-tight">Dara Meas Hotel</div>
-                    <div class="text-white/50 text-xs tracking-widest uppercase">Phnom Penh</div>
-                </div>
+            <a href="{{ url('/') }}" class="flex items-center">
+                <img src="{{ asset('images/logo.png') }}" alt="Dara Meas Hotel" class="h-12 w-auto object-contain brightness-0 invert">
             </a>
         </div>
 
@@ -58,11 +52,8 @@
         <div class="w-full max-w-md py-8">
 
             {{-- Mobile Logo --}}
-            <div class="lg:hidden flex items-center gap-3 mb-8">
-                <div class="w-9 h-9 bg-hotel-gold rounded-lg flex items-center justify-center">
-                    <i class="bi bi-building text-hotel-dark text-lg"></i>
-                </div>
-                <span class="font-[Playfair_Display] text-hotel-dark font-bold text-xl">Dara Meas Hotel</span>
+            <div class="lg:hidden flex items-center mb-8">
+                <img src="{{ asset('images/logo.png') }}" alt="Dara Meas Hotel" class="h-10 w-auto object-contain">
             </div>
 
             <h1 class="font-[Playfair_Display] text-3xl font-bold text-hotel-dark mb-1">Create your account</h1>

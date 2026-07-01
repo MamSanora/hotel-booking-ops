@@ -93,13 +93,20 @@ Route::post('/rooms/{room}/book', [RoomController::class, 'store'])
 // ABA PAYWAY / KHQR PAYMENT ROUTES  (requires web auth)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ABA PayWay callback — accessible WITHOUT auth (server-to-server webhook + browser redirect).
+// IMPORTANT: Must be defined BEFORE the /{booking} wildcard route below, otherwise
+// Laravel matches 'callback' as a booking ID and the auth middleware blocks it.
+Route::match(['get', 'post'], '/payment/callback', [PaymentCallbackController::class, 'handle'])
+    ->name('payment.callback');
+
 Route::middleware('auth')->prefix('payment')->name('payment.')->group(function () {
 
     // Display the KHQR payment page for a booking.
-    Route::get('/{booking}', [PaymentController::class, 'show'])->name('show');
+    // whereNumber() ensures 'callback', 'success', 'failed' are never matched here.
+    Route::get('/{booking}', [PaymentController::class, 'show'])->name('show')->whereNumber('booking');
 
     // Dev / demo payment simulation — disabled in production.
-    Route::post('/{booking}/simulate', [PaymentController::class, 'simulatePay'])->name('simulate');
+    Route::post('/{booking}/simulate', [PaymentController::class, 'simulatePay'])->name('simulate')->whereNumber('booking');
 
     // Success and failure landing pages.
     Route::get('/success/{booking}', function (Booking $booking) {
@@ -110,10 +117,6 @@ Route::middleware('auth')->prefix('payment')->name('payment.')->group(function (
         return view('payment.failed');
     })->name('failed');
 });
-
-// ABA PayWay callback — accessible without auth (server-to-server webhook + browser redirect).
-Route::match(['get', 'post'], '/payment/callback', [PaymentCallbackController::class, 'handle'])
-    ->name('payment.callback');
 
 
 // ═══════════════════════════════════════════════════════════════════════════

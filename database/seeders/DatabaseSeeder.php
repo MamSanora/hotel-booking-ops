@@ -27,9 +27,10 @@ class DatabaseSeeder extends Seeder
         $this->command->newLine();
 
         $this->call([
-            AdminSeeder::class, // Creates the default superadmin account
-            StaffSeeder::class, // Creates default front-desk staff accounts
-            RoomSeeder::class,  // Seeds all 47 guest rooms across Floors 2–4
+            AdminSeeder::class,    // Creates the default superadmin account
+            StaffSeeder::class,    // Creates default front-desk staff accounts
+            RoomSeeder::class,     // Seeds all 47 guest rooms across Floors 2–4
+            DemoDataSeeder::class, // Generates 3-4 months of realistic operational data
         ]);
 
         $this->command->newLine();
