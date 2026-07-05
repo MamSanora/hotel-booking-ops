@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminRoomController;
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\MessageController;
@@ -131,6 +132,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Manual backup trigger (rate-limited inside the controller)
+        Route::post('/backup/run', [BackupController::class, 'run'])->name('backup.run');
 
         // Room management (CRUD)
         Route::get('/rooms',              [AdminRoomController::class, 'index'])->name('rooms.index');

@@ -17,6 +17,29 @@
 <div class="container mx-auto px-4 md:px-6 pb-12">
 
     {{-- ==========================================
+         BACKUP FLASH MESSAGES
+         ========================================== --}}
+    @if (session('backup_success'))
+        <div id="backup-alert-success"
+             class="flex items-start gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-5 py-4 mb-6 shadow-sm">
+            <i class="bi bi-shield-check text-emerald-500 text-xl mt-0.5 shrink-0"></i>
+            <div class="flex-1 text-sm font-medium">{{ session('backup_success') }}</div>
+            <button onclick="document.getElementById('backup-alert-success').remove()"
+                    class="text-emerald-400 hover:text-emerald-600 text-lg leading-none ml-2" aria-label="Dismiss">&times;</button>
+        </div>
+    @endif
+
+    @if (session('backup_error'))
+        <div id="backup-alert-error"
+             class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 rounded-xl px-5 py-4 mb-6 shadow-sm">
+            <i class="bi bi-exclamation-triangle text-red-500 text-xl mt-0.5 shrink-0"></i>
+            <div class="flex-1 text-sm font-medium">{{ session('backup_error') }}</div>
+            <button onclick="document.getElementById('backup-alert-error').remove()"
+                    class="text-red-400 hover:text-red-600 text-lg leading-none ml-2" aria-label="Dismiss">&times;</button>
+        </div>
+    @endif
+
+    {{-- ==========================================
          HOTEL STATISTICS
          ========================================== --}}
     <h2 class="font-playfair text-2xl font-bold text-hotel-dark border-b-2 border-gray-200 pb-3 mb-6 flex items-center">
@@ -91,7 +114,7 @@
         </div>
 
         {{-- System Backup Status --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] h-full">
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] h-full flex flex-col">
             @php
                 $iconClass  = match($backupStatus) {
                     'healthy'   => 'bi-shield-check text-emerald-600',
@@ -117,19 +140,27 @@
                     'no_backup' => '✕ No Backup',
                     default     => '? Unknown',
                 };
+
+                // Check if admin triggered a backup within the last hour.
+                $adminId       = auth('admin')->id();
+                $onCooldown    = cache()->has("admin_manual_backup_{$adminId}");
+                $cooldownSecs  = $onCooldown ? (cache()->getTimeToLive("admin_manual_backup_{$adminId}") ?? 3600) : 0;
+                $cooldownMins  = $onCooldown ? (int) ceil($cooldownSecs / 60) : 0;
             @endphp
 
+            {{-- Icon --}}
             <div class="w-12 h-12 rounded-xl {{ $bgClass }} flex items-center justify-center text-[1.4rem] mb-4">
                 <i class="bi {{ $iconClass }}"></i>
             </div>
 
+            {{-- Badge + Label --}}
             <div class="flex items-center gap-2 mb-1">
                 <span class="text-sm font-bold px-2 py-0.5 rounded-full {{ $badgeClass }}">{{ $badgeLabel }}</span>
             </div>
-
             <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider mb-2">System Backup</div>
 
-            <div class="text-xs text-gray-400 leading-snug">
+            {{-- Last backup time --}}
+            <div class="text-xs text-gray-400 leading-snug mb-4">
                 @if ($lastBackupTime)
                     Last backup:<br>
                     <span class="text-gray-600 font-medium">
@@ -138,6 +169,31 @@
                     </span>
                 @else
                     No backup on record yet.
+                @endif
+            </div>
+
+            {{-- Backup Now button — pushed to the bottom of the card --}}
+            <div class="mt-auto">
+                @if ($onCooldown)
+                    {{-- Greyed-out state: shows remaining cooldown time --}}
+                    <div class="w-full flex items-center justify-center gap-2 text-xs text-gray-400
+                                bg-gray-100 rounded-lg px-3 py-2 cursor-not-allowed select-none">
+                        <i class="bi bi-hourglass-split"></i>
+                        Next backup available in {{ $cooldownMins }} min{{ $cooldownMins !== 1 ? 's' : '' }}
+                    </div>
+                @else
+                    {{-- Active button: triggers manual backup --}}
+                    <form method="POST" action="{{ route('admin.backup.run') }}"
+                          onsubmit="return confirm('Run a manual backup now? This may take a minute.')">
+                        @csrf
+                        <button id="btn-backup-now"
+                                type="submit"
+                                class="w-full flex items-center justify-center gap-2 text-xs font-semibold
+                                       bg-hotel-dark text-white rounded-lg px-3 py-2
+                                       hover:bg-hotel-accent transition-colors duration-200">
+                            <i class="bi bi-cloud-arrow-up"></i> Backup Now
+                        </button>
+                    </form>
                 @endif
             </div>
         </div>
