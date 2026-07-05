@@ -89,6 +89,58 @@
             <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $availableRooms }}</div>
             <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Rooms Available</div>
         </div>
+
+        {{-- System Backup Status --}}
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] h-full">
+            @php
+                $iconClass  = match($backupStatus) {
+                    'healthy'   => 'bi-shield-check text-emerald-600',
+                    'outdated'  => 'bi-shield-exclamation text-amber-500',
+                    'no_backup' => 'bi-shield-x text-red-500',
+                    default     => 'bi-shield text-gray-400',
+                };
+                $bgClass    = match($backupStatus) {
+                    'healthy'   => 'bg-emerald-50',
+                    'outdated'  => 'bg-amber-50',
+                    'no_backup' => 'bg-red-50',
+                    default     => 'bg-gray-50',
+                };
+                $badgeClass = match($backupStatus) {
+                    'healthy'   => 'bg-emerald-100 text-emerald-700',
+                    'outdated'  => 'bg-amber-100 text-amber-700',
+                    'no_backup' => 'bg-red-100 text-red-700',
+                    default     => 'bg-gray-100 text-gray-600',
+                };
+                $badgeLabel = match($backupStatus) {
+                    'healthy'   => '● Secured',
+                    'outdated'  => '⚠ Outdated',
+                    'no_backup' => '✕ No Backup',
+                    default     => '? Unknown',
+                };
+            @endphp
+
+            <div class="w-12 h-12 rounded-xl {{ $bgClass }} flex items-center justify-center text-[1.4rem] mb-4">
+                <i class="bi {{ $iconClass }}"></i>
+            </div>
+
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-bold px-2 py-0.5 rounded-full {{ $badgeClass }}">{{ $badgeLabel }}</span>
+            </div>
+
+            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider mb-2">System Backup</div>
+
+            <div class="text-xs text-gray-400 leading-snug">
+                @if ($lastBackupTime)
+                    Last backup:<br>
+                    <span class="text-gray-600 font-medium">
+                        {{ $lastBackupTime->isToday() ? 'Today' : $lastBackupTime->format('M d, Y') }}
+                        at {{ $lastBackupTime->format('g:i A') }}
+                    </span>
+                @else
+                    No backup on record yet.
+                @endif
+            </div>
+        </div>
     </div>
 
     {{-- ==========================================

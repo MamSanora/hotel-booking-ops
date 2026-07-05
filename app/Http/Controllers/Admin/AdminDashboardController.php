@@ -7,6 +7,9 @@ use App\Models\Booking;
 use App\Models\GuestAuth;
 use App\Models\Room;
 use App\Models\Transaction;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 /**
  * AdminDashboardController
@@ -17,6 +20,7 @@ use App\Models\Transaction;
  *   - Today's arrivals and departures
  *   - Revenue (monthly + 7-day chart)
  *   - Registered guest account count
+ *   - System backup status (last backup timestamp + health indicator)
  *
  * Route: GET /admin/dashboard
  */
@@ -67,6 +71,35 @@ class AdminDashboardController extends Controller
             ->pluck('count', 'booking_status')
             ->toArray();
 
+        // ── Backup Status ─────────────────────────────────────────────────
+        // Read the most recent backup ZIP from the dedicated 'backups' disk.
+        // Spatie stores files under: {backup.name}/{timestamp}.zip
+        // Possible values for $backupStatus: 'healthy' | 'outdated' | 'no_backup' | 'unknown'
+        $backupStatus   = 'no_backup';
+        $lastBackupTime = null;
+
+        try {
+            $disk    = Storage::disk('backups');
+            $appName = config('backup.backup.name', config('app.name', 'Laravel'));
+            $files   = $disk->files($appName);
+
+            if (! empty($files)) {
+                // Sort descending so the newest file is first.
+                rsort($files);
+                $lastModified   = $disk->lastModified($files[0]);
+                $lastBackupTime = Carbon::createFromTimestamp($lastModified);
+
+                // Healthy = backed up within the last 25 hours (1-hour buffer over
+                // the standard nightly schedule). Outdated = older than that.
+                $backupStatus = $lastBackupTime->diffInHours(now()) <= 25
+                    ? 'healthy'
+                    : 'outdated';
+            }
+        } catch (Throwable) {
+            // Disk unavailable or misconfigured — surface as unknown.
+            $backupStatus = 'unknown';
+        }
+
         return view('admin.dashboard', compact(
             'totalRooms',
             'availableRooms',
@@ -78,6 +111,8 @@ class AdminDashboardController extends Controller
             'totalGuests',
             'revenueLast7Days',
             'bookingsByStatus',
+            'backupStatus',
+            'lastBackupTime',
         ));
     }
 }
