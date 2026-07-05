@@ -87,7 +87,10 @@ class AdminDashboardController extends Controller
                 // Sort descending so the newest file is first.
                 rsort($files);
                 $lastModified   = $disk->lastModified($files[0]);
-                $lastBackupTime = Carbon::createFromTimestamp($lastModified);
+                // Explicitly apply the app timezone so the display is in local time
+                // (UTC+7) rather than raw UTC — which would be 7 hours behind.
+                $lastBackupTime = Carbon::createFromTimestampUTC($lastModified)
+                    ->setTimezone(config('app.timezone'));
 
                 // Healthy = backed up within the last 25 hours (1-hour buffer over
                 // the standard nightly schedule). Outdated = older than that.

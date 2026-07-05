@@ -142,10 +142,12 @@
                 };
 
                 // Check if admin triggered a backup within the last hour.
-                $adminId       = auth('admin')->id();
-                $onCooldown    = cache()->has("admin_manual_backup_{$adminId}");
-                $cooldownSecs  = $onCooldown ? (cache()->getTimeToLive("admin_manual_backup_{$adminId}") ?? 3600) : 0;
-                $cooldownMins  = $onCooldown ? (int) ceil($cooldownSecs / 60) : 0;
+                $adminId      = auth('admin')->id();
+                $onCooldown   = cache()->has("admin_manual_backup_{$adminId}");
+                // The cache value is the Unix expiry timestamp — works with any cache driver.
+                $expiresAt    = $onCooldown ? (cache()->get("admin_manual_backup_{$adminId}") ?? now()->timestamp) : now()->timestamp;
+                $cooldownSecs = $onCooldown ? max(0, $expiresAt - now()->timestamp) : 0;
+                $cooldownMins = $onCooldown ? (int) ceil($cooldownSecs / 60) : 0;
             @endphp
 
             {{-- Icon --}}

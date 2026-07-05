@@ -64,6 +64,10 @@ return [
             ]) : [],
             'dump' => [
                 'dump_binary_path' => env('DB_DUMP_BINARY_PATH', ''),
+                // Explicitly force TCP and target 127.0.0.1 so mysqldump does not
+                // rely on the Windows socket environment that can be degraded when
+                // spawned from a web server subprocess.
+                'add_extra_option' => '--protocol=TCP --host=127.0.0.1 --port=3306',
             ],
         ],
 
