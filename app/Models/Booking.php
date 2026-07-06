@@ -20,15 +20,15 @@ use Illuminate\Support\Carbon;
  *   pending → booked → checked-in → checked-out
  *                    ↘ cancelled / no_show
  *
- * @property int         $id
- * @property int|null    $guest_id
- * @property int|null    $room_id
- * @property int|null    $handled_by_staff_id
+ * @property int $id
+ * @property int|null $guest_id
+ * @property int|null $room_id
+ * @property int|null $handled_by_staff_id
  * @property string|null $check_in_date
  * @property string|null $check_out_date
- * @property int         $number_of_stay_extension
- * @property float|null  $total_price
- * @property string      $booking_status
+ * @property int $number_of_stay_extension
+ * @property float|null $total_price
+ * @property string $booking_status
  * @property string|null $guest_type
  */
 class Booking extends Model
@@ -37,29 +37,37 @@ class Booking extends Model
 
     // ── Status Constants ───────────────────────────────────────────────────
 
-    public const STATUS_PENDING     = 'pending';
-    public const STATUS_BOOKED      = 'booked';
-    public const STATUS_CHECKED_IN  = 'checked-in';
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_BOOKED = 'booked';
+
+    public const STATUS_CHECKED_IN = 'checked-in';
+
     public const STATUS_CHECKED_OUT = 'checked-out';
-    public const STATUS_CANCELLED   = 'cancelled';
-    public const STATUS_NO_SHOW     = 'no_show';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_NO_SHOW = 'no_show';
 
     /** Human-readable labels for each status value. */
     public const STATUS_LABELS = [
-        'pending'     => 'Pending',
-        'booked'      => 'Booked',
-        'checked-in'  => 'Checked In',
+        'pending' => 'Pending',
+        'booked' => 'Booked',
+        'checked-in' => 'Checked In',
         'checked-out' => 'Checked Out',
-        'cancelled'   => 'Cancelled',
-        'no_show'     => 'No Show',
+        'cancelled' => 'Cancelled',
+        'no_show' => 'No Show',
     ];
 
     // ── Guest Type Constants ───────────────────────────────────────────────
 
-    public const GUEST_TYPE_USER    = 'user';
-    public const GUEST_TYPE_WALKIN  = 'walk-in';
-    public const GUEST_TYPE_PHONE   = 'phone';
-    public const GUEST_TYPE_OTHER   = 'other';
+    public const GUEST_TYPE_USER = 'user';
+
+    public const GUEST_TYPE_WALKIN = 'walk-in';
+
+    public const GUEST_TYPE_PHONE = 'phone';
+
+    public const GUEST_TYPE_OTHER = 'other';
 
     protected $fillable = [
         'guest_id',
@@ -71,14 +79,15 @@ class Booking extends Model
         'total_price',
         'booking_status',
         'guest_type',
+        'special_requests',
     ];
 
     protected function casts(): array
     {
         return [
-            'check_in_date'            => 'date',
-            'check_out_date'           => 'date',
-            'total_price'              => 'decimal:2',
+            'check_in_date' => 'date',
+            'check_out_date' => 'date',
+            'total_price' => 'decimal:2',
             'number_of_stay_extension' => 'integer',
         ];
     }
@@ -247,7 +256,7 @@ class Booking extends Model
      */
     public function referenceNumber(): string
     {
-        return 'BK-' . str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+        return 'BK-'.str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -269,13 +278,13 @@ class Booking extends Model
     public function statusBadgeClass(): string
     {
         return match ($this->booking_status) {
-            self::STATUS_PENDING     => 'bg-yellow-100 text-yellow-800',
-            self::STATUS_BOOKED      => 'bg-blue-100 text-blue-800',
-            self::STATUS_CHECKED_IN  => 'bg-green-100 text-green-800',
+            self::STATUS_PENDING => 'bg-yellow-100 text-yellow-800',
+            self::STATUS_BOOKED => 'bg-blue-100 text-blue-800',
+            self::STATUS_CHECKED_IN => 'bg-green-100 text-green-800',
             self::STATUS_CHECKED_OUT => 'bg-gray-100 text-gray-800',
-            self::STATUS_CANCELLED   => 'bg-red-100 text-red-800',
-            self::STATUS_NO_SHOW     => 'bg-orange-100 text-orange-800',
-            default                  => 'bg-gray-100 text-gray-600',
+            self::STATUS_CANCELLED => 'bg-red-100 text-red-800',
+            self::STATUS_NO_SHOW => 'bg-orange-100 text-orange-800',
+            default => 'bg-gray-100 text-gray-600',
         };
     }
 

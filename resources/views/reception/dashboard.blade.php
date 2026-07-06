@@ -84,6 +84,12 @@
                                     <div class="text-gray-500 text-[0.8rem] mt-0.5">
                                         {{ $booking->guest?->phones?->first()?->phone_number ?? '—' }}
                                     </div>
+                                    @if($booking->special_requests)
+                                        <div class="mt-1.5 p-1.5 bg-amber-50 border border-amber-200 rounded text-amber-800 text-[0.78rem] flex items-start gap-1 max-w-xs">
+                                            <i class="bi bi-chat-left-text-fill text-amber-600 mt-0.5 shrink-0"></i>
+                                            <span><strong>Request:</strong> {{ $booking->special_requests }}</span>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="text-gray-800 font-medium text-[0.95rem]">{{ $booking->room?->displayType() ?? 'N/A' }}</div>
@@ -204,7 +210,8 @@
                                 <th class="px-5 py-4 font-semibold">Guest Name</th>
                                 <th class="px-5 py-4 font-semibold">Check-In</th>
                                 <th class="px-5 py-4 font-semibold">Check-Out</th>
-                                <th class="px-5 py-4 font-semibold rounded-tr-xl rounded-br-xl">Status</th>
+                                <th class="px-5 py-4 font-semibold">Status</th>
+                                <th class="px-5 py-4 font-semibold rounded-tr-xl rounded-br-xl text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -220,11 +227,31 @@
                                     <div class="text-gray-500 text-[0.8rem] mt-0.5">
                                         {{ $booking->guest?->phones?->first()?->phone_number ?? '—' }}
                                     </div>
+                                    @if($booking->special_requests)
+                                        <div class="mt-1.5 p-1.5 bg-amber-50 border border-amber-200 rounded text-amber-800 text-[0.78rem] flex items-start gap-1 max-w-xs">
+                                            <i class="bi bi-chat-left-text-fill text-amber-600 mt-0.5 shrink-0"></i>
+                                            <span><strong>Request:</strong> {{ $booking->special_requests }}</span>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-4 text-gray-700 text-[0.95rem] whitespace-nowrap">{{ $booking->check_in_date?->format('M d, Y') }}</td>
                                 <td class="px-5 py-4 text-gray-700 text-[0.95rem] whitespace-nowrap">{{ $booking->check_out_date?->format('M d, Y') }}</td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <span class="bg-green-100 text-green-800 text-[0.75rem] font-bold px-3 py-1 rounded-full tracking-wide">Checked In</span>
+                                </td>
+                                <td class="px-5 py-4 whitespace-nowrap text-right">
+                                    <form action="{{ route('reception.checkout', $booking->id) }}" method="POST" class="inline-block">
+                                        @csrf
+                                        @if($booking->check_out_date && $booking->check_out_date->isFuture() && !$booking->check_out_date->isToday())
+                                            <button type="submit" onclick="return confirm('⚠️ EARLY DEPARTURE:\nThis guest was scheduled to leave on {{ $booking->check_out_date->format('M d, Y') }}.\nAre you sure you want to process an EARLY check-out for Room {{ $booking->room?->room_number ?? '-' }}?')" class="inline-flex items-center bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold px-3.5 py-1.5 rounded-lg text-xs transition-colors border border-orange-300 shadow-sm">
+                                                <i class="bi bi-box-arrow-right mr-1.5"></i>Early Check-Out
+                                            </button>
+                                        @else
+                                            <button type="submit" onclick="return confirm('Check out guest from Room {{ $booking->room?->room_number ?? '-' }}?')" class="inline-flex items-center bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-yellow-200">
+                                                <i class="bi bi-door-closed mr-2"></i>Check Out
+                                            </button>
+                                        @endif
+                                    </form>
                                 </td>
                             </tr>
                             @endforeach

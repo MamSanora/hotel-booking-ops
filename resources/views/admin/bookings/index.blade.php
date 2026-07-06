@@ -74,6 +74,12 @@
                             <div class="text-gray-500 text-[0.8rem]">
                                 {{ $booking->guest?->phones?->first()?->phone_number ?? '—' }}
                             </div>
+                            @if($booking->special_requests)
+                                <div class="mt-1.5 p-1.5 bg-amber-50 border border-amber-200 rounded text-amber-800 text-[0.78rem] flex items-start gap-1 max-w-xs">
+                                    <i class="bi bi-chat-left-text-fill text-amber-600 mt-0.5 shrink-0"></i>
+                                    <span><strong>Request:</strong> {{ $booking->special_requests }}</span>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <div class="text-gray-800 text-[0.95rem]"><strong>In:</strong> {{ $booking->check_in_date?->format('M d, Y') }}</div>

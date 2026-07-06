@@ -131,8 +131,16 @@
                         <div class="font-bold text-hotel-dark text-base">
                             {{ $booking->nightCount() }} Night{{ $booking->nightCount() !== 1 ? 's' : '' }}
                         </div>
-                    </div>
                 </div>
+                @if($booking->special_requests)
+                    <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm flex items-start gap-2">
+                        <i class="bi bi-chat-left-text-fill text-amber-600 mt-0.5 shrink-0"></i>
+                        <div>
+                            <span class="font-bold block text-xs uppercase tracking-wider text-amber-700 mb-0.5">Special Request</span>
+                            <span>{{ $booking->special_requests }}</span>
+                        </div>
+                    </div>
+                @endif
             </div>
 
             {{-- Payment Summary --}}

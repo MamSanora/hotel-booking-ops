@@ -29,9 +29,9 @@ class StoreWalkInBookingRequest extends FormRequest
     {
         return [
             // ── Guest Profile ────────────────────────────────────────────────
-            'full_name'    => ['required', 'string', 'max:50'],
-            'gender'       => ['nullable', Rule::in(['male', 'female', 'other', 'prefer_not_to_say'])],
-            'nationality'  => ['nullable', 'string', 'max:50'],
+            'full_name' => ['required', 'string', 'max:50'],
+            'gender' => ['nullable', Rule::in(['male', 'female', 'other', 'prefer_not_to_say'])],
+            'nationality' => ['nullable', 'string', 'max:50'],
             'phone_number' => ['nullable', 'string', 'max:30'],
 
             // ── Booking Details ──────────────────────────────────────────────
@@ -40,7 +40,7 @@ class StoreWalkInBookingRequest extends FormRequest
                 'integer',
                 Rule::exists('rooms', 'id')->where('current_status', Room::STATUS_AVAILABLE),
             ],
-            'check_in_date'  => ['required', 'date', 'after_or_equal:today'],
+            'check_in_date' => ['required', 'date', 'after_or_equal:today'],
             'check_out_date' => ['required', 'date', 'after:check_in_date'],
 
             // How the guest arrived or was contacted.
@@ -48,16 +48,17 @@ class StoreWalkInBookingRequest extends FormRequest
 
             // ── Payment ──────────────────────────────────────────────────────
             'payment_method' => ['required', Rule::in(['cash', 'khqr'])],
-            'amount_paid'    => ['required', 'numeric', 'min:0'],
+            'amount_paid' => ['required', 'numeric', 'min:0'],
             'payment_status' => ['required', Rule::in(['pending', 'half', 'full'])],
+            'special_requests' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'room_id.exists'               => 'The selected room is not available.',
-            'check_out_date.after'         => 'Check-out must be at least one night after check-in.',
+            'room_id.exists' => 'The selected room is not available.',
+            'check_out_date.after' => 'Check-out must be at least one night after check-in.',
             'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
         ];
     }

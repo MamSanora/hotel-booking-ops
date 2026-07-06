@@ -22,8 +22,9 @@ class StoreBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'check_in_date'  => ['required', 'date', 'after_or_equal:today'],
+            'check_in_date' => ['required', 'date', 'after_or_equal:today'],
             'check_out_date' => ['required', 'date', 'after:check_in_date'],
+            'special_requests' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -31,7 +32,7 @@ class StoreBookingRequest extends FormRequest
     {
         return [
             'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
-            'check_out_date.after'         => 'Check-out must be at least one night after check-in.',
+            'check_out_date.after' => 'Check-out must be at least one night after check-in.',
         ];
     }
 }

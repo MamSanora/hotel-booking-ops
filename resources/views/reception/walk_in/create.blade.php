@@ -137,6 +137,11 @@
                         </div>
                     </div>
 
+                    <div class="mt-6">
+                        <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Special Requests / Notes <span class="font-normal text-gray-400 lowercase">(optional)</span></label>
+                        <textarea name="special_requests" rows="2" placeholder="e.g. Extra pillows, late arrival, wake-up call..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] resize-none">{{ old('special_requests') }}</textarea>
+                    </div>
+
                     <div class="pt-6 border-t border-gray-100 flex justify-end">
                         <button type="submit" class="bg-hotel-dark hover:bg-hotel-accent text-white px-8 py-3 rounded-xl font-semibold transition-colors shadow-lg shadow-hotel-dark/20 flex items-center" {{ $availableRooms->isEmpty() ? 'disabled' : '' }}>
                             <i class="bi bi-calendar-check mr-2"></i> Confirm Walk-In Booking

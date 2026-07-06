@@ -8,9 +8,9 @@ use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Room;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -35,7 +35,7 @@ class WalkInBookingController extends Controller
      */
     public function create(Request $request): View
     {
-        $checkinDate  = $request->input('checkin', today()->toDateString());
+        $checkinDate = $request->input('checkin', today()->toDateString());
         $checkoutDate = $request->input('checkout', today()->addDay()->toDateString());
 
         // Show only rooms available for the requested dates.
@@ -66,8 +66,8 @@ class WalkInBookingController extends Controller
         $booking = DB::transaction(function () use ($validated) {
             // Step 1: Create the guest profile.
             $guest = Guest::create([
-                'full_name'   => $validated['full_name'],
-                'gender'      => $validated['gender'] ?? null,
+                'full_name' => $validated['full_name'],
+                'gender' => $validated['gender'] ?? null,
                 'nationality' => $validated['nationality'] ?? null,
             ]);
 
@@ -76,29 +76,30 @@ class WalkInBookingController extends Controller
             }
 
             // Step 2: Calculate pricing.
-            $room   = Room::findOrFail($validated['room_id']);
+            $room = Room::findOrFail($validated['room_id']);
             $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                 ->diffInDays(Carbon::parse($validated['check_out_date'])));
-            $total  = $nights * (float) $room->price_per_night;
+            $total = $nights * (float) $room->price_per_night;
 
             // Step 3: Create the booking.
             // Walk-in bookings default to 'booked' since payment is handled at desk.
             $booking = Booking::create([
-                'guest_id'           => $guest->id,
-                'room_id'            => $room->id,
+                'guest_id' => $guest->id,
+                'room_id' => $room->id,
                 'handled_by_staff_id' => Auth::guard('staff')->id(),
-                'check_in_date'      => $validated['check_in_date'],
-                'check_out_date'     => $validated['check_out_date'],
-                'total_price'        => $total,
-                'booking_status'     => Booking::STATUS_BOOKED,
-                'guest_type'         => $validated['guest_type'],
+                'check_in_date' => $validated['check_in_date'],
+                'check_out_date' => $validated['check_out_date'],
+                'total_price' => $total,
+                'booking_status' => Booking::STATUS_BOOKED,
+                'guest_type' => $validated['guest_type'],
+                'special_requests' => $validated['special_requests'] ?? null,
             ]);
 
             // Step 4: Record the payment transaction.
             Transaction::create([
-                'booking_id'     => $booking->id,
-                'amount_paid'    => $validated['amount_paid'],
-                'payment_for'    => Transaction::FOR_BOOKING,
+                'booking_id' => $booking->id,
+                'amount_paid' => $validated['amount_paid'],
+                'payment_for' => Transaction::FOR_BOOKING,
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => $validated['payment_status'],
             ]);

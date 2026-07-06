@@ -48,8 +48,8 @@
                     <div>
                         <h4 class="font-bold text-hotel-dark text-[1.05rem] mb-1">Our Location</h4>
                         <p class="text-gray-600 text-[0.9rem] leading-relaxed">
-                            #123 Street 456, Sangkat Boeng Keng Kang,<br>
-                            Khan Boeng Keng Kang, Phnom Penh, Cambodia
+                            #123 Street 315, Sangkat Beung Kak 1,<br>
+                            Khan Toul Kork, Phnom Penh, Cambodia
                         </p>
                     </div>
                 </div>

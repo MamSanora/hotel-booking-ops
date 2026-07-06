@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Dara Meas Hotel') — Phnom Penh, Cambodia</title>
-    <meta name="description" content="@yield('meta_description', 'Book your stay at Dara Meas Hotel, a comfortable 2.5-star hotel in the heart of Phnom Penh, Cambodia.')">
+    <meta name="description" content="@yield('meta_description', 'Book your stay at Dara Meas Hotel, a comfortable 3-star hotel in Toul Kork, Phnom Penh, Cambodia.')">
 
     <!-- Fonts: Inter and Playfair Display -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
@@ -225,7 +225,7 @@
                         <i class="bi bi-building mr-2"></i> Dara Meas Hotel
                     </h5>
                     <p class="text-sm leading-relaxed mb-6">
-                        A comfortable 2.5-star hotel in Phnom Penh, Cambodia.<br>
+                        A comfortable 3-star hotel in Toul Kork Phnom Penh, Cambodia.<br>
                         Established 2019. 47 rooms across 4 floors.
                     </p>
                     <div class="flex space-x-4">
@@ -264,7 +264,7 @@
                     <ul class="space-y-3 text-sm">
                         <li class="flex items-start">
                             <i class="bi bi-geo-alt text-hotel-gold mr-3 mt-0.5"></i> 
-                            <span>Phnom Penh, Cambodia</span>
+                            <span>Toul Kork, Phnom Penh, Cambodia</span>
                         </li>
                         <li class="flex items-start">
                             <i class="bi bi-telephone text-hotel-gold mr-3 mt-0.5"></i> 

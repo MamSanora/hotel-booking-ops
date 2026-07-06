@@ -10,9 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * AuthStaff Middleware
  *
- * Protects routes that require an authenticated front-desk staff member.
- * Uses the 'staff' guard (staff table), completely separate from the
- * 'web' (guest) and 'admin' guards.
+ * Protects routes that require an authenticated front-desk staff member
+ * or an administrator. Uses the 'staff' or 'admin' guards.
  *
  * Replaces the old AuthReceptionist middleware, updated to use the
  * renamed 'staff' guard (was 'receptionist').
@@ -24,7 +23,7 @@ class AuthStaff
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::guard('staff')->check()) {
+        if (! Auth::guard('staff')->check() && ! Auth::guard('admin')->check()) {
             return redirect()->route('reception.login')
                 ->with('error', 'Please log in to access the reception panel.');
         }
