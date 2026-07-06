@@ -17,8 +17,6 @@ class RoomFactory extends Factory
         'standard_twin'   => ['capacity' => 2, 'price' => 35.00],
         'standard_double' => ['capacity' => 2, 'price' => 40.00],
         'deluxe_double'   => ['capacity' => 2, 'price' => 55.00],
-        'family_room'     => ['capacity' => 4, 'price' => 80.00],
-        'suite'           => ['capacity' => 3, 'price' => 120.00],
     ];
 
     public function definition(): array
@@ -54,18 +52,6 @@ class RoomFactory extends Factory
             'room_type'      => 'standard_twin',
             'capacity'       => 2,
             'price_per_night' => 35.00,
-        ]);
-    }
-
-    /**
-     * State: suite room.
-     */
-    public function suite(): static
-    {
-        return $this->state([
-            'room_type'      => 'suite',
-            'capacity'       => 3,
-            'price_per_night' => 120.00,
         ]);
     }
 }

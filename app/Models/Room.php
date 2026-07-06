@@ -33,8 +33,6 @@ class Room extends Model
         'standard_twin'   => 'Standard Twin',
         'standard_double' => 'Standard Double',
         'deluxe_double'   => 'Deluxe Double',
-        'family_room'     => 'Family Room',
-        'suite'           => 'Suite',
     ];
 
     public const STATUS_AVAILABLE = 'available';

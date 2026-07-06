@@ -40,8 +40,6 @@
                     'standard_twin'   => 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=85',
                     'standard_double' => 'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?w=900&q=85',
                     'deluxe_double'   => 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=900&q=85',
-                    'family_room'     => 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=900&q=85',
-                    'suite'           => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=85',
                 ];
                 $img = $roomImages[$room->room_type] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=85';
             @endphp
@@ -101,14 +99,6 @@
                         {{ $item }}
                     </div>
                 @endforeach
-                @if($room->room_type === 'suite')
-                    <div class="flex items-center gap-2.5 text-[0.9rem] text-gray-700">
-                        <i class="bi bi-check-circle-fill text-hotel-gold"></i> Daily complimentary breakfast
-                    </div>
-                    <div class="flex items-center gap-2.5 text-[0.9rem] text-gray-700">
-                        <i class="bi bi-check-circle-fill text-hotel-gold"></i> Nespresso machine & minibar
-                    </div>
-                @endif
             </div>
 
             {{-- Hotel Policies --}}

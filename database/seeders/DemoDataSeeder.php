@@ -189,9 +189,7 @@ class DemoDataSeeder extends Seeder
         $types = array_merge(
             array_fill(0, 12, 'standard_twin'),
             array_fill(0, 10, 'standard_double'),
-            array_fill(0, 8,  'deluxe_double'),
-            array_fill(0, 4,  'family_room'),
-            array_fill(0, 2,  'suite')
+            array_fill(0, 10, 'deluxe_double')
         );
 
         // Build scenarios: [month, count, status_logic]
@@ -318,8 +316,8 @@ class DemoDataSeeder extends Seeder
             ['in' => -2, 'out' => 2,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'standard_twin'],
             ['in' => -1, 'out' => 3,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'standard_double'],
             ['in' => -3, 'out' => 1,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'deluxe_double'],
-            ['in' => -1, 'out' => 2,  'guestType' => 'phone',   'method' => 'cash',  'type' => 'family_room'],
-            ['in' => -2, 'out' => 4,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'suite'],
+            ['in' => -1, 'out' => 2,  'guestType' => 'phone',   'method' => 'cash',  'type' => 'standard_twin'],
+            ['in' => -2, 'out' => 4,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'deluxe_double'],
         ];
 
         $staffId = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;

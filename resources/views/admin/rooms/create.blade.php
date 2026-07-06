@@ -52,8 +52,6 @@
                         <option value="standard_twin"   {{ old('room_type') === 'standard_twin'   ? 'selected' : '' }}>Standard Twin</option>
                         <option value="standard_double" {{ old('room_type') === 'standard_double' ? 'selected' : '' }}>Standard Double</option>
                         <option value="deluxe_double"   {{ old('room_type') === 'deluxe_double'   ? 'selected' : '' }}>Deluxe Double</option>
-                        <option value="family_room"     {{ old('room_type') === 'family_room'     ? 'selected' : '' }}>Family Room</option>
-                        <option value="suite"           {{ old('room_type') === 'suite'           ? 'selected' : '' }}>Suite</option>
                     </select>
                     @error('room_type') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

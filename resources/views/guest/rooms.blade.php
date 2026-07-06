@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Our Rooms')
-@section('meta_description', 'Browse all available rooms at Dara Meas Hotel — Standard Twin, Standard Double, Deluxe Double, Family Room and Suite.')
+@section('meta_description', 'Browse all available rooms at Dara Meas Hotel — Standard Twin, Standard Double, and Deluxe Double.')
 
 @section('content')
 
@@ -55,8 +55,6 @@
                     <option value="standard_twin"   {{ request('type') === 'standard_twin'   ? 'selected' : '' }}>Standard Twin</option>
                     <option value="standard_double" {{ request('type') === 'standard_double' ? 'selected' : '' }}>Standard Double</option>
                     <option value="deluxe_double"   {{ request('type') === 'deluxe_double'   ? 'selected' : '' }}>Deluxe Double</option>
-                    <option value="family_room"     {{ request('type') === 'family_room'     ? 'selected' : '' }}>Family Room</option>
-                    <option value="suite"           {{ request('type') === 'suite'           ? 'selected' : '' }}>Suite</option>
                 </select>
             </div>
 
@@ -77,8 +75,6 @@
                 'standard_twin'   => 'Standard Twin',
                 'standard_double' => 'Standard Double',
                 'deluxe_double'   => 'Deluxe Double',
-                'family_room'     => 'Family Room',
-                'suite'           => 'Suite',
             ];
         @endphp
         <a href="{{ route('rooms.index', request()->except('type')) }}"
@@ -114,8 +110,6 @@
             'standard_twin'   => 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80',
             'standard_double' => 'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?w=600&q=80',
             'deluxe_double'   => 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80',
-            'family_room'     => 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=600&q=80',
-            'suite'           => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80',
         ];
     @endphp
 

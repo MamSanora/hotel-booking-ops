@@ -85,17 +85,17 @@
             <div class="relative overflow-hidden aspect-[4/3]">
                 <img src="{{ asset('images/blog3.jpg') }}" 
                      onerror="this.src='https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80'"
-                     alt="Executive Suite Experience" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                     alt="Deluxe Double Room Experience" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                 <div class="absolute top-4 left-4 bg-[#7a5c00] text-white text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-lg">
                     Luxury
                 </div>
             </div>
             <div class="p-6 md:p-8">
                 <h3 class="font-playfair font-bold text-[1.4rem] text-hotel-dark mb-3 group-hover:text-hotel-gold transition-colors">
-                    Executive Suite Experience
+                    Deluxe Double Room Experience
                 </h3>
                 <p class="text-gray-600 text-[0.95rem] leading-relaxed mb-6">
-                    Unwind in top-floor Suites 414 & 415 featuring private balconies, separate living spaces, and deep soaking bathtubs.
+                    Unwind in our spacious Deluxe Double Rooms featuring sweeping city views and a luxurious king-size bed for ultimate relaxation.
                 </p>
                 <a href="#" class="text-hotel-dark font-semibold text-[0.9rem] flex items-center gap-2 hover:text-hotel-gold transition-colors">
                     Read More <i class="bi bi-arrow-right"></i>

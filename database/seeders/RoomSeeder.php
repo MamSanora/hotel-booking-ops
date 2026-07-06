@@ -18,7 +18,7 @@ use Illuminate\Database\Seeder;
  * ├───────┼────────────────────────────────────────────────────────┼───────┤
  * │   2   │ Standard Twin (10) + Standard Double (6)               │  16   │
  * │   3   │ Standard Twin (8) + Standard Double (6) + Deluxe (2)   │  16   │
- * │   4   │ Deluxe (8) + Family (5) + Suite (2)                    │  15   │
+ * │   4   │ Deluxe (10) + Standard Twin (3) + Standard Double (2)      │  15   │
  * └───────┴────────────────────────────────────────────────────────┴───────┘
  * Total: 47 rooms
  *
@@ -47,16 +47,6 @@ class RoomSeeder extends Seeder
             'capacity'       => 2,
             'price_per_night' => 55.00,
             'description'    => 'Spacious 32–36 m² room on the upper floors featuring a king-size bed, seating area, enhanced amenities, and city views.',
-        ],
-        'family_room' => [
-            'capacity'       => 4,
-            'price_per_night' => 80.00,
-            'description'    => 'Generous 40–45 m² layout designed for families. Includes one king bed and one single bunk bed, spacious wardrobe, and modern bathroom.',
-        ],
-        'suite' => [
-            'capacity'       => 3,
-            'price_per_night' => 120.00,
-            'description'    => 'Luxurious 55–65 m² top-floor suite with a separate living area, king bed, private balcony, and deluxe bathroom with a full bathtub.',
         ],
     ];
 
@@ -148,15 +138,16 @@ class RoomSeeder extends Seeder
             ['room_number' => '406', 'room_type' => 'deluxe_double'],
             ['room_number' => '407', 'room_type' => 'deluxe_double'],
             ['room_number' => '408', 'room_type' => 'deluxe_double'],
-            // Rooms 409–413: Family Room (5 rooms)
-            ['room_number' => '409', 'room_type' => 'family_room'],
-            ['room_number' => '410', 'room_type' => 'family_room'],
-            ['room_number' => '411', 'room_type' => 'family_room'],
-            ['room_number' => '412', 'room_type' => 'family_room'],
-            ['room_number' => '413', 'room_type' => 'family_room'],
-            // Rooms 414–415: Suite — top-floor corner rooms (2 rooms)
-            ['room_number' => '414', 'room_type' => 'suite'],
-            ['room_number' => '415', 'room_type' => 'suite'],
+            // Rooms 409–411: Standard Twin (3 rooms)
+            ['room_number' => '409', 'room_type' => 'standard_twin'],
+            ['room_number' => '410', 'room_type' => 'standard_twin'],
+            ['room_number' => '411', 'room_type' => 'standard_twin'],
+            // Rooms 412–413: Standard Double (2 rooms)
+            ['room_number' => '412', 'room_type' => 'standard_double'],
+            ['room_number' => '413', 'room_type' => 'standard_double'],
+            // Rooms 414–415: Deluxe Double — top-floor corner rooms (2 rooms)
+            ['room_number' => '414', 'room_type' => 'deluxe_double'],
+            ['room_number' => '415', 'room_type' => 'deluxe_double'],
         ];
 
         return array_merge($floor2, $floor3, $floor4);

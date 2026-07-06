@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Dara Meas Hotel — Phnom Penh, Cambodia')
-@section('meta_description', 'Book your stay at Dara Meas Hotel, a comfortable hotel in the heart of Phnom Penh, Cambodia. Standard Twin, Double, Deluxe, Family rooms and Suites from $35/night.')
+@section('meta_description', 'Book your stay at Dara Meas Hotel, a comfortable hotel in the heart of Phnom Penh, Cambodia. Standard Twin, Double, and Deluxe rooms from $35/night.')
 
 @section('content')
 
@@ -84,8 +84,6 @@
                     <option value="standard_twin">Standard Twin</option>
                     <option value="standard_double">Standard Double</option>
                     <option value="deluxe_double">Deluxe Double</option>
-                    <option value="family_room">Family Room</option>
-                    <option value="suite">Suite</option>
                 </select>
             </div>
             <div>
@@ -104,7 +102,7 @@
     <div class="text-center mb-12">
         <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block">Our Accommodations</span>
         <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2">Our Room Types</h2>
-        <p class="text-gray-500 text-[0.95rem] mt-3 max-w-xl mx-auto">From standard comfort to executive suites — each room crafted for a peaceful stay in Phnom Penh.</p>
+        <p class="text-gray-500 text-[0.95rem] mt-3 max-w-xl mx-auto">From standard comfort to deluxe double rooms — each room crafted for a peaceful stay in Phnom Penh.</p>
     </div>
 
     @php
@@ -112,8 +110,6 @@
             'standard_twin'   => 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80',
             'standard_double' => 'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?w=600&q=80',
             'deluxe_double'   => 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80',
-            'family_room'     => 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=600&q=80',
-            'suite'           => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80',
         ];
     @endphp
 

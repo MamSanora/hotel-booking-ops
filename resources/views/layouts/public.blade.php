@@ -253,8 +253,6 @@
                         <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Standard Twin</a></li>
                         <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Standard Double</a></li>
                         <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Deluxe Double</a></li>
-                        <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Family Room</a></li>
-                        <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Suite</a></li>
                     </ul>
                 </div>
 
