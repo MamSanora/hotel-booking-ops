@@ -8,4 +8,9 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+
+    // server: {
+    //     host: '0.0.0.0',  // Listen on all network interfaces
+    //     port: 5173,
+    // },
 });

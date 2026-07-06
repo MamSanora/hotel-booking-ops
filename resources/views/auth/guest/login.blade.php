@@ -37,7 +37,7 @@
                 </div>
                 <div>
                     <div class="text-white font-medium text-sm">Dara Meas Hotel</div>
-                    <div class="text-hotel-gold text-xs">Est. 2019 · 3 Stars · 47 Rooms</div>
+                    <div class="text-hotel-gold text-xs">Est. 2019 · 2 Stars · 47 Rooms</div>
                 </div>
             </div>
         </div>

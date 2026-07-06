@@ -51,7 +51,7 @@
             </h2>
             
             <p class="text-gray-600 leading-relaxed mb-5 text-[1.05rem]">
-                Established in 2019 in Toul Kork, Phnom Penh, Cambodia, Dara Meas Hotel is a 3-star boutique property offering warm Cambodian hospitality, modern comfort, and executive convenience across 4 floors and 47 carefully crafted guest rooms.
+                Established in 2019 in Toul Kork, Phnom Penh, Cambodia, Dara Meas Hotel is a 2-star boutique property offering warm Cambodian hospitality, modern comfort, and executive convenience across 4 floors and 47 carefully crafted guest rooms.
             </p>
             
             <p class="text-gray-600 leading-relaxed mb-8 text-[1.05rem]">
