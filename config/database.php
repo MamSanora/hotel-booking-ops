@@ -62,6 +62,13 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            'dump' => [
+                'dump_binary_path' => env('DB_DUMP_BINARY_PATH', ''),
+                // Explicitly force TCP and target 127.0.0.1 so mysqldump does not
+                // rely on the Windows socket environment that can be degraded when
+                // spawned from a web server subprocess.
+                'add_extra_option' => '--protocol=TCP --host=127.0.0.1 --port=3306',
+            ],
         ],
 
         'mariadb' => [
