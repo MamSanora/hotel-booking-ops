@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\PaymentGatewayInterface;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  *
  * File: app/Services/AbaPayWayService.php
  */
-class AbaPayWayService
+class AbaPayWayService implements PaymentGatewayInterface
 {
     protected string $merchantId;
     protected string $apiKey;
@@ -30,25 +31,93 @@ class AbaPayWayService
         $this->currency   = config('payway.currency', 'USD');
     }
 
+    // ── PaymentGatewayInterface ────────────────────────────────────────────
+
+    /**
+     * Returns true if real credentials are set (not the 'demo_' placeholders).
+     */
+    public function isConfigured(): bool
+    {
+        $merchantId = config('payway.merchant_id', '');
+        $apiKey     = config('payway.api_key', '');
+
+        return ! empty($merchantId)
+            && ! empty($apiKey)
+            && $merchantId !== 'demo_merchant'
+            && $apiKey     !== 'demo_api_key';
+    }
+
+    /**
+     * Returns true if the ABA PayWay sandbox/production URL is reachable.
+     */
+    public function isReachable(): bool
+    {
+        try {
+            // A lightweight GET to the base checkout domain (no auth needed for a ping)
+            $baseUrl = 'https://checkout-sandbox.payway.com.kh';
+            $response = Http::timeout(5)->get($baseUrl);
+
+            // Any HTTP response (even 4xx) means the server is up
+            return $response->status() > 0;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     /**
      * Generate HMAC SHA512 hash signature required by ABA PayWay.
      *
-     * ABA PayWay security specification:
-     * hash = base64_encode(hash_hmac('sha512', req_time . merchant_id . tran_id . amount . items . status . shipping . type . currency . return_url, api_key, true))
+     * Full v3 Purchase field concatenation order (from ABA Developer Suite):
+     * req_time + merchant_id + tran_id + amount + items + shipping +
+     * ctid + pwt + firstname + lastname + email + phone + type +
+     * payment_option + return_url + cancel_url + continue_success_url +
+     * return_deeplink + currency + custom_fields + return_params
      */
     public function generateHash(
         string $reqTime,
         string $tranId,
         string $amount,
         string $items = '',
-        string $shipping = '',
+        string $shipping = '0',
         string $type = 'purchase',
-        string $returnUrl = ''
+        string $continueSuccessUrl = '',
+        string $returnUrl = '',
+        string $cancelUrl = ''
     ): string {
-        // String concatenation according to ABA PayWay hash protocol
-        $str = $reqTime . $this->merchantId . $tranId . $amount . $items . $shipping . $type . $this->currency . $returnUrl;
-        
-        // HMAC SHA-512 binary hash encoded in Base64
+        // All optional fields that must still be present as empty strings
+        $ctid          = '';
+        $pwt           = '';
+        $firstname     = '';
+        $lastname      = '';
+        $email         = '';
+        $phone         = '';
+        $paymentOption = '';
+        $returnDeeplink = '';
+        $customFields  = '';
+        $returnParams  = '';
+
+        $str = $reqTime
+             . $this->merchantId
+             . $tranId
+             . $amount
+             . $items
+             . $shipping
+             . $ctid
+             . $pwt
+             . $firstname
+             . $lastname
+             . $email
+             . $phone
+             . $type
+             . $paymentOption
+             . $returnUrl
+             . $cancelUrl
+             . $continueSuccessUrl
+             . $returnDeeplink
+             . $this->currency
+             . $customFields
+             . $returnParams;
+
         return base64_encode(hash_hmac('sha512', $str, $this->apiKey, true));
     }
 
@@ -78,20 +147,55 @@ class AbaPayWayService
         ];
         $items = base64_encode(json_encode($itemsArr));
 
-        // Generate security signature
-        $hash = $this->generateHash($reqTime, $tranId, $amount, $items, '', 'purchase', $returnUrl);
+        $shipping           = '0';
+        $type               = 'purchase';
+        $continueSuccessUrl = route('payment.success', $booking->id);
+        $cancelUrl          = route('payment.show', $booking->id);
 
-        // Simulated/Constructed ABA PayWay Deep Link and QR Code URL
-        // In live environment, ABA PayWay API returns the direct QR image string or payment link URL.
-        $paymentLink = $this->apiUrl . '?' . http_build_query([
-            'merchant_id' => $this->merchantId,
-            'tran_id'     => $tranId,
-            'amount'      => $amount,
-            'hash'        => $hash
-        ]);
+        // Generate security signature using full v3 field concatenation
+        $hash = $this->generateHash(
+            $reqTime,
+            $tranId,
+            $amount,
+            $items,
+            $shipping,
+            $type,
+            $continueSuccessUrl,
+            $returnUrl,
+            $cancelUrl
+        );
 
-        // Generate QR code display URL (using google charts API / public QR generator for reliable standalone display)
-        $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode($paymentLink);
+        // Build the full POST payload for ABA PayWay
+        $payload = [
+            'merchant_id'         => $this->merchantId,
+            'tran_id'             => $tranId,
+            'amount'              => $amount,
+            'items'               => $items,
+            'shipping'            => $shipping,
+            'ctid'                => '',
+            'pwt'                 => '',
+            'firstname'           => '',
+            'lastname'            => '',
+            'email'               => '',
+            'phone'               => '',
+            'type'                => $type,
+            'payment_option'      => '',
+            'return_url'          => $returnUrl,
+            'cancel_url'          => $cancelUrl,
+            'continue_success_url'=> $continueSuccessUrl,
+            'return_deeplink'     => '',
+            'currency'            => $this->currency,
+            'custom_fields'       => '',
+            'return_params'       => '',
+            'req_time'            => $reqTime,
+            'hash'                => $hash,
+        ];
+
+        // POST server-side to the ABA PayWay API
+        $response = Http::asForm()->post($this->apiUrl, $payload);
+        $json     = $response->json();
+
+        $success = isset($json['status']['code']) && (string) $json['status']['code'] === '00';
 
         return [
             'merchant_id'        => $this->merchantId,
@@ -103,8 +207,13 @@ class AbaPayWayService
             'hash'               => $hash,
             'items'              => $items,
             'return_url'         => $returnUrl,
-            'payment_link'       => $paymentLink,
-            'qr_code_url'        => $qrCodeUrl,
+            'api_success'        => $success,
+            'api_error'          => $success ? null : ($json['status']['message'] ?? 'Unknown error from ABA PayWay'),
+            'qr_string'          => $json['qrString'] ?? null,
+            'qr_image'           => $json['qrImage'] ?? null,          // base64 data URI
+            'abapay_deeplink'    => $json['abapay_deeplink'] ?? null,
+            'app_store'          => $json['app_store'] ?? null,
+            'play_store'         => $json['play_store'] ?? null,
         ];
     }
 

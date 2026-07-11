@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Auth\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Auth\Guest\LoginController as GuestLoginController;
@@ -108,6 +109,9 @@ Route::middleware('auth')->prefix('payment')->name('payment.')->group(function (
     // whereNumber() ensures 'callback', 'success', 'failed' are never matched here.
     Route::get('/{booking}', [PaymentController::class, 'show'])->name('show')->whereNumber('booking');
 
+    // AJAX polling endpoint — frontend calls this every few seconds to check payment status.
+    Route::get('/{booking}/check-status', [PaymentController::class, 'checkStatus'])->name('check-status')->whereNumber('booking');
+
     // Dev / demo payment simulation — disabled in production.
     Route::post('/{booking}/simulate', [PaymentController::class, 'simulatePay'])->name('simulate')->whereNumber('booking');
 
@@ -169,9 +173,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/gallery/{gallery}',[GalleryController::class, 'destroy'])->name('gallery.destroy');
 
         // Contact messages
-        Route::get('/messages',                         [MessageController::class, 'index'])->name('messages.index');
-        Route::get('/messages/{contact}',               [MessageController::class, 'show'])->name('messages.show');
-        Route::post('/messages/{contact}/reply',        [MessageController::class, 'reply'])->name('messages.reply');
+        Route::get('/messages',                   [MessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/{contact}',         [MessageController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{contact}/reply',  [MessageController::class, 'reply'])->name('messages.reply');
+
+        // Payment gateway management
+        Route::get('/payment-gateways',           [PaymentGatewayController::class, 'index'])->name('payment-gateways.index');
+        Route::patch('/payment-gateways/{gateway}', [PaymentGatewayController::class, 'update'])->name('payment-gateways.update');
     });
 });
 

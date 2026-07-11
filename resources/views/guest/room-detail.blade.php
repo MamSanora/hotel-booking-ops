@@ -1,5 +1,7 @@
 @extends('layouts.public')
 
+@inject('gatewayManager', 'App\Services\PaymentGatewayManager')
+
 @section('title', $room->displayType() . ' — Room ' . $room->room_number)
 
 @section('content')
@@ -221,14 +223,62 @@
                             </div>
                         </div>
 
-                        {{-- ABA PayWay Notice --}}
-                        <div class="bg-gradient-to-br from-[#fff8ee] to-[#fef3e2] border border-[#f0d9a0] rounded-xl p-4 text-[0.82rem] text-[#7a5c00] flex items-start gap-3 mb-6">
-                            <i class="bi bi-qr-code-scan text-hotel-gold text-[1.1rem] mt-0.5"></i>
-                            <span class="leading-relaxed">
-                                After booking, you'll receive an <strong>ABA PayWay QR Code</strong>
-                                to complete payment. Scan with your ABA Mobile app.
-                            </span>
-                        </div>
+                        {{-- Payment Method Selector (dynamic via PaymentGatewayManager) --}}
+                        @php
+                            $visibleGateways = $gatewayManager->getVisibleGateways();
+                        @endphp
+
+                        @if($visibleGateways->isEmpty())
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-[0.85rem] text-red-700 flex items-start gap-3 mb-6">
+                                <i class="bi bi-exclamation-triangle-fill text-red-500 mt-0.5"></i>
+                                <span>No payment methods are currently available. Please contact the hotel directly.</span>
+                            </div>
+                        @else
+                            <div class="mb-6">
+                                <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Payment Method</label>
+                                <div class="space-y-2.5">
+                                    @foreach($visibleGateways as $index => $item)
+                                        @php
+                                            $gw = $item['gateway'];
+                                            $state = $item['state'];
+                                            $isDisabled = ($state === 'disabled');
+                                            $icon = $gw->slug === 'bakong' ? 'bi-qr-code-scan' : 'bi-credit-card-2-front';
+                                        @endphp
+
+                                        <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 cursor-pointer transition-all
+                                            {{ $isDisabled
+                                                ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                                                : 'border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]'
+                                            }}">
+                                            <input type="radio"
+                                                   name="payment_method"
+                                                   value="{{ $gw->slug }}"
+                                                   id="pm_{{ $gw->slug }}"
+                                                   {{ $index === 0 && ! $isDisabled ? 'checked' : '' }}
+                                                   {{ $isDisabled ? 'disabled' : '' }}
+                                                   class="mt-0.5 accent-hotel-gold shrink-0">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <i class="bi {{ $icon }} text-hotel-gold"></i>
+                                                    <span class="font-semibold text-hotel-dark text-[0.9rem]">{{ $gw->name }}</span>
+                                                    @if($isDisabled)
+                                                        <span class="text-[0.75rem] text-red-500 font-normal">(Currently offline)</span>
+                                                    @endif
+                                                </div>
+                                                @if($gw->slug === 'bakong' && ! $isDisabled)
+                                                    <p class="text-[0.78rem] text-gray-500 mt-0.5">Scan with ABA Mobile, Wing, ACLEDA, or any Bakong-supported app</p>
+                                                @elseif($gw->slug === 'aba_payway' && ! $isDisabled)
+                                                    <p class="text-[0.78rem] text-gray-500 mt-0.5">Visa, Mastercard, JCB or ABA Mobile — via secure ABA PayWay checkout</p>
+                                                @endif
+                                            </div>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @error('payment_method')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
 
                         <button type="submit" class="w-full bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-bold rounded-xl py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(200,169,110,0.45)] flex justify-center items-center gap-2">
                             <i class="bi bi-arrow-right-circle"></i> Confirm & Proceed to Payment

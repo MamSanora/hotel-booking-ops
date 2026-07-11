@@ -76,6 +76,7 @@ class PaymentCallbackController extends Controller
             $transaction->update([
                 'amount_paid'    => $booking->total_price,
                 'payment_status' => Transaction::STATUS_FULL,
+                'apv'            => $request->input('apv'), // Bank approval code from ABA
             ]);
 
             // Booking transitions from 'pending' → 'booked' (confirmed + paid).

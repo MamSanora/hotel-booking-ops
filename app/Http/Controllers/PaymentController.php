@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Transaction;
 use App\Services\AbaPayWayService;
+use App\Services\BakongApiService;
+use App\Services\KhqrService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,67 +16,147 @@ use Illuminate\View\View;
 /**
  * PaymentController
  *
- * Manages the KHQR (ABA PayWay) checkout page for guest self-bookings.
+ * Acts as a unified payment router for guest self-bookings.
+ * After a booking is created with a pending transaction, the guest is
+ * redirected here. This controller inspects the transaction's payment_method
+ * and routes to the appropriate payment flow:
  *
- * After a guest creates a booking (status=pending), they are redirected here.
- * This controller generates the ABA PayWay QR payload, stores it on the
- * pending Transaction record, and renders the QR code display page.
+ *   'khqr'       → Generates a native KHQR string (Tag 29) and renders
+ *                  the QR code display page with Bakong API polling.
+ *   'aba_payway' → Calls AbaPayWayService to build a signed checkout payload
+ *                  and renders an auto-submitting form to the ABA sandbox.
  *
  * Routes:
- *   GET  /payment/{booking}         → show()        — Display KHQR page
- *   POST /payment/{booking}/simulate → simulatePay() — Dev/demo helper
+ *   GET  /payment/{booking}              → show()          — Route to correct payment UI
+ *   GET  /payment/{booking}/check-status → checkStatus()   — AJAX polling (Bakong only)
+ *   POST /payment/{booking}/simulate     → simulatePay()   — Dev/demo helper
  */
 class PaymentController extends Controller
 {
     public function __construct(
-        protected AbaPayWayService $payWayService
+        protected KhqrService      $khqrService,
+        protected BakongApiService $bakongApiService,
+        protected AbaPayWayService $abaPayWayService,
     ) {}
 
+    // ── Payment Gateway Router ─────────────────────────────────────────────
+
     /**
-     * Show the ABA PayWay KHQR payment page for a booking.
-     *
-     * Generates (or regenerates) the QR payload and stores ABA transaction
-     * details on the pending Transaction record for later callback matching.
+     * Inspect the pending transaction's payment_method and route to the
+     * correct payment page.
      */
     public function show(Booking $booking): View
     {
-        // Security: only the booking owner (or admin/staff) may view payment page.
-        $guestId = Auth::guard('web')->check() ? Auth::guard('web')->user()->guest_id : null;
-
-        if ($guestId && $booking->guest_id !== $guestId
-            && ! Auth::guard('admin')->check()
-            && ! Auth::guard('staff')->check()
-        ) {
-            abort(403, 'Unauthorized access to booking payment.');
-        }
+        $this->authorizeBookingAccess($booking);
 
         $booking->load('room');
 
-        // Generate ABA PayWay payload (tran_id, hash, QR URL, etc.)
-        $payWayData = $this->payWayService->createPaymentData($booking);
-
-        // Find the pending transaction for this booking (created during store()).
-        // Store ABA-specific fields for callback matching and display.
         $transaction = $booking->transactions()
             ->where('payment_status', Transaction::STATUS_PENDING)
             ->latest()
             ->firstOrFail();
 
-        $transaction->update([
-            'transaction_id'     => $payWayData['transaction_id'],
-            'merchant_reference' => $payWayData['merchant_reference'],
-            'payment_link'       => $payWayData['payment_link'],
-            'qr_code_url'        => $payWayData['qr_code_url'],
-        ]);
-
-        return view('payment.qr', compact('booking', 'transaction', 'payWayData'));
+        return match ($transaction->payment_method) {
+            Transaction::METHOD_ABA  => $this->showPayWay($booking, $transaction),
+            default                  => $this->showKhqr($booking, $transaction),
+        };
     }
 
+    // ── Bakong KHQR Flow ───────────────────────────────────────────────────
+
     /**
-     * Simulate a successful ABA PayWay callback for development / demo.
+     * Generate a KHQR string and render the QR code payment page.
+     */
+    protected function showKhqr(Booking $booking, Transaction $transaction): View
+    {
+        $khqrData = $this->khqrService->generate($booking);
+
+        $transaction->update([
+            'khqr_string' => $khqrData['khqr_string'],
+            'md5_hash'    => $khqrData['md5_hash'],
+        ]);
+
+        return view('payment.qr', compact('booking', 'transaction', 'khqrData'));
+    }
+
+    // ── ABA PayWay Flow ────────────────────────────────────────────────────
+
+    protected function showPayWay(Booking $booking, Transaction $transaction): View|RedirectResponse
+    {
+        $paymentData = $this->abaPayWayService->createPaymentData($booking);
+
+        if (! $paymentData['api_success']) {
+            return redirect()->route('payment.show', $booking->id)
+                ->withErrors(['payment' => 'ABA PayWay error: ' . $paymentData['api_error']]);
+        }
+
+        // Persist the ABA transaction ID so we can match it on callback.
+        $transaction->update([
+            'transaction_id' => $paymentData['transaction_id'],
+        ]);
+
+        return view('payment.payway-qr', compact('booking', 'transaction', 'paymentData'));
+    }
+
+    // ── Status Polling Endpoint (Bakong only) ──────────────────────────────
+
+    /**
+     * AJAX polling endpoint — check if a KHQR payment has been received.
      *
-     * Redirects to the callback URL with a 'success' status.
-     * This must NEVER be reachable in production.
+     * The frontend calls this every few seconds. We query the Bakong Open
+     * API using the md5_hash. If paid, we mark the transaction as full and
+     * the booking as booked, then return a redirect URL for the frontend.
+     *
+     * Returns JSON:
+     *   { "paid": false }
+     *   { "paid": true, "redirect": "/payment/success/123" }
+     */
+    public function checkStatus(Request $request, Booking $booking): JsonResponse
+    {
+        $this->authorizeBookingAccess($booking);
+
+        // If already confirmed, return success immediately (idempotent).
+        if ($booking->booking_status === Booking::STATUS_BOOKED) {
+            return response()->json([
+                'paid'     => true,
+                'redirect' => route('payment.success', $booking->id),
+            ]);
+        }
+
+        $transaction = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_PENDING)
+            ->where('payment_method', Transaction::METHOD_KHQR)
+            ->latest()
+            ->first();
+
+        if (! $transaction || ! $transaction->md5_hash) {
+            return response()->json(['paid' => false]);
+        }
+
+        $isPaid = $this->bakongApiService->checkPayment($transaction);
+
+        if ($isPaid) {
+            $transaction->update([
+                'amount_paid'    => $booking->total_price,
+                'payment_status' => Transaction::STATUS_FULL,
+            ]);
+
+            $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+
+            return response()->json([
+                'paid'     => true,
+                'redirect' => route('payment.success', $booking->id),
+            ]);
+        }
+
+        return response()->json(['paid' => false]);
+    }
+
+    // ── Dev / Demo Helper ──────────────────────────────────────────────────
+
+    /**
+     * Simulate a successful payment for development / demo.
+     * Must NEVER be reachable in production.
      */
     public function simulatePay(Request $request, Booking $booking): RedirectResponse
     {
@@ -84,10 +167,36 @@ class PaymentController extends Controller
             ->latest()
             ->first();
 
-        return redirect()->route('payment.callback', [
-            'tran_id'    => $transaction?->transaction_id ?? ('DMH-TEST-' . time()),
-            'status'     => 'success',
-            'booking_id' => $booking->id,
-        ]);
+        if ($transaction) {
+            $transaction->update([
+                'amount_paid'     => $booking->total_price,
+                'payment_status'  => Transaction::STATUS_FULL,
+                'tracking_status' => 'SIMULATED',
+            ]);
+        }
+
+        $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+
+        return redirect()->route('payment.success', $booking->id)
+            ->with('info', 'Payment simulated (demo mode).');
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    /**
+     * Abort with 403 if the authenticated guest doesn't own this booking.
+     * Admin and staff guards are allowed through.
+     */
+    protected function authorizeBookingAccess(Booking $booking): void
+    {
+        $guestId = Auth::guard('web')->check() ? Auth::guard('web')->user()->guest_id : null;
+
+        if ($guestId
+            && $booking->guest_id !== $guestId
+            && ! Auth::guard('admin')->check()
+            && ! Auth::guard('staff')->check()
+        ) {
+            abort(403, 'Unauthorized access to booking payment.');
+        }
     }
 }

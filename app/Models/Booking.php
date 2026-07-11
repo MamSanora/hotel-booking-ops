@@ -249,6 +249,19 @@ class Booking extends Model
         ]);
     }
 
+    /**
+     * Policy: Free up to 24 hours before check-in (14:00).
+     */
+    public function isRefundable(): bool
+    {
+        if (! $this->check_in_date) {
+            return false;
+        }
+
+        $checkInDateTime = Carbon::parse($this->check_in_date->format('Y-m-d') . ' 14:00:00');
+        return now()->lessThanOrEqualTo($checkInDateTime->subDay());
+    }
+
     // ── Display Helpers ────────────────────────────────────────────────────
 
     /**

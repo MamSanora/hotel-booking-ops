@@ -22,6 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int         $id
  * @property int         $booking_id
+ * @property string|null $transaction_id  ABA PayWay reference (legacy, kept for compat)
+ * @property string|null $khqr_string     Raw KHQR TLV string shown as the QR code
+ * @property string|null $md5_hash        MD5 hash of khqr_string (for Bakong API lookup)
+ * @property string|null $tracking_status Last Bakong API payment status
+ * @property string|null $apv             ABA PayWay bank approval code
  * @property float       $amount_paid
  * @property string|null $payment_for     'booking' | 'stay_extension'
  * @property string|null $payment_method  'cash' | 'khqr'
@@ -36,8 +41,9 @@ class Transaction extends Model
     public const STATUS_FULL     = 'full';
     public const STATUS_REFUNDED = 'refunded';
 
-    public const METHOD_CASH  = 'cash';
-    public const METHOD_KHQR  = 'khqr';
+    public const METHOD_CASH    = 'cash';
+    public const METHOD_KHQR    = 'khqr';
+    public const METHOD_ABA     = 'aba_payway';
 
     public const FOR_BOOKING        = 'booking';
     public const FOR_STAY_EXTENSION = 'stay_extension';
@@ -48,6 +54,13 @@ class Transaction extends Model
         'merchant_reference',
         'payment_link',
         'qr_code_url',
+        // Bakong KHQR fields
+        'khqr_string',
+        'md5_hash',
+        'tracking_status',
+        // ABA PayWay fields
+        'apv',
+        // Payment fields
         'amount_paid',
         'payment_for',
         'payment_method',
@@ -127,7 +140,8 @@ class Transaction extends Model
     {
         return match ($this->payment_method) {
             self::METHOD_CASH => 'Cash',
-            self::METHOD_KHQR => 'KHQR',
+            self::METHOD_KHQR => 'Bakong (KHQR)',
+            self::METHOD_ABA  => 'ABA PayWay',
             default           => '—',
         };
     }

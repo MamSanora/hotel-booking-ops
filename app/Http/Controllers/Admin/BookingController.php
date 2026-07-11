@@ -58,9 +58,30 @@ class BookingController extends Controller
             return back()->with('error', 'Only pending or booked bookings can be cancelled.');
         }
 
-        $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+        $isRefundable = $booking->isRefundable();
+        $hasPaid = $booking->transactions()->where('payment_status', \App\Models\Transaction::STATUS_FULL)->exists();
 
-        return back()->with('success', "Booking {$booking->referenceNumber()} cancelled.");
+        \Illuminate\Support\Facades\DB::transaction(function () use ($booking, $isRefundable, $hasPaid) {
+            $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+
+            if ($isRefundable && $hasPaid) {
+                $booking->transactions()
+                    ->where('payment_status', \App\Models\Transaction::STATUS_FULL)
+                    ->update(['payment_status' => \App\Models\Transaction::STATUS_REFUNDED]);
+            }
+        });
+
+        $message = "Booking {$booking->referenceNumber()} cancelled.";
+        
+        if ($hasPaid) {
+            if ($isRefundable) {
+                $message .= " Associated payments have been marked as refunded.";
+            } else {
+                $message .= " As this is within 24 hours of check-in, payments are non-refundable.";
+            }
+        }
+
+        return back()->with('success', $message);
     }
 
     /**

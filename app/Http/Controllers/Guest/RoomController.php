@@ -88,7 +88,9 @@ class RoomController extends Controller
      * Store a new self-service booking.
      *
      * Creates a Booking (status=pending) and a Transaction (status=pending),
-     * then redirects to the ABA PayWay KHQR payment page.
+     * then redirects to the payment page. PaymentController@show routes
+     * to the correct payment flow (KHQR or ABA PayWay) based on the
+     * payment_method saved on the transaction.
      * Both records are created in a DB transaction for consistency.
      */
     public function store(StoreBookingRequest $request, Room $room): RedirectResponse
@@ -116,12 +118,13 @@ class RoomController extends Controller
                 'special_requests' => $validated['special_requests'] ?? null,
             ]);
 
-            // Create a pending transaction — updated to 'full' after ABA callback.
+            // Create a pending transaction with the guest's chosen payment method.
+            // PaymentController@show will route to the correct payment flow.
             Transaction::create([
-                'booking_id' => $booking->id,
-                'amount_paid' => 0,
-                'payment_for' => Transaction::FOR_BOOKING,
-                'payment_method' => Transaction::METHOD_KHQR,
+                'booking_id'     => $booking->id,
+                'amount_paid'    => 0,
+                'payment_for'    => Transaction::FOR_BOOKING,
+                'payment_method' => $validated['payment_method'],
                 'payment_status' => Transaction::STATUS_PENDING,
             ]);
 
@@ -168,9 +171,30 @@ class RoomController extends Controller
             return back()->with('error', 'This booking cannot be cancelled at this stage.');
         }
 
-        $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+        $isRefundable = $booking->isRefundable();
+        $hasPaid = $booking->transactions()->where('payment_status', Transaction::STATUS_FULL)->exists();
 
-        return back()->with('success', "Booking {$booking->referenceNumber()} has been cancelled.");
+        DB::transaction(function () use ($booking, $isRefundable, $hasPaid) {
+            $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+
+            if ($isRefundable && $hasPaid) {
+                $booking->transactions()
+                    ->where('payment_status', Transaction::STATUS_FULL)
+                    ->update(['payment_status' => Transaction::STATUS_REFUNDED]);
+            }
+        });
+
+        $message = "Booking {$booking->referenceNumber()} has been cancelled.";
+        
+        if ($hasPaid) {
+            if ($isRefundable) {
+                $message .= " Your payment will be refunded according to our cancellation policy.";
+            } else {
+                $message .= " As this is within 24 hours of check-in, the payment is non-refundable.";
+            }
+        }
+
+        return back()->with('success', $message);
     }
 
     /**
