@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Reception;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\RoomService;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -47,10 +49,17 @@ class ReceptionDashboardController extends Controller
             ->orderBy('check_out_date')
             ->get();
 
+        // Pending room service requests
+        $pendingRoomServices = RoomService::with(['booking.room', 'booking.guest', 'requestedItems.catalog'])
+            ->pending()
+            ->oldest()
+            ->get();
+
         return view('reception.dashboard', compact(
             'todayArrivals',
             'todayDepartures',
             'inHouseGuests',
+            'pendingRoomServices',
         ));
     }
 
@@ -139,5 +148,87 @@ class ReceptionDashboardController extends Controller
         ]);
 
         return back()->with('success', "Payment of \${$validated['amount_paid']} recorded for {$booking->referenceNumber()}.");
+    }
+
+    /**
+     * Mark a room service request as completed.
+     */
+    public function completeRoomService(Request $request, RoomService $roomService): RedirectResponse
+    {
+        $roomService->update([
+            'request_status' => RoomService::STATUS_COMPLETED,
+            'handled_by_staff_id' => Auth::guard('staff')->id(),
+            'response' => $request->input('response'),
+        ]);
+
+        return back()->with('success', 'Room service request marked as completed.');
+    }
+
+    /**
+     * Extend a checked-in guest's stay (receptionist-handled, immediate payment).
+     *
+     * Used for walk-in / phone guests who have no online account.
+     * The receptionist collects payment on the spot, so a full stay_extension
+     * transaction is recorded immediately.
+     */
+    public function extendStay(Request $request, Booking $booking): RedirectResponse
+    {
+        if (! $booking->isCheckedIn()) {
+            return back()->with('error', 'Only checked-in bookings can be extended.');
+        }
+
+        $validated = $request->validate([
+            'extra_nights'   => ['required', 'integer', 'min:1', 'max:30'],
+            'payment_method' => ['required', 'in:cash,khqr'],
+        ]);
+
+        $extraNights = (int) $validated['extra_nights'];
+        $room        = $booking->room;
+
+        if (! $room) {
+            return back()->with('error', 'No room is assigned to this booking.');
+        }
+
+        // Conflict check — look for any other active booking on the same room
+        // that overlaps with the new extended checkout date.
+        $newCheckout = $booking->check_out_date->addDays($extraNights);
+
+        $conflict = Booking::where('room_id', $room->id)
+            ->where('id', '!=', $booking->id)
+            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+            ->where('check_in_date', '<', $newCheckout->toDateString())
+            ->where('check_out_date', '>', $booking->check_out_date->toDateString())
+            ->exists();
+
+        if ($conflict) {
+            return back()->with('error',
+                'Cannot extend — the room is already reserved by another guest during that period.'
+            );
+        }
+
+        $extraCost = $extraNights * (float) $room->price_per_night;
+
+        DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost, $validated) {
+            $booking->update([
+                'check_out_date'           => $newCheckout->toDateString(),
+                'total_price'              => $booking->total_price + $extraCost,
+                'number_of_stay_extension' => $booking->number_of_stay_extension + 1,
+            ]);
+
+            // Record full payment collected on the spot by the receptionist.
+            Transaction::create([
+                'booking_id'     => $booking->id,
+                'amount_paid'    => $extraCost,
+                'payment_for'    => Transaction::FOR_STAY_EXTENSION,
+                'payment_method' => $validated['payment_method'],
+                'payment_status' => Transaction::STATUS_FULL,
+            ]);
+        });
+
+        $guestName = $booking->guest?->full_name ?? 'Guest';
+
+        return back()->with('success',
+            "{$guestName}'s stay extended by {$extraNights} night(s) until {$newCheckout->format('M d, Y')}. Payment of \${$extraCost} collected."
+        );
     }
 }

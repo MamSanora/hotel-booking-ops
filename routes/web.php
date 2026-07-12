@@ -86,10 +86,11 @@ Route::prefix('guest')->name('guest.')->group(function () {
         Route::patch('/profile/password',[GuestProfileController::class, 'updatePassword'])->name('profile.password');
 
         // Booking actions owned by the guest
-        Route::get('/bookings/{booking}',         [RoomController::class, 'showBooking'])->name('booking.show');
-        Route::patch('/bookings/{booking}/cancel', [RoomController::class, 'cancel'])->name('booking.cancel');
-        Route::post('/bookings/{booking}/room-service', [RoomController::class, 'storeRoomService'])->name('booking.room-service.store');
-        Route::get('/bookings/{booking}/invoice',  [RoomController::class, 'invoice'])->name('booking.invoice');
+        Route::get('/bookings/{booking}',                        [RoomController::class, 'showBooking'])->name('booking.show');
+        Route::patch('/bookings/{booking}/cancel',                [RoomController::class, 'cancel'])->name('booking.cancel');
+        Route::post('/bookings/{booking}/room-service',           [RoomController::class, 'storeRoomService'])->name('booking.room-service.store');
+        Route::post('/bookings/{booking}/extend',                 [RoomController::class, 'extendStay'])->name('booking.extend');
+        Route::get('/bookings/{booking}/invoice',                 [RoomController::class, 'invoice'])->name('booking.invoice');
     });
 });
 
@@ -214,5 +215,11 @@ Route::prefix('reception')->name('reception.')->group(function () {
         // Walk-in bookings
         Route::get('/walk-in/create', [WalkInBookingController::class, 'create'])->name('walkin.create');
         Route::post('/walk-in',       [WalkInBookingController::class, 'store'])->name('walkin.store');
+
+        // Room Service Handling
+        Route::patch('/room-service/{roomService}/complete', [ReceptionDashboardController::class, 'completeRoomService'])->name('room-service.complete');
+
+        // Stay Extension (for walk-in / phone guests without an account)
+        Route::post('/extend-stay/{booking}', [ReceptionDashboardController::class, 'extendStay'])->name('extend-stay');
     });
 });

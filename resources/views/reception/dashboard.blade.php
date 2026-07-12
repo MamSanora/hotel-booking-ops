@@ -51,6 +51,68 @@
     <div class="space-y-8">
         
         {{-- ==========================================
+             ROOM SERVICE REQUESTS
+             ========================================== --}}
+        @if(isset($pendingRoomServices) && $pendingRoomServices->count() > 0)
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 md:p-8 border-2 border-amber-200">
+            <h3 class="font-playfair text-[1.4rem] font-bold text-hotel-dark pb-3 border-b-2 border-gray-100 mb-6 flex items-center">
+                <i class="bi bi-bell-fill text-amber-500 mr-3 animate-pulse"></i>
+                Pending Room Service Requests ({{ $pendingRoomServices->count() }})
+            </h3>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-amber-50 text-amber-700 text-[0.8rem] uppercase tracking-wider">
+                        <tr>
+                            <th class="px-5 py-4 font-semibold rounded-tl-xl rounded-bl-xl">Room</th>
+                            <th class="px-5 py-4 font-semibold">Guest</th>
+                            <th class="px-5 py-4 font-semibold">Request Details</th>
+                            <th class="px-5 py-4 font-semibold rounded-tr-xl rounded-br-xl text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($pendingRoomServices as $rs)
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-5 py-4 whitespace-nowrap">
+                                <strong class="text-gray-800 text-[1.05rem]">Room {{ $rs->booking->room?->room_number ?? '-' }}</strong>
+                                <div class="text-[0.75rem] text-gray-500 mt-1">{{ $rs->created_at->diffForHumans() }}</div>
+                            </td>
+                            <td class="px-5 py-4">
+                                <div class="font-semibold text-gray-800 text-[0.95rem]">{{ $rs->booking->guest?->full_name ?? 'Guest' }}</div>
+                            </td>
+                            <td class="px-5 py-4">
+                                @if($rs->requestedItems->isNotEmpty())
+                                    <div class="text-sm font-medium text-gray-800 mb-1">Items:</div>
+                                    <ul class="list-disc list-inside text-[0.85rem] text-gray-600 mb-2">
+                                        @foreach($rs->requestedItems as $item)
+                                            <li>{{ $item->amount_per_item }}x {{ $item->catalog->item_name ?? 'Unknown Item' }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if($rs->guest_notes)
+                                    <div class="text-[0.85rem] text-gray-700 bg-gray-50 p-2 rounded border border-gray-200 italic">"{{ $rs->guest_notes }}"</div>
+                                @endif
+                            </td>
+                            <td class="px-5 py-4 text-right">
+                                <form action="{{ route('reception.room-service.complete', $rs->id) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="text" name="response" placeholder="Reply (optional)..." class="text-sm border border-gray-300 rounded px-2 py-1.5 mb-2 w-full max-w-[200px] inline-block">
+                                    <br>
+                                    <button type="submit" onclick="return confirm('Mark this request as completed?')" class="inline-flex items-center bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-3 py-1.5 rounded-lg text-sm transition-colors border border-amber-300">
+                                        <i class="bi bi-check2-circle mr-1.5"></i>Mark Completed
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        {{-- ==========================================
              TODAY'S ARRIVALS
              ========================================== --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 md:p-8">
@@ -239,19 +301,65 @@
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <span class="bg-green-100 text-green-800 text-[0.75rem] font-bold px-3 py-1 rounded-full tracking-wide">Checked In</span>
                                 </td>
-                                <td class="px-5 py-4 whitespace-nowrap text-right">
-                                    <form action="{{ route('reception.checkout', $booking->id) }}" method="POST" class="inline-block">
-                                        @csrf
-                                        @if($booking->check_out_date && $booking->check_out_date->isFuture() && !$booking->check_out_date->isToday())
-                                            <button type="submit" onclick="return confirm('⚠️ EARLY DEPARTURE:\nThis guest was scheduled to leave on {{ $booking->check_out_date->format('M d, Y') }}.\nAre you sure you want to process an EARLY check-out for Room {{ $booking->room?->room_number ?? '-' }}?')" class="inline-flex items-center bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold px-3.5 py-1.5 rounded-lg text-xs transition-colors border border-orange-300 shadow-sm">
-                                                <i class="bi bi-box-arrow-right mr-1.5"></i>Early Check-Out
-                                            </button>
-                                        @else
-                                            <button type="submit" onclick="return confirm('Check out guest from Room {{ $booking->room?->room_number ?? '-' }}?')" class="inline-flex items-center bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-yellow-200">
-                                                <i class="bi bi-door-closed mr-2"></i>Check Out
-                                            </button>
-                                        @endif
-                                    </form>
+                                <td class="px-5 py-4 whitespace-nowrap text-right relative">
+                                    <div class="flex items-center justify-end gap-2" x-data="{ showExtend: false }">
+                                        {{-- Extend Stay toggle button --}}
+                                        <button type="button" @click="showExtend = !showExtend"
+                                            class="inline-flex items-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-emerald-200"
+                                            title="Extend Stay">
+                                            <i class="bi bi-calendar-plus mr-1"></i> Extend
+                                        </button>
+
+                                        {{-- Checkout button --}}
+                                        <form action="{{ route('reception.checkout', $booking->id) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            @if($booking->check_out_date && $booking->check_out_date->isFuture() && !$booking->check_out_date->isToday())
+                                                <button type="submit" onclick="return confirm('⚠️ EARLY DEPARTURE:\nThis guest was scheduled to leave on {{ $booking->check_out_date->format('M d, Y') }}.\nAre you sure you want to process an EARLY check-out for Room {{ $booking->room?->room_number ?? '-' }}?')" class="inline-flex items-center bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold px-3.5 py-1.5 rounded-lg text-xs transition-colors border border-orange-300 shadow-sm">
+                                                    <i class="bi bi-box-arrow-right mr-1.5"></i>Early Check-Out
+                                                </button>
+                                            @else
+                                                <button type="submit" onclick="return confirm('Check out guest from Room {{ $booking->room?->room_number ?? '-' }}?')" class="inline-flex items-center bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-yellow-200">
+                                                    <i class="bi bi-door-closed mr-2"></i>Check Out
+                                                </button>
+                                            @endif
+                                        </form>
+
+                                        {{-- Extend Stay inline form (toggled by Alpine) --}}
+                                        <div x-show="showExtend" x-cloak
+                                            class="absolute right-4 mt-2 z-10 bg-white border border-emerald-200 rounded-xl shadow-xl p-4 w-72"
+                                            style="top: auto;">
+                                            <form action="{{ route('reception.extend-stay', $booking->id) }}" method="POST">
+                                                @csrf
+                                                <p class="text-sm font-semibold text-gray-700 mb-3">
+                                                    <i class="bi bi-calendar-plus text-emerald-600 mr-1"></i>
+                                                    Extend Stay — Room {{ $booking->room?->room_number ?? '-' }}
+                                                </p>
+                                                <div class="mb-3">
+                                                    <label class="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Extra Nights</label>
+                                                    <input type="number" name="extra_nights" min="1" max="30" value="1" required
+                                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 outline-none">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Payment Method</label>
+                                                    <select name="payment_method" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none">
+                                                        <option value="cash">Cash</option>
+                                                        <option value="khqr">KHQR</option>
+                                                    </select>
+                                                </div>
+                                                <p class="text-xs text-gray-400 mb-3">Rate: ${{ number_format($booking->room?->price_per_night ?? 0, 2) }}/night</p>
+                                                <div class="flex gap-2">
+                                                    <button type="submit" onclick="return confirm('Extend stay and collect payment?')"
+                                                        class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-sm transition-colors">
+                                                        Confirm
+                                                    </button>
+                                                    <button type="button" @click="showExtend = false"
+                                                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 rounded-lg text-sm transition-colors">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach

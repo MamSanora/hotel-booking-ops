@@ -115,12 +115,19 @@ class PaymentController extends Controller
     {
         $this->authorizeBookingAccess($booking);
 
-        // If already confirmed, return success immediately (idempotent).
-        if ($booking->booking_status === Booking::STATUS_BOOKED) {
-            return response()->json([
-                'paid'     => true,
-                'redirect' => route('payment.success', $booking->id),
-            ]);
+        // If already confirmed (booked or still checked-in after an extension), return success.
+        if (in_array($booking->booking_status, [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])) {
+            // Only redirect to success immediately if there are no more pending transactions.
+            $hasPending = $booking->transactions()
+                ->where('payment_status', Transaction::STATUS_PENDING)
+                ->exists();
+
+            if (! $hasPending) {
+                return response()->json([
+                    'paid'     => true,
+                    'redirect' => route('payment.success', $booking->id),
+                ]);
+            }
         }
 
         $transaction = $booking->transactions()
@@ -136,12 +143,19 @@ class PaymentController extends Controller
         $isPaid = $this->bakongApiService->checkPayment($transaction);
 
         if ($isPaid) {
+            // Use the transaction's own amount, not the full booking total.
             $transaction->update([
-                'amount_paid'    => $booking->total_price,
+                'amount_paid'    => $transaction->amount_paid > 0
+                    ? $transaction->amount_paid  // already set (e.g. extension cost)
+                    : $booking->total_price,     // initial booking — use full total
                 'payment_status' => Transaction::STATUS_FULL,
             ]);
 
-            $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+            // Only promote to 'booked' if the booking was pending/pending-adjacent.
+            // A checked-in guest paying for an extension stays checked-in.
+            if ($booking->booking_status === Booking::STATUS_PENDING) {
+                $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+            }
 
             return response()->json([
                 'paid'     => true,
@@ -169,13 +183,19 @@ class PaymentController extends Controller
 
         if ($transaction) {
             $transaction->update([
-                'amount_paid'     => $booking->total_price,
+                'amount_paid'     => $transaction->amount_paid > 0
+                    ? $transaction->amount_paid
+                    : $booking->total_price,
                 'payment_status'  => Transaction::STATUS_FULL,
                 'tracking_status' => 'SIMULATED',
             ]);
         }
 
-        $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+        // Only promote to 'booked' if the booking hasn't advanced further.
+        // A checked-in guest paying for an extension stays checked-in.
+        if ($booking->booking_status === Booking::STATUS_PENDING) {
+            $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+        }
 
         return redirect()->route('payment.success', $booking->id)
             ->with('info', 'Payment simulated (demo mode).');

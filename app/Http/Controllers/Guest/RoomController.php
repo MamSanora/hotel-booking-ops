@@ -10,6 +10,7 @@ use App\Models\RequestedItem;
 use App\Models\Room;
 use App\Models\RoomService;
 use App\Models\Transaction;
+use App\Services\PaymentGatewayManager;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -242,6 +243,83 @@ class RoomController extends Controller
     }
 
     /**
+     * Extend a registered guest's stay (self-service, online payment).
+     *
+     * Only available for guests with an online account while checked-in.
+     * Creates a pending stay_extension transaction and redirects to payment.
+     */
+    public function extendStay(Request $request, Booking $booking): RedirectResponse
+    {
+        $guestId = Auth::user()->guest_id;
+        abort_if($booking->guest_id !== $guestId, 403);
+
+        if (! $booking->isCheckedIn()) {
+            return back()->with('error', 'You can only extend a stay while checked in.');
+        }
+
+        // Collect the slugs of currently active gateways for validation.
+        $gatewayManager   = app(PaymentGatewayManager::class);
+        $activeGateways   = $gatewayManager->getVisibleGateways()
+            ->filter(fn ($item) => $item['state'] === 'active')
+            ->map(fn ($item) => $item['gateway']->slug)
+            ->values()
+            ->toArray();
+
+        $validated = $request->validate([
+            'extra_nights'   => ['required', 'integer', 'min:1', 'max:30'],
+            'payment_method' => ['required', 'string', 'in:' . implode(',', $activeGateways ?: ['khqr', 'aba_payway'])],
+        ]);
+
+        $extraNights = (int) $validated['extra_nights'];
+        $room        = $booking->room;
+
+        if (! $room) {
+            return back()->with('error', 'No room is assigned to this booking.');
+        }
+
+        // Conflict check — query overlapping active bookings on the same room.
+        $newCheckout = $booking->check_out_date->addDays($extraNights);
+
+        $conflict = Booking::where('room_id', $room->id)
+            ->where('id', '!=', $booking->id)
+            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+            ->where('check_in_date', '<', $newCheckout->toDateString())
+            ->where('check_out_date', '>', $booking->check_out_date->toDateString())
+            ->exists();
+
+        if ($conflict) {
+            return back()->with('error',
+                'Sorry — your room is already reserved by another guest during that period and cannot be extended to those dates.'
+            );
+        }
+
+        $extraCost = $extraNights * (float) $room->price_per_night;
+
+        $extensionTransaction = DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost) {
+            $booking->update([
+                'check_out_date'           => $newCheckout->toDateString(),
+                'total_price'              => $booking->total_price + $extraCost,
+                'number_of_stay_extension' => $booking->number_of_stay_extension + 1,
+            ]);
+
+            // Create a pending transaction — guest pays online via KHQR/PayWay.
+            // amount_paid is pre-set to the extension cost so PaymentController
+            // knows the correct amount to record when confirming payment.
+            return Transaction::create([
+                'booking_id'     => $booking->id,
+                'amount_paid'    => $extraCost,
+                'payment_for'    => Transaction::FOR_STAY_EXTENSION,
+                'payment_method' => $validated['payment_method'],
+                'payment_status' => Transaction::STATUS_PENDING,
+            ]);
+        });
+
+        return redirect()
+            ->route('payment.show', $booking->id)
+            ->with('success', "Stay extended by {$extraNights} night(s) until {$newCheckout->format('M d, Y')}. Please complete payment of \${$extraCost} to confirm.");
+    }
+
+    /**
      * Display printable invoice for a booking.
      */
     public function invoice(Booking $booking): View
@@ -258,3 +336,4 @@ class RoomController extends Controller
         return view('guest.invoice', compact('booking'));
     }
 }
+

@@ -1,4 +1,5 @@
 @extends('layouts.public')
+@inject('gatewayManager', 'App\Services\PaymentGatewayManager')
 
 @section('title', 'Booking ' . $booking->referenceNumber() . ' — Dara Meas Hotel')
 
@@ -277,6 +278,84 @@
                 </div>
             </div>
             @endif
+        </div>
+        @endif
+
+        @if($status === 'checked-in')
+        {{-- Extend Stay Section --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-[#f0ebe2] overflow-hidden mb-6">
+            <div class="p-6 border-b border-[#f0ebe2] flex justify-between items-center bg-gradient-to-r from-hotel-dark to-hotel-accent text-white">
+                <div>
+                    <h2 class="font-playfair text-xl font-bold mb-1">Extend My Stay</h2>
+                    <p class="text-white/70 text-sm">Want to stay longer? Extend your check-out date and pay online.</p>
+                </div>
+                <i class="bi bi-calendar-plus text-3xl opacity-50"></i>
+            </div>
+            <div class="p-6">
+                @php $visibleGateways = $gatewayManager->getVisibleGateways(); @endphp
+
+                @if($visibleGateways->isEmpty())
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-start gap-3">
+                        <i class="bi bi-exclamation-triangle-fill text-red-500 mt-0.5"></i>
+                        <span>No payment methods are currently available. Please contact the front desk to extend your stay.</span>
+                    </div>
+                @else
+                <form method="POST" action="{{ route('guest.booking.extend', $booking) }}" onsubmit="return confirm('Extend your stay? You will be redirected to complete payment.')">
+                    @csrf
+                    <div class="space-y-5">
+                        {{-- Extra Nights --}}
+                        <div>
+                            <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-2" for="extra_nights">Extra Nights</label>
+                            <div class="flex items-center gap-3">
+                                <input type="number" id="extra_nights" name="extra_nights" min="1" max="30" value="1"
+                                    class="w-28 border border-gray-300 rounded-xl px-4 py-2.5 text-base font-bold text-center outline-none focus:border-hotel-gold focus:ring-2 focus:ring-[#b8935a]/20 transition-all">
+                                <span class="text-sm text-gray-500">
+                                    Current check-out: <strong class="text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_out_date)->format('d M Y') }}</strong>
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1.5">At ${{ number_format($booking->room?->price_per_night ?? 0, 2) }}/night. Maximum 30 extra nights.</p>
+                        </div>
+
+                        {{-- Payment Method --}}
+                        <div>
+                            <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-3">Payment Method</label>
+                            <div class="space-y-2">
+                                @foreach($visibleGateways as $index => $item)
+                                    @php
+                                        $gw = $item['gateway'];
+                                        $gwState = $item['state'];
+                                        $gwDisabled = ($gwState === 'disabled');
+                                        $gwIcon = $gw->slug === 'bakong' ? 'bi-qr-code-scan' : 'bi-credit-card-2-front';
+                                    @endphp
+                                    <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3 cursor-pointer transition-all
+                                        {{ $gwDisabled ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]' }}">
+                                        <input type="radio"
+                                               name="payment_method"
+                                               value="{{ $gw->slug }}"
+                                               {{ $index === 0 && ! $gwDisabled ? 'checked' : '' }}
+                                               {{ $gwDisabled ? 'disabled' : '' }}
+                                               class="mt-0.5 accent-hotel-gold shrink-0">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <i class="bi {{ $gwIcon }} text-hotel-gold"></i>
+                                                <span class="font-semibold text-hotel-dark text-sm">{{ $gw->name }}</span>
+                                                @if($gwDisabled)
+                                                    <span class="text-xs text-red-500">(Currently offline)</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <button type="submit" class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-6 py-2.5 rounded-xl transition-colors">
+                            <i class="bi bi-calendar-check mr-2"></i> Extend &amp; Pay
+                        </button>
+                    </div>
+                </form>
+                @endif
+            </div>
         </div>
         @endif
 

@@ -176,6 +176,9 @@
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('guest.booking.show', $booking->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-hotel-gold transition-colors" title="View Details">
+                                            <i class="bi bi-eye text-lg"></i>
+                                        </a>
                                         @if($booking->canCancel())
                                             <form method="POST" action="{{ route('guest.booking.cancel', $booking->id) }}"
                                                   onsubmit="return confirm('Cancel this booking?')" class="inline-block">
@@ -223,6 +226,7 @@
                             <th class="px-5 py-4 font-semibold">Check-Out</th>
                             <th class="px-5 py-4 font-semibold">Total</th>
                             <th class="px-5 py-4 font-semibold">Status</th>
+                            <th class="px-5 py-4 font-semibold text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[#f0ebe2]">
@@ -268,6 +272,11 @@
                                     <span class="{{ $statusClass }} text-[0.75rem] font-bold px-3 py-1 rounded-full tracking-wide">
                                         {{ $statusLabel }}
                                     </span>
+                                </td>
+                                <td class="px-5 py-4 whitespace-nowrap text-right">
+                                    <a href="{{ route('guest.booking.show', $booking->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-hotel-gold transition-colors" title="View Details">
+                                        <i class="bi bi-eye text-lg"></i>
+                                    </a>
                                 </td>
                             </tr>
                         @endforeach
