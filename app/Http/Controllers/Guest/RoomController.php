@@ -295,7 +295,7 @@ class RoomController extends Controller
 
         $extraCost = $extraNights * (float) $room->price_per_night;
 
-        $extensionTransaction = DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost) {
+        $extensionTransaction = DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost, $validated) {
             $booking->update([
                 'check_out_date'           => $newCheckout->toDateString(),
                 'total_price'              => $booking->total_price + $extraCost,
