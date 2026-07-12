@@ -349,6 +349,11 @@
                             </div>
                         </div>
 
+                        <div class="bg-red-50 text-red-600 text-xs p-3 rounded-lg border border-red-100 flex gap-2">
+                            <i class="bi bi-info-circle-fill mt-0.5"></i>
+                            <p><strong>Note:</strong> Stay extensions are final. Once payment is completed, the extension cannot be refunded.</p>
+                        </div>
+
                         <button type="submit" class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-6 py-2.5 rounded-xl transition-colors">
                             <i class="bi bi-calendar-check mr-2"></i> Extend &amp; Pay
                         </button>
