@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\GuestAuth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -12,9 +14,18 @@ use Illuminate\Validation\ValidationException;
 /**
  * Guest Login Request
  *
- * Validates credentials for the 'web' guard (email + password).
- * Includes rate limiting to prevent brute-force attacks: a guest is locked
- * out after 5 failed attempts within 60 seconds, keyed by email + IP.
+ * Validates credentials for the 'web' guard (email or phone + password).
+ *
+ * Input detection:
+ *   - If the identifier contains '@' → treat as email → query guest_auths.email
+ *   - Otherwise                      → treat as phone → query guest_auths.login_phone
+ *
+ * We manually perform the credential lookup here rather than using Auth::attempt()
+ * with a 'login_phone' key, because Laravel's EloquentUserProvider only queries
+ * the column named by getAuthIdentifierName() (which is 'id' for session reloads).
+ * Using a custom lookup avoids confusing the provider while keeping rate limiting.
+ *
+ * Rate limiting: 5 failed attempts per identifier+IP within 60 seconds.
  */
 class GuestLoginRequest extends FormRequest
 {
@@ -26,9 +37,24 @@ class GuestLoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'    => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'identifier' => ['required', 'string'],
+            'password'   => ['required', 'string'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'identifier.required' => 'Please enter your email or phone number.',
+        ];
+    }
+
+    /**
+     * Detect whether the identifier is an email or a phone number.
+     */
+    public function isEmailLogin(): bool
+    {
+        return str_contains($this->string('identifier')->value(), '@');
     }
 
     /**
@@ -39,19 +65,28 @@ class GuestLoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // The key must be 'password' — see AdminLoginRequest for the explanation.
-        $credentials = [
-            'email'    => $this->string('email')->lower()->value(),
-            'password' => $this->string('password')->value(),
-        ];
+        $identifier = $this->string('identifier')->trim()->value();
+        $password   = $this->string('password')->value();
 
-        if (! Auth::guard('web')->attempt($credentials, $this->boolean('remember'))) {
+        // Resolve the GuestAuth row by the appropriate column.
+        if ($this->isEmailLogin()) {
+            $guestAuth = GuestAuth::where('email', Str::lower($identifier))->first();
+        } else {
+            // Normalise phone: strip spaces for matching.
+            $guestAuth = GuestAuth::where('login_phone', $identifier)->first();
+        }
+
+        // Verify the password hash manually, then log in via the guard.
+        if (! $guestAuth || ! Hash::check($password, $guestAuth->getAuthPassword())) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'identifier' => __('auth.failed'),
             ]);
         }
+
+        // Log in using the resolved model directly.
+        Auth::guard('web')->login($guestAuth, $this->boolean('remember'));
 
         RateLimiter::clear($this->throttleKey());
     }
@@ -70,7 +105,7 @@ class GuestLoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
+            'identifier' => __('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -78,12 +113,12 @@ class GuestLoginRequest extends FormRequest
     }
 
     /**
-     * Rate limit key: email (normalised) + IP address.
+     * Rate limit key: normalised identifier + IP address.
      */
     public function throttleKey(): string
     {
         return Str::transliterate(
-            Str::lower($this->string('email')).'|'.$this->ip()
+            Str::lower($this->string('identifier')).'|'.$this->ip()
         );
     }
 }

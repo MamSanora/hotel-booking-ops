@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Auth\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Auth\Guest\LoginController as GuestLoginController;
+use App\Http\Controllers\Auth\Guest\PhoneVerificationController as GuestPhoneVerificationController;
 use App\Http\Controllers\Auth\Guest\RegisterController as GuestRegisterController;
 use App\Http\Controllers\Auth\Staff\LoginController as StaffLoginController;
 use App\Http\Controllers\Guest\GuestDashboardController;
@@ -67,6 +68,11 @@ Route::prefix('guest')->name('guest.')->group(function () {
     Route::post('/login',    [GuestLoginController::class, 'login'])->name('login.post');
     Route::post('/register', [GuestRegisterController::class, 'register'])->name('register.post');
     Route::post('/logout',   [GuestLoginController::class, 'logout'])->name('logout');
+
+    // Phone OTP verification (accessible without being logged in — user is mid-registration).
+    Route::get('/verify-phone',          [GuestPhoneVerificationController::class, 'show'])->name('verify-phone');
+    Route::post('/verify-phone',         [GuestPhoneVerificationController::class, 'verify'])->name('verify-phone.submit');
+    Route::post('/verify-phone/resend',  [GuestPhoneVerificationController::class, 'resend'])->name('verify-phone.resend');
 
     // ── Protected guest routes ──────────────────────────────────────────
     Route::middleware('auth')->group(function () {

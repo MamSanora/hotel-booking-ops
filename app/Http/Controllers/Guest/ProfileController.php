@@ -61,16 +61,27 @@ class ProfileController extends Controller
             'full_name'    => ['required', 'string', 'max:50'],
             'gender'       => ['nullable', 'in:male,female,other,prefer_not_to_say'],
             'nationality'  => ['nullable', 'string', 'max:50'],
-            'email'        => [
-                'required', 'string', 'email', 'max:255',
-                'unique:guest_auths,email,' . $guestAuth->id,
-            ],
+            'email'        => $guestAuth->isPhoneUser()
+                // Phone users: email is optional but must be unique if provided.
+                ? ['nullable', 'string', 'email', 'max:255', 'unique:guest_auths,email,' . $guestAuth->id]
+                // Email users: email is required.
+                : ['required', 'string', 'email', 'max:255', 'unique:guest_auths,email,' . $guestAuth->id],
+            'login_phone'  => ['nullable', 'string', 'max:30', 'unique:guest_auths,login_phone,' . $guestAuth->id],
             'phones'       => ['nullable', 'array', 'max:5'],
             'phones.*'     => ['nullable', 'string', 'max:30'],
         ]);
 
         // ── Update auth credentials ─────────────────────────────────────────
-        $guestAuth->update(['email' => $validated['email']]);
+        $authUpdate = [];
+        if (! $guestAuth->isPhoneUser() || $request->filled('email')) {
+            $authUpdate['email'] = $validated['email'] ?? null;
+        }
+        if ($request->filled('login_phone')) {
+            $authUpdate['login_phone'] = $validated['login_phone'];
+        }
+        if (! empty($authUpdate)) {
+            $guestAuth->update($authUpdate);
+        }
 
         // ── Update profile data ─────────────────────────────────────────────
         $guest->update([
@@ -81,31 +92,21 @@ class ProfileController extends Controller
 
         // ── Sync phone numbers ──────────────────────────────────────────────
         $submittedPhones = $validated['phones'] ?? [];
-
-        // Collect all existing phone IDs for this guest.
-        $existingIds = $guest->phones()->pluck('id')->all();
-
-        // Track which existing IDs were submitted (to detect deletions).
+        $existingIds     = $guest->phones()->pluck('id')->all();
         $submittedExistingIds = [];
 
         foreach ($submittedPhones as $key => $number) {
-            // Skip blank entries — the guest left the field empty.
             if (blank($number)) {
                 continue;
             }
-
-            // Key is a numeric string = existing phone ID; anything else = new.
             if (is_numeric($key) && in_array((int) $key, $existingIds)) {
-                // Update an existing phone record.
                 $guest->phones()->where('id', $key)->update(['phone_number' => $number]);
                 $submittedExistingIds[] = (int) $key;
             } else {
-                // Insert a new phone record.
                 $guest->phones()->create(['phone_number' => $number]);
             }
         }
 
-        // Delete any existing phone that was NOT submitted (guest removed it).
         $idsToDelete = array_diff($existingIds, $submittedExistingIds);
         if (! empty($idsToDelete)) {
             $guest->phones()->whereIn('id', $idsToDelete)->delete();

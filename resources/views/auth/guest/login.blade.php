@@ -53,7 +53,7 @@
             </div>
 
             <h1 class="font-[Playfair_Display] text-3xl font-bold text-hotel-dark mb-1">Welcome back</h1>
-            <p class="text-gray-500 text-sm mb-8">Sign in to access your bookings and reservations.</p>
+            <p class="text-gray-500 text-sm mb-8">Sign in with your email address or phone number.</p>
 
             {{-- Session Error --}}
             @if (session('error'))
@@ -66,14 +66,22 @@
             <form method="POST" action="{{ route('guest.login.post') }}" class="space-y-5">
                 @csrf
 
-                {{-- Email --}}
+                {{-- Identifier (email or phone) --}}
                 <div>
-                    <label for="email" class="block text-[0.8rem] uppercase font-semibold text-gray-500 tracking-wider mb-2">
-                        Email Address
+                    <label for="identifier" class="block text-[0.8rem] uppercase font-semibold text-gray-500 tracking-wider mb-2">
+                        Email or Phone Number
                     </label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email"
-                           class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all @error('email') border-red-400 @enderror">
-                    @error('email')
+                    <div class="relative">
+                        <span id="identifier-icon" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base transition-all">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+                        <input id="identifier" type="text" name="identifier"
+                               value="{{ old('identifier') }}"
+                               required autofocus autocomplete="username"
+                               placeholder="e.g. your@email.com or +855 12 345 678"
+                               class="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all @error('identifier') border-red-400 @enderror">
+                    </div>
+                    @error('identifier')
                         <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                             <i class="bi bi-exclamation-circle"></i> {{ $message }}
                         </p>
@@ -136,6 +144,26 @@
     </div>
 
 </div>
+
+<script>
+    // Swap the icon in the identifier field based on input type.
+    (function () {
+        const input = document.getElementById('identifier');
+        const icon  = document.getElementById('identifier-icon');
+        if (!input || !icon) return;
+
+        function update() {
+            const val = input.value.trim();
+            const isPhone = val !== '' && !val.includes('@') && /^[\d\+\s\-\(\)]+$/.test(val);
+            icon.innerHTML = isPhone
+                ? '<i class="bi bi-telephone"></i>'
+                : '<i class="bi bi-envelope"></i>';
+        }
+
+        input.addEventListener('input', update);
+        update();
+    })();
+</script>
 
 </body>
 </html>

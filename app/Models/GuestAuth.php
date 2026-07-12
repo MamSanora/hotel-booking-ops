@@ -12,19 +12,30 @@ use Illuminate\Notifications\Notifiable;
  * GuestAuth Model
  *
  * The authenticatable model for the 'web' guard. Holds login credentials
- * (email + passwordhash) for guests who register an online account.
+ * for guests who register an online account.
  *
- * This model intentionally separates authentication from profile data.
- * The guest's profile (name, gender, nationality) lives in the `guests`
- * table and is accessed via the guest() relationship.
+ * Supports two registration paths:
+ *   - Email path  : email + passwordhash (classic)
+ *   - Phone path  : login_phone + passwordhash (new)
  *
- * Implements MustVerifyEmail to enable the existing email verification flow.
+ * A single guest_auths row may have:
+ *   - email only        (email-registered user, no phone login)
+ *   - login_phone only  (phone-registered user, no email login)
+ *   - both              (user who added both after registration)
+ *
+ * OTP flow (mock — no real SMS API):
+ *   otp_code and otp_expires_at are populated on phone registration.
+ *   phone_verified_at is set after the guest enters the correct code.
  *
  * @property int         $id
  * @property int         $guest_id
- * @property string      $email
+ * @property string|null $email
+ * @property string|null $login_phone
  * @property string      $passwordhash
  * @property string|null $email_verified_at
+ * @property string|null $phone_verified_at
+ * @property string|null $otp_code
+ * @property string|null $otp_expires_at
  */
 class GuestAuth extends Authenticatable implements MustVerifyEmail
 {
@@ -38,41 +49,32 @@ class GuestAuth extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'guest_id',
         'email',
+        'login_phone',
         'passwordhash',
         'email_verified_at',
+        'phone_verified_at',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     protected $hidden = [
         'passwordhash',
         'remember_token',
+        'otp_code',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
+            'otp_expires_at'    => 'datetime',
             // Auto-hash on assignment: $guestAuth->passwordhash = 'plain';
             'passwordhash'      => 'hashed',
         ];
     }
 
     // ── Auth Contract Overrides ────────────────────────────────────────────
-
-    /**
-     * DO NOT override getAuthIdentifierName() here.
-     *
-     * The session guard stores getAuthIdentifier() in the session and later
-     * calls retrieveById($identifier) to reload the user. That method runs
-     * Model::find($identifier), which looks up by PRIMARY KEY.
-     *
-     * If getAuthIdentifierName() returned 'email', the session would store
-     * the email string, and find('email@...') would query WHERE id = 'email@...'
-     * — which always returns null, causing an infinite login redirect loop.
-     *
-     * The login field (email) is specified separately via the credentials
-     * array passed to Auth::attempt(['email' => ..., 'password' => ...]).
-     * retrieveByCredentials() uses those keys for the WHERE clause independently.
-     */
 
     /**
      * The column holding the bcrypt hash. Required by Laravel 12 contract.
@@ -92,18 +94,17 @@ class GuestAuth extends Authenticatable implements MustVerifyEmail
 
     /**
      * Returns the email used for password reset token lookup.
-     * The `password_reset_tokens` table is keyed by email.
+     * Phone-only users have no email — returns empty string as a safe fallback.
      */
     public function getEmailForPasswordReset(): string
     {
-        return $this->email;
+        return $this->email ?? '';
     }
 
     // ── Relationships ──────────────────────────────────────────────────────
 
     /**
      * The guest profile associated with these credentials.
-     * Use this to access full_name, gender, nationality, etc.
      */
     public function guest(): BelongsTo
     {
@@ -111,6 +112,24 @@ class GuestAuth extends Authenticatable implements MustVerifyEmail
     }
 
     // ── Convenience Helpers ────────────────────────────────────────────────
+
+    /**
+     * Whether this is a phone-registered user (no email credential).
+     */
+    public function isPhoneUser(): bool
+    {
+        return is_null($this->email) && ! is_null($this->login_phone);
+    }
+
+    /**
+     * Whether the OTP code is still valid (not expired).
+     */
+    public function isOtpValid(string $code): bool
+    {
+        return $this->otp_code === $code
+            && $this->otp_expires_at
+            && $this->otp_expires_at->isFuture();
+    }
 
     /**
      * Shortcut to the guest's full name for use in views and notifications.
