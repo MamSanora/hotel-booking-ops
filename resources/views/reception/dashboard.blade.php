@@ -113,28 +113,29 @@
         @endif
 
         {{-- ==========================================
-             TODAY'S ARRIVALS
+             UPCOMING ARRIVALS
              ========================================== --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 md:p-8">
             <h3 class="font-playfair text-[1.4rem] font-bold text-hotel-dark pb-3 border-b-2 border-gray-100 mb-6 flex items-center">
                 <i class="bi bi-box-arrow-in-right text-green-500 mr-3"></i>
-                Today's Arrivals ({{ $todayArrivals->count() }})
+                Upcoming Arrivals ({{ $upcomingArrivals->count() }})
             </h3>
             
-            @if($todayArrivals->count() > 0)
+            @if($upcomingArrivals->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
                             <tr>
                                 <th class="px-5 py-4 font-semibold rounded-tl-xl rounded-bl-xl">Ref</th>
                                 <th class="px-5 py-4 font-semibold">Guest Name</th>
+                                <th class="px-5 py-4 font-semibold">Arrival Date</th>
                                 <th class="px-5 py-4 font-semibold">Room</th>
                                 <th class="px-5 py-4 font-semibold">Payment</th>
                                 <th class="px-5 py-4 font-semibold rounded-tr-xl rounded-br-xl text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            @foreach($todayArrivals as $booking)
+                            @foreach($upcomingArrivals as $booking)
                             <tr class="hover:bg-gray-50/50 transition-colors">
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <strong class="font-playfair text-hotel-gold text-lg">{{ $booking->referenceNumber() }}</strong>
@@ -151,6 +152,18 @@
                                             <i class="bi bi-chat-left-text-fill text-amber-600 mt-0.5 shrink-0"></i>
                                             <span><strong>Request:</strong> {{ $booking->special_requests }}</span>
                                         </div>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4 whitespace-nowrap">
+                                    <div class="font-semibold text-gray-800 text-[0.95rem]">
+                                        {{ $booking->check_in_date->format('M d, Y') }}
+                                    </div>
+                                    @if($booking->check_in_date->isToday())
+                                        <span class="bg-green-100 text-green-800 text-[0.7rem] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Today</span>
+                                    @elseif($booking->check_in_date->isTomorrow())
+                                        <span class="bg-blue-100 text-blue-800 text-[0.7rem] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Tomorrow</span>
+                                    @else
+                                        <span class="text-gray-500 text-[0.75rem] font-medium">{{ $booking->check_in_date->diffForHumans() }}</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4">
@@ -176,12 +189,18 @@
                                             </button>
                                         </form>
                                     @endif
-                                    <form action="{{ route('reception.checkin', $booking->id) }}" method="POST" class="inline-block">
-                                        @csrf
-                                        <button type="submit" onclick="return confirm('Check in this guest?')" class="inline-flex items-center bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-2 rounded-lg text-sm transition-colors border border-green-200">
+                                    @if($booking->check_in_date->startOfDay()->lte(now()->startOfDay()))
+                                        <form action="{{ route('reception.checkin', $booking->id) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            <button type="submit" onclick="return confirm('Check in this guest?')" class="inline-flex items-center bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-2 rounded-lg text-sm transition-colors border border-green-200">
+                                                <i class="bi bi-check2-square mr-1"></i>Check In
+                                            </button>
+                                        </form>
+                                    @else
+                                        <button type="button" disabled class="inline-flex items-center bg-gray-100 text-gray-400 font-semibold px-3 py-2 rounded-lg text-sm border border-gray-200 cursor-not-allowed" title="Cannot check in before arrival date">
                                             <i class="bi bi-check2-square mr-1"></i>Check In
                                         </button>
-                                    </form>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -189,7 +208,7 @@
                     </table>
                 </div>
             @else
-                <p class="text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">No arrivals scheduled for today.</p>
+                <p class="text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">No upcoming arrivals scheduled.</p>
             @endif
         </div>
 
@@ -368,6 +387,65 @@
                 </div>
             @else
                 <p class="text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">No guests currently staying in the hotel.</p>
+            @endif
+        </div>
+
+        {{-- ==========================================
+             RECENT HISTORY (LAST 14 DAYS)
+             ========================================== --}}
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 md:p-8">
+            <h3 class="font-playfair text-[1.4rem] font-bold text-hotel-dark pb-3 border-b-2 border-gray-100 mb-6 flex items-center">
+                <i class="bi bi-clock-history text-purple-500 mr-3"></i>
+                Recent History ({{ $recentHistory->count() }})
+                <span class="ml-3 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Last 14 Days</span>
+            </h3>
+            
+            @if($recentHistory->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
+                            <tr>
+                                <th class="px-5 py-4 font-semibold rounded-tl-xl rounded-bl-xl">Ref</th>
+                                <th class="px-5 py-4 font-semibold">Guest Name</th>
+                                <th class="px-5 py-4 font-semibold">Room</th>
+                                <th class="px-5 py-4 font-semibold">Dates</th>
+                                <th class="px-5 py-4 font-semibold rounded-tr-xl rounded-br-xl">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($recentHistory as $booking)
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-5 py-4 whitespace-nowrap">
+                                    <strong class="font-playfair text-hotel-gold text-lg">{{ $booking->referenceNumber() }}</strong>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div class="font-semibold text-gray-800 text-[0.95rem]">
+                                        {{ $booking->guest?->full_name ?? 'Walk-in Guest' }}
+                                    </div>
+                                    <div class="text-gray-500 text-[0.8rem] mt-0.5">
+                                        {{ $booking->guest?->phones?->first()?->phone_number ?? '—' }}
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div class="text-gray-800 font-medium text-[0.95rem]">Room {{ $booking->room?->room_number ?? '-' }}</div>
+                                </td>
+                                <td class="px-5 py-4 text-gray-700 text-[0.85rem] whitespace-nowrap">
+                                    {{ $booking->check_in_date?->format('M d') }} - {{ $booking->check_out_date?->format('M d, Y') }}
+                                </td>
+                                <td class="px-5 py-4 whitespace-nowrap">
+                                    @if($booking->isCancelled())
+                                        <span class="bg-red-100 text-red-800 text-[0.75rem] font-bold px-3 py-1 rounded-full">Cancelled</span>
+                                    @else
+                                        <span class="bg-gray-200 text-gray-800 text-[0.75rem] font-bold px-3 py-1 rounded-full">Checked Out</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">No recent history available.</p>
             @endif
         </div>
 

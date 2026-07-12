@@ -31,9 +31,9 @@ class ReceptionDashboardController extends Controller
      */
     public function index(): View
     {
-        // Guests arriving today — booking confirmed, not yet checked in.
-        $todayArrivals = Booking::with(['guest', 'room'])
-            ->arrivingToday()
+        // All confirmed bookings arriving today or in the future — staff can see the full pipeline.
+        $upcomingArrivals = Booking::with(['guest', 'room'])
+            ->upcomingArrivals()
             ->orderBy('check_in_date')
             ->get();
 
@@ -55,11 +55,19 @@ class ReceptionDashboardController extends Controller
             ->oldest()
             ->get();
 
+        // Recent booking history — checked-out or cancelled within the last 14 days.
+        // Read-only for context: lost-and-found, billing disputes, returning guests.
+        $recentHistory = Booking::with(['guest', 'room'])
+            ->recentHistory()
+            ->orderByDesc('updated_at')
+            ->get();
+
         return view('reception.dashboard', compact(
-            'todayArrivals',
+            'upcomingArrivals',
             'todayDepartures',
             'inHouseGuests',
             'pendingRoomServices',
+            'recentHistory',
         ));
     }
 
@@ -72,7 +80,7 @@ class ReceptionDashboardController extends Controller
     public function checkin(Booking $booking): RedirectResponse
     {
         if (! $booking->canCheckIn()) {
-            return back()->with('error', 'Only confirmed (booked) bookings can be checked in.');
+            return back()->with('error', 'Guests can only be checked in on or after their arrival date, and the booking must be confirmed.');
         }
 
         $booking->update(['booking_status' => Booking::STATUS_CHECKED_IN]);

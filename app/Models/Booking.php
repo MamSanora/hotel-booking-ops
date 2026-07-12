@@ -182,12 +182,32 @@ class Booking extends Model
     }
 
     /**
-     * Bookings checking in today or overdue (arriving today or earlier).
+     * Bookings checking in today (arriving today exactly).
      */
     public function scopeArrivingToday(Builder $query): Builder
     {
         return $query->where('booking_status', self::STATUS_BOOKED)
             ->whereDate('check_in_date', today());
+    }
+
+    /**
+     * All upcoming confirmed arrivals — today and beyond.
+     * Used by the reception dashboard so staff can see the full arrivals pipeline.
+     */
+    public function scopeUpcomingArrivals(Builder $query): Builder
+    {
+        return $query->where('booking_status', self::STATUS_BOOKED)
+            ->whereDate('check_in_date', '>=', today());
+    }
+
+    /**
+     * Recent booking history — checked-out or cancelled bookings within the last 14 days.
+     * Gives reception staff just enough context for lost-and-found, billing queries, etc.
+     */
+    public function scopeRecentHistory(Builder $query): Builder
+    {
+        return $query->whereIn('booking_status', [self::STATUS_CHECKED_OUT, self::STATUS_CANCELLED])
+            ->where('updated_at', '>=', now()->subDays(14));
     }
 
     /**
@@ -233,7 +253,8 @@ class Booking extends Model
 
     public function canCheckIn(): bool
     {
-        return $this->booking_status === self::STATUS_BOOKED;
+        return $this->booking_status === self::STATUS_BOOKED
+            && $this->check_in_date->startOfDay()->lte(now()->startOfDay());
     }
 
     public function canCheckOut(): bool
