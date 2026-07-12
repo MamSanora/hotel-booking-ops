@@ -23,6 +23,11 @@
                     </div>
                     <h3 class="font-playfair text-xl font-bold text-hotel-dark">{{ $guest->full_name }}</h3>
                     <p class="text-sm text-gray-500">{{ $guestAuth->email }}</p>
+                    @if($guest->phones->isNotEmpty())
+                        @foreach($guest->phones as $phone)
+                            <p class="text-sm text-gray-500 mt-1"><i class="bi bi-telephone"></i> {{ $phone->phone_number }}</p>
+                        @endforeach
+                    @endif
                     @if($guest->nationality)
                         <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-1">
                             <i class="bi bi-globe"></i> {{ $guest->nationality }}
@@ -76,6 +81,55 @@
                             <input type="email" name="email" id="email" value="{{ old('email', $guestAuth->email) }}"
                                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all">
                             @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        {{-- ── Phone Numbers (multi) ─────────────────────────────────────────── --}}
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700">Phone Numbers</label>
+                                <button type="button" id="add-phone-btn"
+                                        class="text-xs text-hotel-gold hover:text-amber-600 font-semibold flex items-center gap-1 transition-colors">
+                                    <i class="bi bi-plus-circle"></i> Add Number
+                                </button>
+                            </div>
+
+                            {{-- Warning --}}
+                            <div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
+                                <p class="text-xs text-amber-700">
+                                    <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                                    The password reset feature is not yet available. Please provide a legitimate phone number so we can contact and verify your identity if you lose access to your account.
+                                </p>
+                            </div>
+
+                            {{-- Existing phones --}}
+                            <div id="phone-list" class="space-y-2">
+                                @forelse($guest->phones as $phone)
+                                    <div class="phone-row flex items-center gap-2">
+                                        <input type="text"
+                                               name="phones[{{ $phone->id }}]"
+                                               value="{{ old('phones.' . $phone->id, $phone->phone_number) }}"
+                                               placeholder="e.g. +855 12 345 678"
+                                               class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all">
+                                        <button type="button" class="remove-phone-btn text-gray-400 hover:text-red-500 transition-colors flex-shrink-0" title="Remove">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                @empty
+                                    {{-- No existing phones: render one blank row so there is always at least one field --}}
+                                    <div class="phone-row flex items-center gap-2">
+                                        <input type="text"
+                                               name="phones[new_0]"
+                                               value=""
+                                               placeholder="e.g. +855 12 345 678"
+                                               class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all">
+                                        <button type="button" class="remove-phone-btn text-gray-400 hover:text-red-500 transition-colors flex-shrink-0" title="Remove">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            @error('phones.*') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -149,3 +203,74 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const list      = document.getElementById('phone-list');
+    const addBtn    = document.getElementById('add-phone-btn');
+    let   newIndex  = {{ $guest->phones->count() }};   // start counter after existing rows
+
+    // ── Add a new blank phone row ──────────────────────────────────────────
+    addBtn.addEventListener('click', function () {
+        // Enforce a sensible cap (matches server-side max:5)
+        const rows = list.querySelectorAll('.phone-row');
+        if (rows.length >= 5) {
+            addBtn.textContent = 'Max 5 numbers reached';
+            addBtn.disabled = true;
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'phone-row flex items-center gap-2';
+        row.innerHTML = `
+            <input type="text"
+                   name="phones[new_${newIndex}]"
+                   value=""
+                   placeholder="e.g. +855 12 345 678"
+                   class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all">
+            <button type="button" class="remove-phone-btn text-gray-400 hover:text-red-500 transition-colors flex-shrink-0" title="Remove">
+                <i class="bi bi-trash3"></i>
+            </button>
+        `;
+        list.appendChild(row);
+        row.querySelector('input').focus();
+        newIndex++;
+
+        // Re-enable cap message if applicable
+        updateAddButton();
+        attachRemove(row.querySelector('.remove-phone-btn'));
+    });
+
+    // ── Attach remove listener to a single button ─────────────────────────
+    function attachRemove(btn) {
+        btn.addEventListener('click', function () {
+            const row = btn.closest('.phone-row');
+            // Always keep at least 1 row so there is somewhere to type
+            if (list.querySelectorAll('.phone-row').length > 1) {
+                row.remove();
+            } else {
+                // Clear the value instead of removing the only row
+                row.querySelector('input').value = '';
+            }
+            updateAddButton();
+        });
+    }
+
+    // ── Update add-button state ───────────────────────────────────────────
+    function updateAddButton() {
+        const count = list.querySelectorAll('.phone-row').length;
+        if (count < 5) {
+            addBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Add Number';
+            addBtn.disabled  = false;
+        } else {
+            addBtn.textContent = 'Max 5 numbers reached';
+            addBtn.disabled    = true;
+        }
+    }
+
+    // ── Attach listeners to all pre-rendered remove buttons ───────────────
+    list.querySelectorAll('.remove-phone-btn').forEach(attachRemove);
+})();
+</script>
+@endpush
