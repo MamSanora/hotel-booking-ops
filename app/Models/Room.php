@@ -133,6 +133,23 @@ class Room extends Model
     }
 
     /**
+     * Check if this specific room is available for a date range.
+     */
+    public function isAvailableForDates(string $checkIn, string $checkOut, ?int $excludeBookingId = null): bool
+    {
+        if ($this->current_status !== self::STATUS_AVAILABLE) {
+            return false;
+        }
+
+        return !$this->bookings()
+            ->whereIn('booking_status', ['booked', 'checked-in'])
+            ->where('check_in_date', '<', $checkOut)
+            ->where('check_out_date', '>', $checkIn)
+            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            ->exists();
+    }
+
+    /**
      * Returns the human-readable room type label, e.g. "Standard Twin".
      */
     public function displayType(): string

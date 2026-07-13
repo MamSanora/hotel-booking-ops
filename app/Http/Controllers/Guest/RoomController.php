@@ -98,6 +98,12 @@ class RoomController extends Controller
     {
         $validated = $request->validated();
 
+        if (!$room->isAvailableForDates($validated['check_in_date'], $validated['check_out_date'])) {
+            return back()
+                ->withErrors(['check_in_date' => 'This room is not available for the selected dates. Please choose different dates or another room.'])
+                ->withInput();
+        }
+
         // GuestAuth → guest_id (bookings are linked to Guest, not GuestAuth).
         $guestId = Auth::user()->guest_id;
 

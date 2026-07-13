@@ -67,7 +67,18 @@
 
                 <div class="flex justify-between items-center py-3.5 border-b border-[#f0ebe2] text-[0.92rem]">
                     <span class="text-gray-500 font-semibold flex items-center"><i class="bi bi-credit-card mr-2 text-hotel-gold"></i>Payment Method</span>
-                    <span class="text-hotel-dark font-semibold text-right">ABA PayWay</span>
+                    <span class="text-hotel-dark font-semibold text-right">
+                        @php
+                            $method = $booking->transactions->last()?->payment_method ?? 'khqr';
+                        @endphp
+                        @if($method === 'aba_payway')
+                            ABA PayWay
+                        @elseif($method === 'khqr')
+                            KHQR &bull; Bakong
+                        @else
+                            {{ ucfirst($method) }}
+                        @endif
+                    </span>
                 </div>
 
                 <div class="flex justify-between items-center py-4 text-[0.92rem]">
@@ -101,7 +112,7 @@
 
             <div class="px-6 pb-6 pt-2 text-center text-gray-500 text-[0.78rem]">
                 <i class="bi bi-shield-check mr-1 text-green-500"></i>
-                Powered by ABA PayWay &nbsp;&middot;&nbsp; Dara Meas Hotel, Phnom Penh
+                Powered by {{ $method === 'aba_payway' ? 'ABA PayWay' : 'Bakong • NBC' }} &nbsp;&middot;&nbsp; Dara Meas Hotel, Phnom Penh
             </div>
 
         </div>

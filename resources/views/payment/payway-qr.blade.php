@@ -1,173 +1,257 @@
 @extends('layouts.public')
 
-@section('title', 'Pay with ABA PayWay — ' . $booking->referenceNumber())
+@section('title', 'Complete Payment — ' . $booking->referenceNumber())
 
 @section('content')
 
-<div class="min-h-[80vh] bg-hotel-light flex items-center py-12">
-    <div class="container mx-auto px-4">
+<div class="min-h-[85vh] bg-[#f4f6f9] py-12 px-4 flex items-center justify-center">
+    <div class="max-w-5xl w-full mx-auto">
 
-        <div class="bg-white rounded-[20px] shadow-[0_12px_48px_rgba(0,0,0,0.12)] max-w-3xl mx-auto overflow-hidden">
-
-            {{-- ── Header ── --}}
-            <div class="bg-gradient-to-br from-hotel-dark to-hotel-accent py-8 px-6 md:px-10 text-center">
-                <div class="inline-flex items-center gap-2 bg-[#fef0e6] border border-[#f0d5b0] text-hotel-gold font-bold text-[0.85rem] px-4 py-1.5 rounded-full mb-4">
-                    <i class="bi bi-credit-card-2-front"></i> ABA PayWay Checkout
-                </div>
-                <h2 class="font-playfair text-white text-[1.6rem] font-bold mb-1">Complete Your Payment</h2>
-                <p class="text-white/65 text-[0.9rem] mb-0">Scan the QR code below with your preferred banking app.</p>
-                <div class="inline-block bg-hotel-gold/20 border border-hotel-gold/50 text-hotel-gold font-playfair text-[1.3rem] font-bold px-7 py-2 rounded-full mt-4 tracking-widest">
-                    {{ $booking->referenceNumber() }}
-                </div>
-            </div>
-
-            {{-- ── Booking Summary Strip ── --}}
-            <div class="bg-hotel-light px-6 md:px-10 py-5 border-b border-[#ede8df] flex flex-wrap gap-6 items-center">
-                <div class="flex items-center gap-2.5 text-[0.88rem]">
-                    <i class="bi bi-door-open text-hotel-gold text-base"></i>
-                    <div>
-                        <span class="text-gray-500 block">Room</span>
-                        <strong class="text-hotel-dark">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}</strong>
-                        @if($booking->room)
-                            <span class="text-gray-500 text-[0.78rem] ml-1">No. {{ $booking->room->room_number }}</span>
-                        @endif
-                    </div>
-                </div>
-                <div class="flex items-center gap-2.5 text-[0.88rem]">
-                    <i class="bi bi-calendar-check text-hotel-gold text-base"></i>
-                    <div>
-                        <span class="text-gray-500 block">Check-In</span>
-                        <strong class="text-hotel-dark">{{ $booking->check_in_date?->format('M d, Y') }}</strong>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2.5 text-[0.88rem]">
-                    <i class="bi bi-calendar-x text-hotel-gold text-base"></i>
-                    <div>
-                        <span class="text-gray-500 block">Check-Out</span>
-                        <strong class="text-hotel-dark">{{ $booking->check_out_date?->format('M d, Y') }}</strong>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2.5 text-[0.88rem]">
-                    <i class="bi bi-moon text-hotel-gold text-base"></i>
-                    <div>
-                        <span class="text-gray-500 block">Nights</span>
-                        <strong class="text-hotel-dark">{{ $booking->nightCount() }}</strong>
-                    </div>
+        {{-- Top Navigation & Reference Bar --}}
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <a href="{{ route('guest.booking.show', $booking) }}"
+                   class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm border border-gray-200 text-gray-600 hover:text-hotel-dark transition-colors">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900 leading-tight">Complete KHQR Payment</h1>
+                    <p class="text-xs text-gray-500">Scan & pay instantly with any Cambodian banking app</p>
                 </div>
             </div>
 
-            {{-- ── Main Payment Area ── --}}
-            <div class="p-8 md:p-10">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-gray-200 shadow-sm text-xs font-semibold text-gray-700">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Ref: <strong class="text-gray-900">{{ $booking->referenceNumber() }}</strong>
+            </div>
+        </div>
 
-                {{-- Amount --}}
-                <div class="text-center mb-8">
-                    <div class="bg-gradient-to-br from-hotel-gold to-[#b8935a] rounded-xl px-8 py-4 inline-block">
-                        <div class="text-white/75 text-[0.78rem] uppercase tracking-widest mb-1">Total Amount Due</div>
-                        <div class="text-white font-playfair text-[2.2rem] font-bold leading-tight">${{ number_format($booking->total_price, 2) }} <span class="text-[1rem] font-normal">{{ $paymentData['currency'] }}</span></div>
+        {{-- Main Two-Column Layout --}}
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            {{-- ── Left: Official KHQR Card ── --}}
+            <div class="lg:col-span-6 flex flex-col items-center">
+
+                <div class="w-full max-w-[370px] bg-white rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-gray-200/80 overflow-hidden">
+
+                    {{-- Red Header (Bakong signature slanted corner) --}}
+                    <div class="relative bg-[#E1232C] pt-6 pb-6 px-7 text-white"
+                         style="clip-path: polygon(0 0, 100% 0, 100% 58%, 87% 100%, 0 100%);">
+                        <div class="flex items-center justify-between">
+                            {{-- Official KHQR Logo (white) --}}
+                            <img src="/images/khqr-logo-white.svg"
+                                 alt="KHQR"
+                                 style="height:28px;width:auto;display:block;filter:brightness(0) invert(1);">
+                            <span class="text-[10px] font-bold tracking-widest uppercase bg-white/20 px-2.5 py-1 rounded">Tag 29</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="flex flex-col md:flex-row gap-8 items-start justify-center">
-
-                    {{-- QR Code --}}
-                    <div class="flex flex-col items-center gap-4 flex-shrink-0">
-                        <p class="text-[0.82rem] text-gray-500 uppercase tracking-wider font-semibold">Scan with your banking app</p>
-                        @if($paymentData['qr_image'])
-                            <div class="border-4 border-hotel-gold/30 rounded-2xl p-3 shadow-lg bg-white">
-                                <img src="{{ $paymentData['qr_image'] }}"
-                                     alt="ABA PayWay QR Code"
-                                     class="w-56 h-56 block"
-                                     id="payway-qr-img">
+                    {{-- Amount Due & Room --}}
+                    <div class="px-7 pt-5 pb-2">
+                        <div class="flex items-baseline justify-between">
+                            <div>
+                                <div class="text-[11px] font-bold tracking-wider text-gray-400 uppercase">Amount Due</div>
+                                <div class="flex items-baseline gap-1.5 mt-0.5">
+                                    <span class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($booking->total_price, 2) }}</span>
+                                    <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 uppercase">{{ $paymentData['currency'] ?? 'USD' }}</span>
+                                </div>
                             </div>
-                        @else
-                            <div class="w-56 h-56 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400">
-                                <i class="bi bi-qr-code text-5xl"></i>
+                            <div class="text-right">
+                                <div class="text-[11px] font-bold tracking-wider text-gray-400 uppercase">Room</div>
+                                <div class="text-sm font-bold text-gray-800 mt-0.5">#{{ $booking->room?->room_number ?? $booking->room_id }}</div>
                             </div>
-                        @endif
+                        </div>
+                    </div>
 
-                        {{-- ABA App deeplink (mobile) --}}
-                        @if($paymentData['abapay_deeplink'])
+                    {{-- Ticket Dashed Divider --}}
+                    <div class="relative my-4 flex items-center">
+                        <div class="absolute -left-3 w-6 h-6 rounded-full bg-[#f4f6f9] border border-gray-200/80 z-10"></div>
+                        <div class="w-full border-b-2 border-dashed border-gray-200 mx-4"></div>
+                        <div class="absolute -right-3 w-6 h-6 rounded-full bg-[#f4f6f9] border border-gray-200/80 z-10"></div>
+                    </div>
+
+                    {{-- QR Code + Bakong Emblem --}}
+                    <div class="px-7 pb-8 pt-2 flex flex-col items-center">
+                        <div class="relative bg-white p-3.5 rounded-2xl border-2 border-gray-100 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+
+                            <div class="w-[230px] h-[230px] flex items-center justify-center">
+                                @if(!empty($paymentData['qr_image']))
+                                    <img src="{{ $paymentData['qr_image'] }}" alt="ABA PayWay QR Code" class="w-full h-full object-contain">
+                                @else
+                                    <div id="khqr-fallback" class="animate-pulse text-gray-400 text-xs font-medium text-center px-4">
+                                        <i class="bi bi-qr-code text-5xl text-gray-300 block mb-2"></i>
+                                        QR code unavailable.<br>Please use the deeplink below.
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- Center Bakong Emblem — official temple logo --}}
+                            <div class="absolute inset-0 m-auto w-12 h-12 bg-white rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.18)] border-[2.5px] border-white flex items-center justify-center pointer-events-none z-10">
+                                <img src="/images/bakong-emblem.svg"
+                                     alt="Bakong"
+                                     class="w-8 h-8 object-contain">
+                            </div>
+                        </div>
+
+                        {{-- ABA deeplink (mobile only) --}}
+                        @if(!empty($paymentData['abapay_deeplink']))
                         <a href="{{ $paymentData['abapay_deeplink'] }}"
-                           class="w-full flex items-center justify-center gap-2.5 bg-[#1a3c5e] hover:bg-[#142e4a] text-white font-bold rounded-xl px-6 py-3 transition-all duration-200 text-[0.9rem] md:hidden">
+                           class="mt-4 w-full flex items-center justify-center gap-2 bg-[#004B87] hover:bg-[#003a6a] text-white font-bold rounded-xl px-6 py-2.5 transition-all text-xs md:hidden">
                             <i class="bi bi-phone"></i> Open in ABA Mobile
                         </a>
                         @endif
 
-                        <p class="text-[0.75rem] text-gray-400 text-center max-w-[240px]">
-                            Supports ABA Mobile, Wing, ACLEDA, Pi Pay, and all Bakong-connected apps
-                        </p>
+                        <div class="mt-5 flex items-center justify-center gap-2 text-gray-500 text-[11px] font-medium">
+                            <span class="w-2 h-2 rounded-full bg-[#E1232C]"></span>
+                            <span>Supported by <strong class="text-gray-800">Bakong &bull; NBC</strong></span>
+                        </div>
                     </div>
 
-                    {{-- Right: instructions + mobile app links --}}
-                    <div class="flex-1 space-y-4">
-                        <h3 class="font-semibold text-hotel-dark text-[1rem]">How to pay:</h3>
-                        <ol class="space-y-3 text-[0.88rem] text-gray-600">
-                            <li class="flex items-start gap-2.5">
-                                <span class="bg-hotel-gold text-white rounded-full w-5 h-5 flex items-center justify-center text-[0.72rem] font-bold flex-shrink-0 mt-0.5">1</span>
-                                Open your banking app (ABA Mobile, Wing, ACLEDA, etc.)
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <span class="bg-hotel-gold text-white rounded-full w-5 h-5 flex items-center justify-center text-[0.72rem] font-bold flex-shrink-0 mt-0.5">2</span>
-                                Tap <strong>Scan QR</strong> or <strong>Pay</strong>
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <span class="bg-hotel-gold text-white rounded-full w-5 h-5 flex items-center justify-center text-[0.72rem] font-bold flex-shrink-0 mt-0.5">3</span>
-                                Point your camera at the QR code on screen
-                            </li>
-                            <li class="flex items-start gap-2.5">
-                                <span class="bg-hotel-gold text-white rounded-full w-5 h-5 flex items-center justify-center text-[0.72rem] font-bold flex-shrink-0 mt-0.5">4</span>
-                                Confirm the amount: <strong>${{ number_format($booking->total_price, 2) }}</strong> and complete payment
-                            </li>
-                        </ol>
+                </div>
 
-                        {{-- Desktop deeplink as app store buttons --}}
-                        @if($paymentData['abapay_deeplink'])
-                        <div class="pt-2">
-                            <p class="text-[0.78rem] text-gray-500 mb-2">On mobile? Open directly in ABA app:</p>
-                            <a href="{{ $paymentData['abapay_deeplink'] }}"
-                               class="hidden md:inline-flex items-center gap-2.5 bg-[#1a3c5e] hover:bg-[#142e4a] text-white font-bold rounded-xl px-5 py-2.5 transition-all duration-200 text-[0.88rem]">
-                                <i class="bi bi-phone"></i> Open in ABA Mobile
-                            </a>
+                {{-- Status & Timer Row --}}
+                <div class="mt-5 flex flex-col items-center gap-2.5 w-full max-w-[370px]">
+
+                    <div id="payment-status" class="w-full bg-white border border-gray-200/80 rounded-xl py-3 px-4 shadow-sm flex items-center justify-between text-xs font-medium text-gray-600">
+                        <div class="flex items-center gap-2.5">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                            </span>
+                            Waiting for payment…
                         </div>
-                        @endif
-
-                        {{-- Security badge --}}
-                        <div class="bg-[#f0f9f0] border border-[#b0d9b0] rounded-xl px-4 py-3 text-[#2a6a2a] text-[0.82rem] flex items-start gap-3 mt-4">
-                            <i class="bi bi-shield-lock-fill text-lg flex-shrink-0 mt-0.5"></i>
-                            <span>Your payment is secured by ABA PayWay. Card and account details are never stored on our servers.</span>
+                        <div class="flex items-center gap-1.5 text-gray-500 font-semibold">
+                            <i class="bi bi-clock"></i>
+                            <span id="countdown">15:00</span>
                         </div>
-
-                        {{-- Transaction ref for support --}}
-                        <p class="text-[0.75rem] text-gray-400">
-                            Transaction ref: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{{ $paymentData['transaction_id'] }}</code>
-                        </p>
                     </div>
+
+                    @if(! app()->isProduction())
+                    <div class="w-full pt-2">
+                        <form method="POST" action="{{ route('payment.simulate', $booking) }}"
+                              onsubmit="return confirm('DEMO MODE: Simulate a successful payment?')">
+                            @csrf
+                            <button type="submit"
+                                    class="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-300 rounded-xl py-2.5 text-xs transition-all shadow-sm">
+                                <i class="bi bi-check-circle-fill text-sm"></i> Simulate Successful Payment (Local Demo)
+                            </button>
+                        </form>
+                    </div>
+                    @endif
+
                 </div>
             </div>
 
-            {{-- ── Dev / Demo Simulate Button ── --}}
-            @if(! app()->isProduction())
-            <div class="px-8 md:px-10 pb-8 pt-0 flex flex-wrap gap-4 justify-center bg-white border-t border-gray-100">
-                <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                      onsubmit="return confirm('DEMO MODE: Simulate a successful payment?\n\nThis is for testing only — no real money is charged.')">
-                    @csrf
-                    <button type="submit"
-                            class="inline-flex items-center gap-2.5 bg-green-50 hover:bg-green-100 text-green-700 font-bold border-2 border-green-200 hover:border-green-400 rounded-xl px-8 py-3.5 transition-all duration-200">
-                        <i class="bi bi-check-circle"></i> Simulate Successful Payment
-                    </button>
-                </form>
-            </div>
-            @endif
+            {{-- ── Right: Info Panels ── --}}
+            <div class="lg:col-span-6 space-y-6">
 
-            {{-- ── Footer Note ── --}}
-            <div class="px-6 pb-6 pt-2 text-center text-gray-500 text-[0.78rem] bg-white">
-                <i class="bi bi-shield-check mr-1 text-green-500"></i>
-                Powered by ABA PayWay.
-                &nbsp;&middot;&nbsp; Need help? Call <strong class="text-hotel-dark">+855 23 456 789</strong>
-            </div>
+                {{-- Supported Apps --}}
+                <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i class="bi bi-phone text-[#E1232C] text-base"></i> Supported Banking Apps
+                    </h3>
+                    <p class="text-xs text-gray-600 leading-relaxed mb-5">
+                        Open any banking app in Cambodia that supports <strong>KHQR / Bakong</strong> to scan and pay instantly with zero transfer fees.
+                    </p>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
+                                <img src="/images/aba-logo.webp" alt="ABA Mobile" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[11px] font-bold text-gray-700">ABA Mobile</span>
+                        </div>
+                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
+                                <img src="/images/wing-logo.jpg" alt="Wing Bank" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[11px] font-bold text-gray-700">Wing Bank</span>
+                        </div>
+                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
+                                <img src="/images/acleda-logo.jpg" alt="ACLEDA" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[11px] font-bold text-gray-700">ACLEDA</span>
+                        </div>
+                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
+                                <img src="/images/bakong-app-logo.png" alt="Bakong" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[11px] font-bold text-gray-700">Bakong</span>
+                        </div>
+                    </div>
+                </div>
 
+                {{-- Steps --}}
+                <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i class="bi bi-shield-check text-[#E1232C] text-base"></i> Quick Payment Steps
+                    </h3>
+                    <div class="space-y-4">
+                        @foreach([
+                            'Open <strong class="text-gray-900">ABA Mobile, Wing Bank, ACLEDA</strong> or your preferred banking app.',
+                            'Tap <strong class="text-gray-900">KHQR / Scan QR</strong> and point your camera at the code.',
+                            'Verify the amount is <strong class="text-gray-900">$'.(number_format($booking->total_price,2)).' USD</strong>.',
+                            'Once paid, this page will <strong class="text-gray-900">automatically redirect</strong> to your receipt.',
+                        ] as $i => $step)
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-6 h-6 rounded-full bg-[#E1232C]/10 text-[#E1232C] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{{ $i + 1 }}</div>
+                            <div class="text-xs text-gray-600 leading-relaxed">{!! $step !!}</div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Booking Summary --}}
+                <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Booking Summary</h3>
+                    <div class="divide-y divide-gray-100 text-xs">
+                        <div class="py-2.5 flex justify-between items-center">
+                            <span class="text-gray-500">Guest Name</span>
+                            <span class="font-bold text-gray-900">{{ $booking->guest_name }}</span>
+                        </div>
+                        <div class="py-2.5 flex justify-between items-center">
+                            <span class="text-gray-500">Room Type</span>
+                            <span class="font-bold text-gray-900">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}</span>
+                        </div>
+                        <div class="py-2.5 flex justify-between items-center">
+                            <span class="text-gray-500">Check-in</span>
+                            <span class="font-bold text-gray-900">{{ $booking->check_in_date?->format('D, M d, Y') }} (2:00 PM)</span>
+                        </div>
+                        <div class="py-2.5 flex justify-between items-center">
+                            <span class="text-gray-500">Check-out</span>
+                            <span class="font-bold text-gray-900">{{ $booking->check_out_date?->format('D, M d, Y') }} (12:00 PM)</span>
+                        </div>
+                        <div class="py-3 flex justify-between items-center text-sm font-bold border-t border-gray-200 mt-1">
+                            <span class="text-gray-700">Total Payable</span>
+                            <span class="text-[#E1232C]">${{ number_format($booking->total_price, 2) }} USD</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    let seconds = 15 * 60;
+    const countdownEl = document.getElementById('countdown');
+
+    const timer = setInterval(() => {
+        seconds--;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        countdownEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        if (seconds <= 0) {
+            clearInterval(timer);
+            countdownEl.textContent = 'Expired';
+            countdownEl.classList.add('text-red-500');
+        }
+    }, 1000);
+})();
+</script>
+@endpush

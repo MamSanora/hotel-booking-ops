@@ -33,9 +33,9 @@ class PageController extends Controller
      */
     public function gallery(): View
     {
-        $images = Gallery::orderByDesc('created_at')->get();
+        $gallery = $images = Gallery::orderByDesc('created_at')->get();
 
-        return view('public.gallery', compact('images'));
+        return view('public.gallery', compact('gallery', 'images'));
     }
 
     /**
