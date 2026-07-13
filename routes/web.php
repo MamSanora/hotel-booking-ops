@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Auth\Admin\LoginController as AdminLoginController;
+use App\Http\Controllers\Auth\Guest\ForgotPasswordController as GuestForgotPasswordController;
 use App\Http\Controllers\Auth\Guest\LoginController as GuestLoginController;
 use App\Http\Controllers\Auth\Guest\PhoneVerificationController as GuestPhoneVerificationController;
 use App\Http\Controllers\Auth\Guest\RegisterController as GuestRegisterController;
@@ -73,6 +74,16 @@ Route::prefix('guest')->name('guest.')->group(function () {
     Route::get('/verify-phone',          [GuestPhoneVerificationController::class, 'show'])->name('verify-phone');
     Route::post('/verify-phone',         [GuestPhoneVerificationController::class, 'verify'])->name('verify-phone.submit');
     Route::post('/verify-phone/resend',  [GuestPhoneVerificationController::class, 'resend'])->name('verify-phone.resend');
+
+    // Password recovery — accessible without being logged in.
+    // throttle:5,1  → max 5 OTP requests per minute per IP (prevents email/phone enumeration)
+    // throttle:10,1 → max 10 verify attempts per minute per IP (prevents brute-force)
+    Route::get('/forgot-password',              [GuestForgotPasswordController::class, 'showRequestForm'])->name('forgot-password');
+    Route::post('/forgot-password',             [GuestForgotPasswordController::class, 'sendOtp'])->name('forgot-password.send')->middleware('throttle:5,1');
+    Route::get('/verify-recovery-otp',          [GuestForgotPasswordController::class, 'showVerifyForm'])->name('forgot-password.verify');
+    Route::post('/verify-recovery-otp',         [GuestForgotPasswordController::class, 'verifyOtp'])->name('forgot-password.verify.submit')->middleware('throttle:10,1');
+    Route::get('/reset-password',               [GuestForgotPasswordController::class, 'showResetForm'])->name('forgot-password.reset');
+    Route::post('/reset-password',              [GuestForgotPasswordController::class, 'resetPassword'])->name('forgot-password.reset.submit');
 
     // ── Protected guest routes ──────────────────────────────────────────
     Route::middleware('auth')->group(function () {

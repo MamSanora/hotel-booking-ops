@@ -90,9 +90,14 @@
 
                 {{-- Password --}}
                 <div>
-                    <label for="password" class="block text-[0.8rem] uppercase font-semibold text-gray-500 tracking-wider mb-2">
-                        Password
-                    </label>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="password" class="block text-[0.8rem] uppercase font-semibold text-gray-500 tracking-wider">
+                            Password
+                        </label>
+                        <a href="{{ route('guest.forgot-password') }}" class="text-[0.8rem] font-semibold text-hotel-gold hover:text-hotel-dark transition-colors">
+                            Forgot Password?
+                        </a>
+                    </div>
                     <input id="password" type="password" name="password" required autocomplete="current-password"
                            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all @error('password') border-red-400 @enderror">
                     @error('password')
