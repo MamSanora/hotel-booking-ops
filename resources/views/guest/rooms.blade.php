@@ -117,7 +117,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($rooms as $room)
                 @php
-                    $img = $roomImages[$room->room_type] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80';
+                    $img = $roomImages[$room->roomType?->slug] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80';
                 @endphp
                 <div class="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
 
@@ -137,17 +137,17 @@
                         <div class="flex justify-between items-center mb-3">
                             <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded">
                                 <i class="bi bi-hash mr-1"></i>Room {{ $room->room_number }}
-                                &middot; <i class="bi bi-people mr-1"></i>Up to {{ $room->capacity }} guests
+                                &middot; <i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->capacity }} guests
                             </span>
                             <div class="font-playfair text-2xl font-bold text-hotel-gold">
-                                ${{ number_format($room->price_per_night, 0) }}
+                                ${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}
                                 <span class="text-[0.8rem] text-gray-400 font-sans font-normal">/night</span>
                             </div>
                         </div>
 
                         <h5 class="font-bold text-xl text-hotel-dark mb-2">{{ $room->displayType() }}</h5>
                         <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
-                            {{ Str::limit($room->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.', 90) }}
+                            {{ Str::limit($room->roomType?->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.', 90) }}
                         </p>
 
                         {{-- Amenity Tags --}}

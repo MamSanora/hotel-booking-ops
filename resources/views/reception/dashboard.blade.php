@@ -365,7 +365,7 @@
                                                         <option value="khqr">KHQR</option>
                                                     </select>
                                                 </div>
-                                                <p class="text-xs text-gray-400 mb-3">Rate: ${{ number_format($booking->room?->price_per_night ?? 0, 2) }}/night</p>
+                                                <p class="text-xs text-gray-400 mb-3">Rate: ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</p>
                                                 <div class="flex gap-2">
                                                     <button type="submit" onclick="return confirm('Extend stay and collect payment?')"
                                                         class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-sm transition-colors">

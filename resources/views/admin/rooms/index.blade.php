@@ -70,11 +70,11 @@
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <div class="text-gray-700">
-                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $room->capacity }} guests
+                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $room->roomType?->capacity ?? '—' }} guests
                             </div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
-                            <div class="font-bold text-hotel-gold">${{ number_format($room->price_per_night, 2) }}</div>
+                            <div class="font-bold text-hotel-gold">${{ number_format($room->roomType?->price_per_night ?? 0, 2) }}</div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             @if($room->current_status === 'available')

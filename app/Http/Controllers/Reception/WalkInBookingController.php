@@ -76,10 +76,10 @@ class WalkInBookingController extends Controller
             }
 
             // Step 2: Calculate pricing.
-            $room = Room::findOrFail($validated['room_id']);
+            $room = Room::with('roomType')->findOrFail($validated['room_id']);
             $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                 ->diffInDays(Carbon::parse($validated['check_out_date'])));
-            $total = $nights * (float) $room->price_per_night;
+            $total = $nights * (float) $room->roomType->price_per_night;
 
             // Step 3: Create the booking.
             // Walk-in bookings default to 'booked' since payment is handled at desk.

@@ -104,8 +104,8 @@
                         </div>
                         <div class="text-gray-500 text-sm mb-3">Room {{ $booking->room?->room_number ?? '—' }}</div>
                         <div class="flex flex-wrap gap-3 text-sm">
-                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->capacity ?? '—' }} guests</span>
-                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->price_per_night ?? 0, 2) }}/night</span>
+                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->capacity ?? '—' }} guests</span>
+                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>
                         </div>
                     </div>
                 </div>
@@ -149,8 +149,8 @@
                 <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Payment Summary</h2>
                 <div class="space-y-2 text-sm text-gray-600">
                     <div class="flex justify-between">
-                        <span>${{ number_format($booking->room?->price_per_night ?? 0, 2) }} × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
-                        <span>${{ number_format(($booking->room?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</span>
+                        <span>${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }} × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
+                        <span>${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</span>
                     </div>
                     <div class="border-t border-dashed border-gray-200 pt-2 flex justify-between font-bold text-hotel-dark text-base">
                         <span>Total Amount</span>
@@ -313,7 +313,7 @@
                                     Current check-out: <strong class="text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_out_date)->format('d M Y') }}</strong>
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1.5">At ${{ number_format($booking->room?->price_per_night ?? 0, 2) }}/night. Maximum 30 extra nights.</p>
+                            <p class="text-xs text-gray-400 mt-1.5">At ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night. Maximum 30 extra nights.</p>
                         </div>
 
                         {{-- Payment Method --}}

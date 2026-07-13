@@ -43,7 +43,7 @@
                     'standard_double' => 'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?w=900&q=85',
                     'deluxe_double'   => 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=900&q=85',
                 ];
-                $img = $roomImages[$room->room_type] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=85';
+                $img = $roomImages[$room->roomType?->slug] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=85';
             @endphp
             <img src="{{ $img }}" alt="{{ $room->displayType() }}" class="w-full h-[300px] sm:h-[400px] object-cover rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8">
 
@@ -53,7 +53,7 @@
                     <i class="bi bi-hash text-hotel-gold"></i>Room {{ $room->room_number }}
                 </span>
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
-                    <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->capacity }} guests
+                    <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->roomType?->capacity }} guests
                 </span>
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
                     <i class="bi bi-wifi text-hotel-gold"></i>Free Wi-Fi
@@ -69,7 +69,7 @@
             {{-- Price --}}
             <div class="flex items-end gap-4 mb-8">
                 <div class="font-playfair text-[2.8rem] font-bold text-hotel-gold leading-none">
-                    ${{ number_format($room->price_per_night, 0) }}
+                    ${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}
                     <span class="text-base text-gray-400 font-sans font-normal">/night</span>
                 </div>
                 <span class="bg-hotel-gold/10 text-[#b8935a] text-sm font-semibold px-4 py-2 rounded-xl mb-1">
@@ -80,7 +80,7 @@
             {{-- Description --}}
             <h5 class="font-bold text-xl text-hotel-dark mb-4">About This Room</h5>
             <p class="text-gray-600 leading-[1.9] text-[0.95rem] mb-10">
-                {{ $room->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.' }}
+                {{ $room->roomType?->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.' }}
             </p>
 
             {{-- What's Included --}}
@@ -182,7 +182,7 @@
                             <div>
                                 <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">Adults</label>
                                 <select name="adults" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                                    @for($i = 1; $i <= $room->capacity; $i++)
+                                    @for($i = 1; $i <= $room->roomType?->capacity; $i++)
                                         <option value="{{ $i }}" {{ old('adults', 1) == $i ? 'selected' : '' }}>{{ $i }} Adult{{ $i > 1 ? 's' : '' }}</option>
                                     @endfor
                                 </select>
@@ -211,7 +211,7 @@
                         <div class="bg-hotel-light rounded-xl p-5 my-6 space-y-2" id="priceSummary">
                             <div class="flex justify-between text-[0.9rem] text-gray-600">
                                 <span>Price per night</span>
-                                <span class="font-medium text-gray-800">${{ number_format($room->price_per_night, 2) }}</span>
+                                <span class="font-medium text-gray-800">${{ number_format($room->roomType?->price_per_night ?? 0, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-[0.9rem] text-gray-600">
                                 <span>Number of nights</span>
@@ -312,7 +312,7 @@
 
 @push('scripts')
 <script>
-    const pricePerNight = {{ $room->price_per_night }};
+    const pricePerNight = {{ $room->roomType?->price_per_night ?? 0 }};
     const checkInEl   = document.getElementById('check_in_date');
     const checkOutEl  = document.getElementById('check_out_date');
     const nightEl     = document.getElementById('nightCount');

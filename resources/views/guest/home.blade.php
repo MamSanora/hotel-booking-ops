@@ -118,7 +118,7 @@
             @foreach($featuredRooms as $room)
             <div class="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col">
                 <div class="relative overflow-hidden h-[220px]">
-                    <img src="{{ $roomImages[$room->room_type] ?? $roomImages['standard_double'] }}"
+                    <img src="{{ $roomImages[$room->roomType?->slug] ?? $roomImages['standard_double'] }}"
                          alt="{{ $room->displayType() }}"
                          class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
                     <div class="absolute top-4 left-4">
@@ -129,14 +129,14 @@
                 </div>
                 <div class="p-6 flex flex-col flex-grow">
                     <div class="flex justify-between items-center mb-3">
-                        <span class="text-gray-500 text-xs"><i class="bi bi-people mr-1"></i>Up to {{ $room->capacity }} guests</span>
+                        <span class="text-gray-500 text-xs"><i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->capacity }} guests</span>
                         <div class="font-playfair text-2xl font-bold text-hotel-gold">
-                            ${{ number_format($room->price_per_night, 0) }}
+                            ${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}
                             <span class="text-[0.75rem] text-gray-400 font-sans font-normal">/night</span>
                         </div>
                     </div>
                     <p class="text-gray-500 text-sm leading-relaxed mb-5 flex-grow">
-                        {{ Str::limit($room->description ?? 'A comfortable and well-appointed room for your stay in Phnom Penh.', 80) }}
+                        {{ Str::limit($room->roomType?->description ?? 'A comfortable and well-appointed room for your stay in Phnom Penh.', 80) }}
                     </p>
                     <a href="{{ route('rooms.show', $room) }}"
                        class="w-full text-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold py-2.5 rounded-xl transition-colors duration-200">

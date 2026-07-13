@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Room;
+use App\Models\RoomType;
 use Illuminate\Database\Seeder;
 
 /**
@@ -18,64 +19,74 @@ use Illuminate\Database\Seeder;
  * ├───────┼────────────────────────────────────────────────────────┼───────┤
  * │   2   │ Standard Twin (10) + Standard Double (6)               │  16   │
  * │   3   │ Standard Twin (8) + Standard Double (6) + Deluxe (2)   │  16   │
- * │   4   │ Deluxe (10) + Standard Twin (3) + Standard Double (2)      │  15   │
+ * │   4   │ Deluxe (10) + Standard Twin (3) + Standard Double (2)  │  15   │
  * └───────┴────────────────────────────────────────────────────────┴───────┘
  * Total: 47 rooms
  *
  * Room Numbering Convention:
  *   First digit = floor number, next two = sequential room on that floor.
  *   e.g. Room 201 = Floor 2, first room.
+ *
+ * Since the normalization, price/capacity/description live on RoomType.
+ * The seeder creates or finds each RoomType first, then attaches room_type_id
+ * to every room row.
  */
 class RoomSeeder extends Seeder
 {
     /**
-     * Type-level defaults applied to every room of that type.
-     * Capacity and price are defined once here and referenced below.
+     * Room type definitions — single source of truth for pricing.
+     * Keyed by slug.
      */
-    private array $typeDefaults = [
+    private array $roomTypeData = [
         'standard_twin' => [
-            'capacity'       => 2,
+            'display_name'    => 'Standard Twin',
+            'capacity'        => 2,
             'price_per_night' => 35.00,
-            'description'    => 'Comfortable 24–28 m² room featuring two single beds, air conditioning, private bathroom, and work desk. Perfect for friends or business travellers.',
+            'description'     => 'Comfortable 24–28 m² room featuring two single beds, air conditioning, private bathroom, and work desk. Perfect for friends or business travellers.',
         ],
         'standard_double' => [
-            'capacity'       => 2,
+            'display_name'    => 'Standard Double',
+            'capacity'        => 2,
             'price_per_night' => 40.00,
-            'description'    => 'Cosy 24–28 m² room with a queen-size bed, flat-screen TV, mini-fridge, and daily housekeeping. Great for couples visiting Phnom Penh.',
+            'description'     => 'Cosy 24–28 m² room with a queen-size bed, flat-screen TV, mini-fridge, and daily housekeeping. Great for couples visiting Phnom Penh.',
         ],
         'deluxe_double' => [
-            'capacity'       => 2,
+            'display_name'    => 'Deluxe Double',
+            'capacity'        => 2,
             'price_per_night' => 55.00,
-            'description'    => 'Spacious 32–36 m² room on the upper floors featuring a king-size bed, seating area, enhanced amenities, and city views.',
+            'description'     => 'Spacious 32–36 m² room on the upper floors featuring a king-size bed, seating area, enhanced amenities, and city views.',
         ],
     ];
 
     public function run(): void
     {
-        $rooms = $this->buildRoomList();
+        // ── Step 1: Seed the room_types lookup table ──────────────────────────
+        foreach ($this->roomTypeData as $slug => $data) {
+            RoomType::updateOrCreate(
+                ['slug' => $slug],
+                $data
+            );
+        }
 
-        foreach ($rooms as $room) {
-            $type    = $room['room_type'];
-            $defaults = $this->typeDefaults[$type];
+        // Build a slug → id map for FK assignment.
+        $typeIds = RoomType::pluck('id', 'slug');
 
+        // ── Step 2: Seed all 47 rooms ─────────────────────────────────────────
+        foreach ($this->buildRoomList() as $room) {
             Room::updateOrCreate(
-                // Lookup key — prevents duplicates on re-seed.
                 ['room_number' => $room['room_number']],
                 [
-                    'room_type'      => $type,
-                    'capacity'       => $defaults['capacity'],
-                    'price_per_night' => $defaults['price_per_night'],
-                    'description'    => $defaults['description'],
+                    'room_type_id'   => $typeIds[$room['room_type']],
                     'current_status' => 'available',
                 ]
             );
         }
 
-        $this->command->info('  RoomSeeder: 47 rooms seeded across Floors 2, 3, and 4.');
+        $this->command->info('  RoomSeeder: 3 room types and 47 rooms seeded across Floors 2, 3, and 4.');
     }
 
     /**
-     * Returns the full list of 47 rooms with their room numbers and types.
+     * Returns the full list of 47 rooms with their room numbers and type slugs.
      * Grouped by floor for readability.
      *
      * @return array<int, array{room_number: string, room_type: string}>

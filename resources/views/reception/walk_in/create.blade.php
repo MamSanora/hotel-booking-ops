@@ -111,7 +111,7 @@
                                         <div class="ml-3">
                                             <div class="font-bold text-gray-800">Room {{ $room->room_number }}</div>
                                             <div class="text-sm text-gray-500">{{ $room->displayType() }}</div>
-                                            <div class="text-hotel-gold font-semibold text-sm mt-1">${{ number_format($room->price_per_night, 2) }}/night</div>
+                                            <div class="text-hotel-gold font-semibold text-sm mt-1">${{ number_format($room->roomType?->price_per_night ?? 0, 2) }}/night</div>
                                         </div>
                                     </label>
                                 @endforeach

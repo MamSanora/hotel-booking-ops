@@ -9,6 +9,7 @@ use App\Models\ItemsCatalog;
 use App\Models\RequestedItem;
 use App\Models\Room;
 use App\Models\RoomService;
+use App\Models\RoomType;
 use App\Models\Transaction;
 use App\Services\PaymentGatewayManager;
 use Carbon\Carbon;
@@ -38,14 +39,13 @@ class RoomController extends Controller
      */
     public function home(): View
     {
-        $roomTypes = Room::ROOM_TYPES;
-
-        // Show one representative room per type for the homepage cards.
+        // Show one representative available room per room type for the homepage cards.
         $featuredRooms = Room::available()
-            ->whereNotNull('room_type')
-            ->whereNotNull('price_per_night')
+            ->with('roomType')
             ->get()
-            ->unique('room_type');
+            ->unique('room_type_id');
+
+        $roomTypes = RoomType::all()->keyBy('slug');
 
         return view('guest.home', compact('roomTypes', 'featuredRooms'));
     }
@@ -55,15 +55,15 @@ class RoomController extends Controller
      */
     public function index(Request $request): View
     {
-        $checkinDate = $request->input('checkin');
+        $checkinDate  = $request->input('checkin');
         $checkoutDate = $request->input('checkout');
-        $typeFilter = $request->input('type');
+        $typeFilter   = $request->input('type');
 
-        $query = Room::available()->whereNotNull('price_per_night');
+        $query = Room::available()->with('roomType');
 
-        // Filter by room type if a type slug is provided.
-        if ($typeFilter && array_key_exists($typeFilter, Room::ROOM_TYPES)) {
-            $query->where('room_type', $typeFilter);
+        // Filter by room type slug via the relationship.
+        if ($typeFilter) {
+            $query->whereHas('roomType', fn ($q) => $q->where('slug', $typeFilter));
         }
 
         // Filter by date availability if both dates are provided.
@@ -71,8 +71,8 @@ class RoomController extends Controller
             $query->availableForDates($checkinDate, $checkoutDate);
         }
 
-        $rooms = $query->orderBy('room_number')->get();
-        $roomTypes = Room::ROOM_TYPES;
+        $rooms     = $query->orderBy('room_number')->get();
+        $roomTypes = RoomType::all()->keyBy('slug');
 
         return view('guest.rooms', compact('rooms', 'roomTypes', 'checkinDate', 'checkoutDate'));
     }
@@ -82,6 +82,7 @@ class RoomController extends Controller
      */
     public function show(Room $room): View
     {
+        $room->load('roomType');
         return view('guest.room-detail', compact('room'));
     }
 
@@ -111,7 +112,7 @@ class RoomController extends Controller
             $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                 ->diffInDays(Carbon::parse($validated['check_out_date'])));
 
-            $total = $nights * (float) $room->price_per_night;
+            $total = $nights * (float) $room->roomType->price_per_night;
 
             // Create the booking in 'pending' status — confirmed after payment.
             $booking = Booking::create([
@@ -299,7 +300,7 @@ class RoomController extends Controller
             );
         }
 
-        $extraCost = $extraNights * (float) $room->price_per_night;
+        $extraCost = $extraNights * (float) $room->roomType->price_per_night;
 
         $extensionTransaction = DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost, $validated) {
             $booking->update([

@@ -44,54 +44,20 @@
                     @error('room_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Room Type (Enum) --}}
+                {{-- Room Type (FK to room_types) --}}
                 <div>
                     <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Room Type</label>
-                    <select name="room_type" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                    <select name="room_type_id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
                         <option value="">Select a Room Type...</option>
-                        <option value="standard_twin"   {{ old('room_type') === 'standard_twin'   ? 'selected' : '' }}>Standard Twin</option>
-                        <option value="standard_double" {{ old('room_type') === 'standard_double' ? 'selected' : '' }}>Standard Double</option>
-                        <option value="deluxe_double"   {{ old('room_type') === 'deluxe_double'   ? 'selected' : '' }}>Deluxe Double</option>
+                        @foreach($roomTypes as $type)
+                            <option value="{{ $type->id }}" {{ old('room_type_id') == $type->id ? 'selected' : '' }}>
+                                {{ $type->display_name }} — ${{ number_format($type->price_per_night, 2) }}/night ({{ $type->capacity }} guests)
+                            </option>
+                        @endforeach
                     </select>
-                    @error('room_type') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    @error('room_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    <p class="text-xs text-gray-400 mt-1">Price and capacity are inherited from the room type.</p>
                 </div>
-
-                {{-- Capacity --}}
-                <div>
-                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Capacity (Max Guests)</label>
-                    <input type="number" name="capacity" value="{{ old('capacity', 2) }}" required min="1" max="10"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
-                    @error('capacity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-
-                {{-- Price Per Night --}}
-                <div>
-                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Price Per Night (USD)</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
-                        <input type="number" name="price_per_night" value="{{ old('price_per_night') }}" required step="0.01" min="0"
-                               class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
-                    </div>
-                    @error('price_per_night') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-
-                {{-- Initial Status --}}
-                <div>
-                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Initial Status</label>
-                    <select name="current_status" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
-                        <option value="available"    {{ old('current_status', 'available') === 'available'    ? 'selected' : '' }}>Available</option>
-                        <option value="occupied"     {{ old('current_status') === 'occupied'     ? 'selected' : '' }}>Occupied</option>
-                        <option value="maintenance"  {{ old('current_status') === 'maintenance'  ? 'selected' : '' }}>Maintenance</option>
-                    </select>
-                    @error('current_status') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
-            {{-- Description --}}
-            <div>
-                <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Description (Optional)</label>
-                <textarea name="description" rows="4"
-                          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">{{ old('description') }}</textarea>
             </div>
 
             <div class="pt-4 border-t border-gray-100 flex justify-end">

@@ -214,7 +214,7 @@ class ReceptionDashboardController extends Controller
             );
         }
 
-        $extraCost = $extraNights * (float) $room->price_per_night;
+        $extraCost = $extraNights * (float) $room->roomType->price_per_night;
 
         DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost, $validated) {
             $booking->update([

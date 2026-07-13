@@ -5,57 +5,48 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Room Model
  *
- * Represents a physical hotel room. Replaces the old Room model which had
- * legacy columns (room_title, wifi, bed_type) and a separate RoomType FK.
- * Room type is now stored directly as an enum for simplicity.
+ * Represents a physical hotel room. Room type-level attributes
+ * (price_per_night, capacity, description) are now stored in the
+ * `room_types` table and accessed via the `roomType()` relationship.
+ * This eliminates the previous 3NF violation where those values were
+ * duplicated across every room row.
  *
  * @property int         $id
  * @property string|null $room_number
+ * @property int         $room_type_id
  * @property string      $current_status  'available' | 'occupied'
- * @property string|null $room_type
- * @property float|null  $price_per_night
- * @property int|null    $capacity
+ *
+ * @property-read RoomType $roomType
  */
 class Room extends Model
 {
     use HasFactory;
-
-    // ── Room Type Constants ────────────────────────────────────────────────
-
-    /** Human-readable labels for each room type enum value. */
-    public const ROOM_TYPES = [
-        'standard_twin'   => 'Standard Twin',
-        'standard_double' => 'Standard Double',
-        'deluxe_double'   => 'Deluxe Double',
-    ];
 
     public const STATUS_AVAILABLE = 'available';
     public const STATUS_OCCUPIED  = 'occupied';
 
     protected $fillable = [
         'room_number',
+        'room_type_id',
         'current_status',
-        'room_type',
-        'price_per_night',
-        'capacity',
-        'description',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'price_per_night' => 'decimal:2',
-            'capacity'        => 'integer',
-        ];
-    }
-
     // ── Relationships ──────────────────────────────────────────────────────
+
+    /**
+     * The room category (type, price, capacity, description).
+     */
+    public function roomType(): BelongsTo
+    {
+        return $this->belongsTo(RoomType::class);
+    }
 
     /**
      * All bookings ever assigned to this room.
@@ -151,20 +142,20 @@ class Room extends Model
 
     /**
      * Returns the human-readable room type label, e.g. "Standard Twin".
+     * Delegates to the RoomType model if loaded; falls back gracefully.
      */
     public function displayType(): string
     {
-        return self::ROOM_TYPES[$this->room_type] ?? ucfirst(str_replace('_', ' ', $this->room_type ?? ''));
+        return $this->roomType?->display_name ?? 'Unknown Type';
     }
 
     /**
-     * Returns the formatted price string, e.g. "$120.00 / night".
+     * Returns the formatted price string, e.g. "$35.00 / night".
+     * Delegates to the RoomType model.
      */
     public function displayPrice(): string
     {
-        return $this->price_per_night
-            ? '$' . number_format((float) $this->price_per_night, 2) . ' / night'
-            : 'Price not set';
+        return $this->roomType?->displayPrice() ?? 'Price not set';
     }
 
     /**
