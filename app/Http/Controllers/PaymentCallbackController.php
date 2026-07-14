@@ -79,7 +79,23 @@ class PaymentCallbackController extends Controller
                 'apv'            => $request->input('apv'), // Bank approval code from ABA
             ]);
 
-            // Booking transitions from 'pending' → 'booked' (confirmed + paid).
+            // Booking transitions from 'pending' → 'booked' (confirmed + paid) ONLY if room is still available
+            $room = \App\Models\Room::find($booking->room_id);
+            if (!$room || !$room->isAvailableForDates($booking->check_in_date, $booking->check_out_date, $booking->id)) {
+                $booking->update([
+                    'booking_status' => Booking::STATUS_CANCELLED,
+                    'special_requests' => '[PAYMENT RECEIVED BUT ROOM SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
+                ]);
+
+                Log::warning('ABA Callback: Payment verified but room was snatched', [
+                    'booking_id'     => $booking->id,
+                    'transaction_id' => $tranId,
+                ]);
+
+                return redirect()->route('payment.failed')
+                    ->with('error', 'Your payment was successful, but the room was booked by someone else moments ago! Please contact our staff for a refund or alternate room.');
+            }
+
             $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
 
             Log::info('ABA Callback: Payment verified — booking confirmed', [

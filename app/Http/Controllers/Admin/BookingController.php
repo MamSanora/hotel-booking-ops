@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -14,6 +16,7 @@ use Illuminate\View\View;
  *   - View full booking list with guest and room details
  *   - Approve a pending booking (pending → booked)
  *   - Cancel a booking (pending/booked → cancelled)
+ *   - Mark a cancelled booking's payment as refunded (bookkeeping only)
  *   - Delete a booking record entirely
  *
  * Route prefix: /admin/bookings
@@ -22,14 +25,22 @@ class BookingController extends Controller
 {
     /**
      * Display a paginated list of all bookings, newest first.
+     * Also passes a count of bookings that need a refund for the alert banner.
      */
     public function index(): View
     {
-        $bookings = Booking::with(['guest', 'room', 'handledBy'])
+        $bookings = Booking::with(['guest', 'room', 'handledBy', 'transactions'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return view('admin.bookings.index', compact('bookings'));
+        // Count cancelled bookings that have a full (paid) transaction but no refunded one yet.
+        // These represent real money the hotel owes back to a guest.
+        $pendingRefundCount = Booking::where('booking_status', Booking::STATUS_CANCELLED)
+            ->whereHas('transactions', fn ($q) => $q->where('payment_status', Transaction::STATUS_FULL))
+            ->whereDoesntHave('transactions', fn ($q) => $q->where('payment_status', Transaction::STATUS_REFUNDED))
+            ->count();
+
+        return view('admin.bookings.index', compact('bookings', 'pendingRefundCount'));
     }
 
     /**
@@ -51,6 +62,10 @@ class BookingController extends Controller
     /**
      * Cancel a booking (admin-initiated).
      * Allowed for pending and booked bookings only.
+     *
+     * NOTE: This does NOT automatically mark transactions as refunded.
+     * If the guest paid digitally, the owner must physically send money back
+     * through ABA/Bakong, then use the "Mark as Refunded" action below.
      */
     public function cancel(Booking $booking): RedirectResponse
     {
@@ -58,30 +73,58 @@ class BookingController extends Controller
             return back()->with('error', 'Only pending or booked bookings can be cancelled.');
         }
 
-        $isRefundable = $booking->isRefundable();
-        $hasPaid = $booking->transactions()->where('payment_status', \App\Models\Transaction::STATUS_FULL)->exists();
+        $hasPaid = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_FULL)
+            ->exists();
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($booking, $isRefundable, $hasPaid) {
-            $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
-
-            if ($isRefundable && $hasPaid) {
-                $booking->transactions()
-                    ->where('payment_status', \App\Models\Transaction::STATUS_FULL)
-                    ->update(['payment_status' => \App\Models\Transaction::STATUS_REFUNDED]);
-            }
-        });
+        $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
 
         $message = "Booking {$booking->referenceNumber()} cancelled.";
-        
+
         if ($hasPaid) {
-            if ($isRefundable) {
-                $message .= " Associated payments have been marked as refunded.";
-            } else {
-                $message .= " As this is within 24 hours of check-in, payments are non-refundable.";
-            }
+            $message .= ' This guest had a completed payment — please issue a manual refund via ABA/Bakong, then mark it as refunded here.';
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Mark a cancelled booking's payment as refunded (bookkeeping only).
+     *
+     * This does NOT move any money. The owner must have already manually
+     * transferred the refund via ABA/Bakong before clicking this button.
+     * This action simply records that the refund has been issued, so the
+     * hotel's records match the actual bank statement.
+     */
+    public function markAsRefunded(Booking $booking): RedirectResponse
+    {
+        if (! $booking->isCancelled()) {
+            return back()->with('error', 'Only cancelled bookings can be marked as refunded.');
+        }
+
+        $fullTransactions = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_FULL)
+            ->get();
+
+        if ($fullTransactions->isEmpty()) {
+            return back()->with('error', 'No completed payment found on this booking — nothing to refund.');
+        }
+
+        $alreadyRefunded = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_REFUNDED)
+            ->exists();
+
+        if ($alreadyRefunded) {
+            return back()->with('error', "Booking {$booking->referenceNumber()} has already been marked as refunded.");
+        }
+
+        DB::transaction(function () use ($fullTransactions) {
+            foreach ($fullTransactions as $transaction) {
+                $transaction->update(['payment_status' => Transaction::STATUS_REFUNDED]);
+            }
+        });
+
+        return back()->with('success', "Booking {$booking->referenceNumber()} marked as refunded. Bookkeeping updated.");
     }
 
     /**

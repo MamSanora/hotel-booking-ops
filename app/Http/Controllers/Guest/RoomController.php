@@ -114,6 +114,41 @@ class RoomController extends Controller
 
             $total = $nights * (float) $room->roomType->price_per_night;
 
+            // Check if there's already a pending booking for this guest, room, and dates.
+            $existingBooking = Booking::where('guest_id', $guestId)
+                ->where('room_id', $room->id)
+                ->where('check_in_date', $validated['check_in_date'])
+                ->where('check_out_date', $validated['check_out_date'])
+                ->where('booking_status', Booking::STATUS_PENDING)
+                ->first();
+
+            if ($existingBooking) {
+                // Update special requests if they changed
+                if (array_key_exists('special_requests', $validated)) {
+                    $existingBooking->update(['special_requests' => $validated['special_requests']]);
+                }
+
+                // Check for existing pending transaction
+                $transaction = $existingBooking->transactions()
+                    ->where('payment_status', Transaction::STATUS_PENDING)
+                    ->latest()
+                    ->first();
+
+                if ($transaction && $transaction->payment_method !== $validated['payment_method']) {
+                    $transaction->update(['payment_method' => $validated['payment_method']]);
+                } elseif (!$transaction) {
+                    Transaction::create([
+                        'booking_id'     => $existingBooking->id,
+                        'amount_paid'    => 0,
+                        'payment_for'    => Transaction::FOR_BOOKING,
+                        'payment_method' => $validated['payment_method'],
+                        'payment_status' => Transaction::STATUS_PENDING,
+                    ]);
+                }
+
+                return $existingBooking;
+            }
+
             // Create the booking in 'pending' status — confirmed after payment.
             $booking = Booking::create([
                 'guest_id' => $guestId,

@@ -154,6 +154,20 @@ class PaymentController extends Controller
             // Only promote to 'booked' if the booking was pending/pending-adjacent.
             // A checked-in guest paying for an extension stays checked-in.
             if ($booking->booking_status === Booking::STATUS_PENDING) {
+                $room = \App\Models\Room::find($booking->room_id);
+                if (!$room || !$room->isAvailableForDates($booking->check_in_date, $booking->check_out_date, $booking->id)) {
+                    $booking->update([
+                        'booking_status' => Booking::STATUS_CANCELLED,
+                        'special_requests' => '[PAYMENT RECEIVED BUT ROOM SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
+                    ]);
+
+                    return response()->json([
+                        'paid'     => true,
+                        // Redirect to failed page with session error
+                        'redirect' => route('payment.failed'),
+                    ]);
+                }
+
                 $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
             }
 
@@ -194,6 +208,17 @@ class PaymentController extends Controller
         // Only promote to 'booked' if the booking hasn't advanced further.
         // A checked-in guest paying for an extension stays checked-in.
         if ($booking->booking_status === Booking::STATUS_PENDING) {
+            $room = \App\Models\Room::find($booking->room_id);
+            if (!$room || !$room->isAvailableForDates($booking->check_in_date, $booking->check_out_date, $booking->id)) {
+                $booking->update([
+                    'booking_status' => Booking::STATUS_CANCELLED,
+                    'special_requests' => '[PAYMENT RECEIVED BUT ROOM SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
+                ]);
+
+                return redirect()->route('payment.failed')
+                    ->with('error', 'Payment simulated, but the room was booked by someone else moments ago! Refund required.');
+            }
+
             $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
         }
 

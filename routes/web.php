@@ -175,6 +175,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/bookings',                       [AdminBookingController::class, 'index'])->name('bookings.index');
         Route::patch('/bookings/{booking}/approve',   [AdminBookingController::class, 'approve'])->name('bookings.approve');
         Route::patch('/bookings/{booking}/cancel',    [AdminBookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::patch('/bookings/{booking}/refund',    [AdminBookingController::class, 'markAsRefunded'])->name('bookings.refund');
         Route::delete('/bookings/{booking}',          [AdminBookingController::class, 'destroy'])->name('bookings.destroy');
 
         // Staff management (CRUD)

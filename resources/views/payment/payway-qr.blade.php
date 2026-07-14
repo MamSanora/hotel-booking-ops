@@ -1,99 +1,96 @@
 @extends('layouts.public')
 
-@section('title', 'Complete Payment — ' . $booking->referenceNumber())
+@section('title', 'KHQR Payment — ' . $booking->referenceNumber())
 
 @section('content')
 
-<div class="min-h-[85vh] bg-[#f4f6f9] py-12 px-4 flex items-center justify-center">
+<div class="min-h-[85vh] bg-[#f0f2f5] py-10 px-4">
     <div class="max-w-5xl w-full mx-auto">
 
-        {{-- Top Navigation & Reference Bar --}}
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+        {{-- ── Top Bar: Back + Title + Ref ── --}}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-7">
             <div class="flex items-center gap-3">
                 <a href="{{ route('guest.booking.show', $booking) }}"
-                   class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm border border-gray-200 text-gray-600 hover:text-hotel-dark transition-colors">
+                   class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-gray-200 text-gray-500 hover:text-gray-800 transition-colors text-sm">
                     <i class="bi bi-arrow-left"></i>
                 </a>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-900 leading-tight">Complete KHQR Payment</h1>
-                    <p class="text-xs text-gray-500">Scan & pay instantly with any Cambodian banking app</p>
+                    <h1 class="text-lg font-bold text-gray-900 leading-snug">Complete KHQR Payment</h1>
+                    <p class="text-xs text-gray-500">Scan &amp; pay instantly with any Cambodian banking app</p>
                 </div>
             </div>
-
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-gray-200 shadow-sm text-xs font-semibold text-gray-700">
+            <div class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Ref: <strong class="text-gray-900">{{ $booking->referenceNumber() }}</strong>
+                Ref: &nbsp;<strong class="text-gray-900">{{ $booking->referenceNumber() }}</strong>
             </div>
         </div>
 
-        {{-- Main Two-Column Layout --}}
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {{-- ── Main Grid: 5/12 left | 7/12 right ── --}}
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            {{-- ── Left: Official KHQR Card ── --}}
-            <div class="lg:col-span-6 flex flex-col items-center">
+            {{-- ═══════════════════════════
+                 LEFT — KHQR Card + Status
+                 ═══════════════════════════ --}}
+            <div class="lg:col-span-5 flex flex-col items-center">
 
-                <div class="w-full max-w-[370px] bg-white rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-gray-200/80 overflow-hidden">
+                {{-- KHQR Card --}}
+                <div class="w-full max-w-[340px] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.10)] border border-gray-200/60 overflow-hidden">
 
-                    {{-- Red Header (Bakong signature slanted corner) --}}
-                    <div class="relative bg-[#E1232C] pt-6 pb-6 px-7 text-white"
-                         style="clip-path: polygon(0 0, 100% 0, 100% 58%, 87% 100%, 0 100%);">
+                    {{-- Red header with slanted bottom-right cut --}}
+                    <div class="bg-[#E1232C] px-6 pt-5 pb-8 text-white"
+                         style="clip-path: polygon(0 0, 100% 0, 100% 65%, 86% 100%, 0 100%);">
                         <div class="flex items-center justify-between">
-                            {{-- Official KHQR Logo (white) --}}
                             <img src="/images/khqr-logo-white.svg"
                                  alt="KHQR"
-                                 style="height:28px;width:auto;display:block;filter:brightness(0) invert(1);">
-                            <span class="text-[10px] font-bold tracking-widest uppercase bg-white/20 px-2.5 py-1 rounded">Tag 29</span>
+                                 style="height:26px;width:auto;display:block;">
+                            <span class="text-[10px] font-bold tracking-widest uppercase bg-white/20 px-2 py-0.5 rounded">Tag 29</span>
                         </div>
                     </div>
 
-                    {{-- Amount Due & Room --}}
-                    <div class="px-7 pt-5 pb-2">
-                        <div class="flex items-baseline justify-between">
+                    {{-- Amount + Room --}}
+                    <div class="px-6 pt-4 pb-2">
+                        <div class="flex items-end justify-between">
                             <div>
-                                <div class="text-[11px] font-bold tracking-wider text-gray-400 uppercase">Amount Due</div>
+                                <div class="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">Amount Due</div>
                                 <div class="flex items-baseline gap-1.5 mt-0.5">
                                     <span class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($booking->total_price, 2) }}</span>
-                                    <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 uppercase">{{ $paymentData['currency'] ?? 'USD' }}</span>
+                                    <span class="text-xs font-bold text-gray-500 uppercase">{{ $paymentData['currency'] ?? 'USD' }}</span>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div class="text-[11px] font-bold tracking-wider text-gray-400 uppercase">Room</div>
+                                <div class="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">Room</div>
                                 <div class="text-sm font-bold text-gray-800 mt-0.5">#{{ $booking->room?->room_number ?? $booking->room_id }}</div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Ticket Dashed Divider --}}
-                    <div class="relative my-4 flex items-center">
-                        <div class="absolute -left-3 w-6 h-6 rounded-full bg-[#f4f6f9] border border-gray-200/80 z-10"></div>
+                    {{-- Ticket perforated divider --}}
+                    <div class="relative my-3 flex items-center">
+                        <div class="absolute -left-3 w-6 h-6 rounded-full bg-[#f0f2f5] border border-gray-200/80 z-10"></div>
                         <div class="w-full border-b-2 border-dashed border-gray-200 mx-4"></div>
-                        <div class="absolute -right-3 w-6 h-6 rounded-full bg-[#f4f6f9] border border-gray-200/80 z-10"></div>
+                        <div class="absolute -right-3 w-6 h-6 rounded-full bg-[#f0f2f5] border border-gray-200/80 z-10"></div>
                     </div>
 
-                    {{-- QR Code + Bakong Emblem --}}
-                    <div class="px-7 pb-8 pt-2 flex flex-col items-center">
-                        <div class="relative bg-white p-3.5 rounded-2xl border-2 border-gray-100 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
-
-                            <div class="w-[230px] h-[230px] flex items-center justify-center">
+                    {{-- QR Code --}}
+                    <div class="px-6 pb-6 pt-1 flex flex-col items-center">
+                        <div class="relative bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                            <div class="w-[200px] h-[200px] flex items-center justify-center">
                                 @if(!empty($paymentData['qr_image']))
                                     <img src="{{ $paymentData['qr_image'] }}" alt="ABA PayWay QR Code" class="w-full h-full object-contain">
                                 @else
-                                    <div id="khqr-fallback" class="animate-pulse text-gray-400 text-xs font-medium text-center px-4">
+                                    <div id="khqr-fallback" class="text-gray-400 text-xs font-medium text-center px-4">
                                         <i class="bi bi-qr-code text-5xl text-gray-300 block mb-2"></i>
                                         QR code unavailable.<br>Please use the deeplink below.
                                     </div>
                                 @endif
                             </div>
-
-                            {{-- Center Bakong Emblem — official temple logo --}}
-                            <div class="absolute inset-0 m-auto w-12 h-12 bg-white rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.18)] border-[2.5px] border-white flex items-center justify-center pointer-events-none z-10">
-                                <img src="/images/bakong-emblem.svg"
-                                     alt="Bakong"
-                                     class="w-8 h-8 object-contain">
+                            {{-- Bakong centre emblem --}}
+                            <div class="absolute inset-0 m-auto w-11 h-11 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.16)] border-2 border-white flex items-center justify-center pointer-events-none z-10">
+                                <img src="/images/bakong-emblem.svg" alt="Bakong" class="w-7 h-7 object-contain">
                             </div>
                         </div>
 
-                        {{-- ABA deeplink (mobile only) --}}
+                        {{-- ABA deeplink — mobile only --}}
                         @if(!empty($paymentData['abapay_deeplink']))
                         <a href="{{ $paymentData['abapay_deeplink'] }}"
                            class="mt-4 w-full flex items-center justify-center gap-2 bg-[#004B87] hover:bg-[#003a6a] text-white font-bold rounded-xl px-6 py-2.5 transition-all text-xs md:hidden">
@@ -101,129 +98,118 @@
                         </a>
                         @endif
 
-                        <div class="mt-5 flex items-center justify-center gap-2 text-gray-500 text-[11px] font-medium">
+                        <div class="mt-4 flex items-center gap-1.5 text-gray-500 text-[11px] font-medium">
                             <span class="w-2 h-2 rounded-full bg-[#E1232C]"></span>
-                            <span>Supported by <strong class="text-gray-800">Bakong &bull; NBC</strong></span>
+                            <span>Supported by <strong class="text-gray-700">Bakong &bull; NBC</strong></span>
                         </div>
                     </div>
-
                 </div>
 
-                {{-- Status & Timer Row --}}
-                <div class="mt-5 flex flex-col items-center gap-2.5 w-full max-w-[370px]">
-
-                    <div id="payment-status" class="w-full bg-white border border-gray-200/80 rounded-xl py-3 px-4 shadow-sm flex items-center justify-between text-xs font-medium text-gray-600">
-                        <div class="flex items-center gap-2.5">
-                            <span class="relative flex h-2.5 w-2.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                            </span>
-                            Waiting for payment…
-                        </div>
-                        <div class="flex items-center gap-1.5 text-gray-500 font-semibold">
-                            <i class="bi bi-clock"></i>
-                            <span id="countdown">15:00</span>
-                        </div>
+                {{-- Status + Countdown bar --}}
+                <div id="payment-status"
+                     class="mt-4 w-full max-w-[340px] bg-white border border-gray-200/80 rounded-xl py-2.5 px-4 shadow-sm flex items-center justify-between text-xs font-medium text-gray-600">
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        Waiting for payment...
                     </div>
-
-                    @if(! app()->isProduction())
-                    <div class="w-full pt-2">
-                        <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                              onsubmit="return confirm('DEMO MODE: Simulate a successful payment?')">
-                            @csrf
-                            <button type="submit"
-                                    class="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-300 rounded-xl py-2.5 text-xs transition-all shadow-sm">
-                                <i class="bi bi-check-circle-fill text-sm"></i> Simulate Successful Payment (Local Demo)
-                            </button>
-                        </form>
+                    <div class="flex items-center gap-1 text-gray-500 font-semibold">
+                        <i class="bi bi-clock text-[11px]"></i>
+                        <span id="countdown">15:00</span>
                     </div>
-                    @endif
-
                 </div>
+
+                {{-- Local demo simulate button --}}
+                @if(! app()->isProduction())
+                <div class="mt-3 w-full max-w-[340px]">
+                    <form method="POST" action="{{ route('payment.simulate', $booking) }}"
+                          onsubmit="return confirm('DEMO MODE: Simulate a successful payment?')">
+                        @csrf
+                        <button type="submit"
+                                class="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold border border-emerald-300 rounded-xl py-2.5 text-xs transition-all shadow-sm">
+                            <i class="bi bi-check-circle-fill"></i> Simulate Successful Payment (Local Demo)
+                        </button>
+                    </form>
+                </div>
+                @endif
+
             </div>
 
-            {{-- ── Right: Info Panels ── --}}
-            <div class="lg:col-span-6 space-y-6">
+            {{-- ═══════════════════════════
+                 RIGHT — Info Panels
+                 ═══════════════════════════ --}}
+            <div class="lg:col-span-7 space-y-4">
 
-                {{-- Supported Apps --}}
-                <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm">
-                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <i class="bi bi-phone text-[#E1232C] text-base"></i> Supported Banking Apps
+                {{-- Supported Banking Apps --}}
+                <div class="bg-white rounded-2xl border border-gray-200/60 p-5 shadow-sm">
+                    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-widest mb-1 flex items-center gap-2">
+                        <i class="bi bi-phone text-[#E1232C]"></i> Supported Banking Apps
                     </h3>
-                    <p class="text-xs text-gray-600 leading-relaxed mb-5">
-                        Open any banking app in Cambodia that supports <strong>KHQR / Bakong</strong> to scan and pay instantly with zero transfer fees.
+                    <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+                        Open any banking app in Cambodia that supports <strong class="text-gray-700">KHQR / Bakong</strong> to scan and pay instantly with zero transfer fees.
                     </p>
-                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
-                                <img src="/images/aba-logo.webp" alt="ABA Mobile" class="w-full h-full object-cover">
+                    <div class="grid grid-cols-4 gap-3">
+                        @foreach([
+                            ['src' => '/images/aba-logo.webp',       'label' => 'ABA Mobile'],
+                            ['src' => '/images/wing-logo.jpg',       'label' => 'Wing Bank'],
+                            ['src' => '/images/acleda-logo.jpg',     'label' => 'ACLEDA'],
+                            ['src' => '/images/bakong-app-logo.png', 'label' => 'Bakong'],
+                        ] as $app)
+                        <div class="flex flex-col items-center gap-1.5">
+                            <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                                <img src="{{ $app['src'] }}" alt="{{ $app['label'] }}" class="w-full h-full object-cover">
                             </div>
-                            <span class="text-[11px] font-bold text-gray-700">ABA Mobile</span>
+                            <span class="text-[10px] font-semibold text-gray-600 text-center leading-tight">{{ $app['label'] }}</span>
                         </div>
-                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
-                                <img src="/images/wing-logo.jpg" alt="Wing Bank" class="w-full h-full object-cover">
-                            </div>
-                            <span class="text-[11px] font-bold text-gray-700">Wing Bank</span>
-                        </div>
-                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
-                                <img src="/images/acleda-logo.jpg" alt="ACLEDA" class="w-full h-full object-cover">
-                            </div>
-                            <span class="text-[11px] font-bold text-gray-700">ACLEDA</span>
-                        </div>
-                        <div class="flex flex-col items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                            <div class="w-9 h-9 rounded-lg overflow-hidden mb-1.5 shadow-sm">
-                                <img src="/images/bakong-app-logo.png" alt="Bakong" class="w-full h-full object-cover">
-                            </div>
-                            <span class="text-[11px] font-bold text-gray-700">Bakong</span>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
 
-                {{-- Steps --}}
-                <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm">
-                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <i class="bi bi-shield-check text-[#E1232C] text-base"></i> Quick Payment Steps
+                {{-- Quick Payment Steps --}}
+                <div class="bg-white rounded-2xl border border-gray-200/60 p-5 shadow-sm">
+                    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i class="bi bi-shield-check text-[#E1232C]"></i> Quick Payment Steps
                     </h3>
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         @foreach([
-                            'Open <strong class="text-gray-900">ABA Mobile, Wing Bank, ACLEDA</strong> or your preferred banking app.',
-                            'Tap <strong class="text-gray-900">KHQR / Scan QR</strong> and point your camera at the code.',
-                            'Verify the amount is <strong class="text-gray-900">$'.(number_format($booking->total_price,2)).' USD</strong>.',
-                            'Once paid, this page will <strong class="text-gray-900">automatically redirect</strong> to your receipt.',
+                            'Open <strong>ABA Mobile, Wing Bank, ACLEDA</strong> or your preferred banking app.',
+                            'Tap <strong>KHQR / Scan QR</strong> and point your camera at the code.',
+                            'Verify the amount is <strong>$'. number_format($booking->total_price, 2) .' USD</strong>.',
+                            'Once paid, this page will <strong>automatically redirect</strong> to your receipt.',
                         ] as $i => $step)
-                        <div class="flex items-start gap-3.5">
-                            <div class="w-6 h-6 rounded-full bg-[#E1232C]/10 text-[#E1232C] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{{ $i + 1 }}</div>
-                            <div class="text-xs text-gray-600 leading-relaxed">{!! $step !!}</div>
+                        <div class="flex items-start gap-3">
+                            <span class="mt-0.5 w-5 h-5 rounded-full bg-[#E1232C] text-white text-[10px] font-bold flex items-center justify-center shrink-0">{{ $i + 1 }}</span>
+                            <p class="text-xs text-gray-600 leading-relaxed">{!! $step !!}</p>
                         </div>
                         @endforeach
                     </div>
                 </div>
 
                 {{-- Booking Summary --}}
-                <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm">
-                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Booking Summary</h3>
-                    <div class="divide-y divide-gray-100 text-xs">
+                <div class="bg-white rounded-2xl border border-gray-200/60 p-5 shadow-sm">
+                    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-widest mb-4">Booking Summary</h3>
+                    <div class="divide-y divide-gray-100 text-[13px]">
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Guest Name</span>
-                            <span class="font-bold text-gray-900">{{ $booking->guest_name }}</span>
+                            <span class="font-semibold text-gray-900">{{ $booking->guest_name }}</span>
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Room Type</span>
-                            <span class="font-bold text-gray-900">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}</span>
+                            <span class="font-semibold text-gray-900">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}</span>
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Check-in</span>
-                            <span class="font-bold text-gray-900">{{ $booking->check_in_date?->format('D, M d, Y') }} (2:00 PM)</span>
+                            <span class="font-semibold text-gray-900">{{ $booking->check_in_date?->format('D, M d, Y') }} (2:00 PM)</span>
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Check-out</span>
-                            <span class="font-bold text-gray-900">{{ $booking->check_out_date?->format('D, M d, Y') }} (12:00 PM)</span>
+                            <span class="font-semibold text-gray-900">{{ $booking->check_out_date?->format('D, M d, Y') }} (12:00 PM)</span>
                         </div>
-                        <div class="py-3 flex justify-between items-center text-sm font-bold border-t border-gray-200 mt-1">
-                            <span class="text-gray-700">Total Payable</span>
-                            <span class="text-[#E1232C]">${{ number_format($booking->total_price, 2) }} USD</span>
+                        <div class="pt-3 pb-1 flex justify-between items-center">
+                            <span class="text-sm font-bold text-gray-800">Total Payable</span>
+                            <span class="text-sm font-bold text-[#E1232C]">${{ number_format($booking->total_price, 2) }} USD</span>
                         </div>
                     </div>
                 </div>
@@ -252,6 +238,24 @@
             countdownEl.classList.add('text-red-500');
         }
     }, 1000);
+
+    // Poll for payment status every 5 s
+    const bookingId = {{ $booking->id }};
+    const checkInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/payment/${bookingId}/check-status`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'paid' && data.redirect) {
+                clearInterval(checkInterval);
+                clearInterval(timer);
+                window.location.href = data.redirect;
+            }
+        } catch (e) { /* silently ignore */ }
+    }, 5000);
 })();
 </script>
 @endpush
+
