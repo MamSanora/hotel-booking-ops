@@ -1,4 +1,4 @@
-# Hotel Booking Ops V5
+# Hotel Booking Ops
 
 A Laravel 12 hotel booking & operations application.
 
