@@ -21,6 +21,7 @@ use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Reception\ReceptionDashboardController;
+use App\Http\Controllers\Reception\ReceptionRelocationController;
 use App\Http\Controllers\Reception\WalkInBookingController;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Route;
@@ -233,5 +234,9 @@ Route::prefix('reception')->name('reception.')->group(function () {
 
         // Stay Extension (for walk-in / phone guests without an account)
         Route::post('/extend-stay/{booking}', [ReceptionDashboardController::class, 'extendStay'])->name('extend-stay');
+
+        // Room Relocation — when extension is blocked by an incoming guest
+        Route::get('/relocate/{booking}',          [ReceptionRelocationController::class, 'show'])->name('relocate.show');
+        Route::post('/relocate/{booking}/confirm', [ReceptionRelocationController::class, 'confirm'])->name('relocate.confirm');
     });
 });

@@ -321,13 +321,29 @@
                                     <span class="bg-green-100 text-green-800 text-[0.75rem] font-bold px-3 py-1 rounded-full tracking-wide">Checked In</span>
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap text-right relative">
+                                    @php
+                                        $limit      = $extensionLimits[$booking->id] ?? ['max_nights' => 30, 'next_booking' => null];
+                                        $maxNights  = $limit['max_nights'];
+                                        $nextBook   = $limit['next_booking'];
+                                        $blocked    = $maxNights === 0;
+                                    @endphp
                                     <div class="flex items-center justify-end gap-2" x-data="{ showExtend: false }">
-                                        {{-- Extend Stay toggle button --}}
-                                        <button type="button" @click="showExtend = !showExtend"
-                                            class="inline-flex items-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-emerald-200"
-                                            title="Extend Stay">
-                                            <i class="bi bi-calendar-plus mr-1"></i> Extend
-                                        </button>
+
+                                        {{-- Extend Stay button (hidden if blocked) --}}
+                                        @if(! $blocked)
+                                            <button type="button" @click="showExtend = !showExtend"
+                                                class="inline-flex items-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-emerald-200"
+                                                title="Extend Stay">
+                                                <i class="bi bi-calendar-plus mr-1"></i> Extend
+                                            </button>
+                                        @else
+                                            {{-- Blocked: show Relocate button instead --}}
+                                            <a href="{{ route('reception.relocate.show', $booking->id) }}"
+                                                class="inline-flex items-center bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-purple-200"
+                                                title="Extension impossible — relocate this guest">
+                                                <i class="bi bi-arrow-repeat mr-1"></i> Relocate
+                                            </a>
+                                        @endif
 
                                         {{-- Checkout button --}}
                                         <form action="{{ route('reception.checkout', $booking->id) }}" method="POST" class="inline-block">
@@ -343,41 +359,61 @@
                                             @endif
                                         </form>
 
-                                        {{-- Extend Stay inline form (toggled by Alpine) --}}
-                                        <div x-show="showExtend" x-cloak
-                                            class="absolute right-4 mt-2 z-10 bg-white border border-emerald-200 rounded-xl shadow-xl p-4 w-72"
-                                            style="top: auto;">
-                                            <form action="{{ route('reception.extend-stay', $booking->id) }}" method="POST">
-                                                @csrf
-                                                <p class="text-sm font-semibold text-gray-700 mb-3">
-                                                    <i class="bi bi-calendar-plus text-emerald-600 mr-1"></i>
-                                                    Extend Stay — Room {{ $booking->room?->room_number ?? '-' }}
-                                                </p>
-                                                <div class="mb-3">
-                                                    <label class="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Extra Nights</label>
-                                                    <input type="number" name="extra_nights" min="1" max="30" value="1" required
-                                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 outline-none">
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Payment Method</label>
-                                                    <select name="payment_method" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none">
-                                                        <option value="cash">Cash</option>
-                                                        <option value="khqr">KHQR</option>
-                                                    </select>
-                                                </div>
-                                                <p class="text-xs text-gray-400 mb-3">Rate: ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</p>
-                                                <div class="flex gap-2">
-                                                    <button type="submit" onclick="return confirm('Extend stay and collect payment?')"
-                                                        class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-sm transition-colors">
-                                                        Confirm
-                                                    </button>
-                                                    <button type="button" @click="showExtend = false"
-                                                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 rounded-lg text-sm transition-colors">
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                        {{-- Extension blocked warning (inline, shown below action buttons) --}}
+                                        @if($blocked && $nextBook)
+                                            <div class="absolute right-4 top-full mt-1 z-10 bg-red-50 border border-red-200 text-red-800 text-[0.75rem] rounded-lg px-3 py-2 shadow-md w-64 text-left"
+                                                 x-data x-init="setTimeout(() => $el.remove(), 8000)">
+                                                <i class="bi bi-exclamation-triangle-fill mr-1 text-red-500"></i>
+                                                <strong>Extension impossible.</strong><br>
+                                                Room {{ $booking->room?->room_number }} is reserved by another guest from
+                                                {{ $nextBook->check_in_date?->format('M d') }}.
+                                                Use <strong>Relocate</strong> to suggest an alternative room.
+                                            </div>
+                                        @endif
+
+                                        {{-- Extend Stay inline form (shown only if not blocked) --}}
+                                        @if(! $blocked)
+                                            <div x-show="showExtend" x-cloak
+                                                class="absolute right-4 mt-2 z-10 bg-white border border-emerald-200 rounded-xl shadow-xl p-4 w-72"
+                                                style="top: auto;">
+                                                <form action="{{ route('reception.extend-stay', $booking->id) }}" method="POST">
+                                                    @csrf
+                                                    <p class="text-sm font-semibold text-gray-700 mb-3">
+                                                        <i class="bi bi-calendar-plus text-emerald-600 mr-1"></i>
+                                                        Extend Stay — Room {{ $booking->room?->room_number ?? '-' }}
+                                                    </p>
+                                                    @if($nextBook)
+                                                        <p class="text-[0.75rem] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-3">
+                                                            <i class="bi bi-info-circle mr-1"></i>
+                                                            Max <strong>{{ $maxNights }} night(s)</strong> — next guest arrives {{ $nextBook->check_in_date?->format('M d') }}.
+                                                        </p>
+                                                    @endif
+                                                    <div class="mb-3">
+                                                        <label class="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Extra Nights</label>
+                                                        <input type="number" name="extra_nights" min="1" max="{{ $maxNights }}" value="1" required
+                                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 outline-none">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Payment Method</label>
+                                                        <select name="payment_method" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none">
+                                                            <option value="cash">Cash</option>
+                                                            <option value="khqr">KHQR</option>
+                                                        </select>
+                                                    </div>
+                                                    <p class="text-xs text-gray-400 mb-3">Rate: ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</p>
+                                                    <div class="flex gap-2">
+                                                        <button type="submit" onclick="return confirm('Extend stay and collect payment?')"
+                                                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-sm transition-colors">
+                                                            Confirm
+                                                        </button>
+                                                        <button type="button" @click="showExtend = false"
+                                                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 rounded-lg text-sm transition-colors">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

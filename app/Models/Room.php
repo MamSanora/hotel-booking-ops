@@ -102,13 +102,12 @@ class Room extends Model
         string $checkOut,
         ?int $excludeBookingId = null
     ): Builder {
-        return $query->where('current_status', self::STATUS_AVAILABLE)
-            ->whereDoesntHave('bookings', function (Builder $q) use ($checkIn, $checkOut, $excludeBookingId) {
-                $q->whereIn('booking_status', ['booked', 'checked-in'])
-                    ->where('check_in_date', '<', $checkOut)
-                    ->where('check_out_date', '>', $checkIn)
-                    ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId));
-            });
+        return $query->whereDoesntHave('bookings', function (Builder $q) use ($checkIn, $checkOut, $excludeBookingId) {
+            $q->whereIn('booking_status', ['booked', 'checked-in'])
+                ->where('check_in_date', '<', $checkOut)
+                ->where('check_out_date', '>', $checkIn)
+                ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId));
+        });
     }
 
     // ── Display Helpers ────────────────────────────────────────────────────
@@ -128,9 +127,7 @@ class Room extends Model
      */
     public function isAvailableForDates(string $checkIn, string $checkOut, ?int $excludeBookingId = null): bool
     {
-        if ($this->current_status !== self::STATUS_AVAILABLE) {
-            return false;
-        }
+
 
         return !$this->bookings()
             ->whereIn('booking_status', ['booked', 'checked-in'])

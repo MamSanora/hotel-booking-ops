@@ -49,6 +49,8 @@ class Booking extends Model
 
     public const STATUS_NO_SHOW = 'no_show';
 
+    public const STATUS_RELOCATED = 'relocated';
+
     /** Human-readable labels for each status value. */
     public const STATUS_LABELS = [
         'pending' => 'Pending',
@@ -57,6 +59,7 @@ class Booking extends Model
         'checked-out' => 'Checked Out',
         'cancelled' => 'Cancelled',
         'no_show' => 'No Show',
+        'relocated' => 'Relocated',
     ];
 
     // ── Guest Type Constants ───────────────────────────────────────────────
@@ -80,6 +83,7 @@ class Booking extends Model
         'booking_status',
         'guest_type',
         'special_requests',
+        'relocated_to_booking_id',
     ];
 
     protected function casts(): array
@@ -135,6 +139,14 @@ class Booking extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * The booking this guest was relocated to (if status is 'relocated').
+     */
+    public function relocatedTo(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class, 'relocated_to_booking_id');
     }
 
     /**
@@ -206,7 +218,11 @@ class Booking extends Model
      */
     public function scopeRecentHistory(Builder $query): Builder
     {
-        return $query->whereIn('booking_status', [self::STATUS_CHECKED_OUT, self::STATUS_CANCELLED])
+        return $query->whereIn('booking_status', [
+                self::STATUS_CHECKED_OUT,
+                self::STATUS_CANCELLED,
+                self::STATUS_RELOCATED,
+            ])
             ->where('updated_at', '>=', now()->subDays(14));
     }
 
@@ -270,6 +286,11 @@ class Booking extends Model
         ]);
     }
 
+    public function isRelocated(): bool
+    {
+        return $this->booking_status === self::STATUS_RELOCATED;
+    }
+
     /**
      * Policy: Free up to 24 hours before check-in (14:00).
      */
@@ -318,6 +339,7 @@ class Booking extends Model
             self::STATUS_CHECKED_OUT => 'bg-gray-100 text-gray-800',
             self::STATUS_CANCELLED => 'bg-red-100 text-red-800',
             self::STATUS_NO_SHOW => 'bg-orange-100 text-orange-800',
+            self::STATUS_RELOCATED => 'bg-purple-100 text-purple-800',
             default => 'bg-gray-100 text-gray-600',
         };
     }

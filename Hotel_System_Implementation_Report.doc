@@ -1,0 +1,81 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Hotel Booking Operations System - Implementation Summary</title>
+<style>
+  body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.6; color: #000000; margin: 40px; }
+  h1 { color: #1F497D; border-bottom: 2px solid #1F497D; padding-bottom: 5px; font-size: 24px; }
+  h2 { color: #2E74B5; margin-top: 24px; font-size: 18px; border-bottom: 1px solid #BDD6EE; padding-bottom: 4px; }
+  h3 { color: #5B9BD5; font-size: 14px; margin-top: 16px; margin-bottom: 8px;}
+  p { margin-bottom: 12px; font-size: 11pt; }
+  ul { margin-bottom: 16px; }
+  li { margin-bottom: 6px; font-size: 11pt; }
+  .header-meta { font-size: 10pt; color: #595959; margin-bottom: 30px; }
+  strong { color: #262626; }
+</style>
+</head>
+<body>
+
+<h1>Hotel Booking Operations System <br><span style="font-size: 18px; font-weight: normal; color: #595959;">Implementation Summary & Defense Preparation Document</span></h1>
+
+<div class="header-meta">
+    <strong>Date:</strong> July 2026<br>
+    <strong>Topic:</strong> Payment Gateway Synchronization, Race Conditions, and Bookkeeping Workflows
+</div>
+
+<h2>1. Context and Problem Statement</h2>
+<p>During the development of the online payment integration (KHQR / ABA PayWay), we identified and addressed several critical edge cases related to concurrent users and financial data integrity. The primary challenges were:</p>
+
+<ul>
+    <li><strong>Abandoned Bookings:</strong> Users initiating a booking (creating a <code>pending</code> database record) but abandoning the payment page, leading to database clutter and multiple "pending" records for the same room.</li>
+    <li><strong>The "Room Snatched" Race Condition:</strong> Two guests (Guest A and Guest B) attempting to book the exact same room for the same dates simultaneously. If Guest A pays first, Guest B could theoretically still complete their payment seconds later, resulting in a double-booking despite the hotel taking money from both guests.</li>
+    <li><strong>Financial Bookkeeping:</strong> Handling the scenario where Guest B's payment succeeds but the room is already taken. The system needed a secure bookkeeping workflow for the hotel management to issue manual refunds without giving cash/bank access to standard receptionists.</li>
+</ul>
+
+<h2>2. Solutions Implemented</h2>
+
+<h3>A. Preventing Duplicate Pending Bookings</h3>
+<p>Instead of allowing infinite <code>pending</code> bookings for the same room by the same guest, we optimized the <code>RoomController</code>. The system now detects if an identical <code>pending</code> booking already exists for that guest. If found, it safely reuses that existing booking ID and forwards them back to the payment gateway rather than cluttering the database with new abandoned records.</p>
+
+<h3>B. Resolving the Double-Booking Race Condition</h3>
+<p>We implemented a strict <strong>"Just-In-Time" (JIT)</strong> availability check at the payment callback level (<code>PaymentCallbackController</code> and <code>PaymentController</code>). </p>
+<ul>
+    <li>When the payment gateway (ABA/Bakong) sends a successful payment webhook, the system checks the room's availability <em>one last time</em>.</li>
+    <li>If the room is still available, the booking is successfully confirmed (<code>booked</code>).</li>
+    <li>If the room was snatched by Guest A, Guest B's booking is forced into a <code>cancelled</code> state. However, their transaction is still recorded as <code>STATUS_FULL</code> to ensure the financial records accurately reflect the money received.</li>
+</ul>
+
+<h3>C. Admin Bookkeeping & Refund Workflow</h3>
+<p>We established an industry-standard Role-Based Access Control (RBAC) workflow for handling refunds:</p>
+<ul>
+    <li><strong>Security First:</strong> Automated bank refunds are complex and risky. It is not industry standard to give receptionists access to the hotel's corporate bank account.</li>
+    <li><strong>Admin Refund Dashboard:</strong> We built a "Pending Refunds" alert system in the Admin Dashboard (<code>AdminBookingController</code>) that flags "Snatched" bookings (i.e., cancelled bookings that have a completed payment).</li>
+    <li><strong>Manual Bookkeeping Action:</strong> The Hotel Owner (Admin) manually transfers the money back to the guest using their banking app, and then clicks a new <strong>"Mark as Refunded"</strong> button in the system. This updates the database transaction to <code>STATUS_REFUNDED</code>, keeping the system's financial records perfectly synced with the actual bank statements without compromising security.</li>
+</ul>
+
+<h3>D. Accurate Date-Based Availability vs. Physical Room Status</h3>
+<p>We identified a flaw where a room's physical <code>current_status</code> (e.g., 'occupied' today) was incorrectly blocking guests from booking that same room for dates in the future. We separated the logic:</p>
+<ul>
+    <li>The <code>current_status</code> flag on the <code>rooms</code> table is now strictly used by Housekeeping and Reception to know the real-time physical state of the room.</li>
+    <li>Future availability is calculated dynamically by checking for overlapping dates in the <code>bookings</code> table, allowing seamless advance reservations even while a room is currently occupied.</li>
+</ul>
+
+<h3>E. Proactive Stay Extensions & Guest Relocation</h3>
+<p>When a checked-in guest wishes to extend their stay, but their current room is already booked by an incoming guest, the system handles it gracefully:</p>
+<ul>
+    <li><strong>Proactive Dashboard Warnings:</strong> The Reception Dashboard pre-calculates the maximum allowed extension nights for every guest. If a room is blocked by an incoming reservation, the dashboard hides the extension form and instantly displays a warning with a "Relocate" option.</li>
+    <li><strong>Relocation Workflow:</strong> The receptionist can relocate the guest to a new room of the same type. To maintain database query efficiency (using a flattened schema), the system securely completes a 5-step transaction: checking out the old room, checking into the new room, and linking the two distinct bookings via a <code>relocated_to_booking_id</code> foreign key to ensure a complete paper trail for analytics.</li>
+</ul>
+
+<h2>3. Key Learnings & Takeaways for Defense</h2>
+<p>If asked about these features during the graduation project defense, highlight the following engineering concepts:</p>
+
+<ul>
+    <li><strong>Concurrency & Race Conditions:</strong> Explain how asynchronous webhook callbacks require verifying state (room availability) at the exact moment of transaction completion, not just when the checkout page is initially loaded.</li>
+    <li><strong>Role-Based Access Control (RBAC):</strong> Demonstrate an understanding of business security by separating operational roles (Receptionist) from financial roles (Admin/Owner), ensuring that staff cannot issue fraudulent refunds or access corporate funds.</li>
+    <li><strong>Real-world System Design:</strong> Emphasize that software must account for real-world business constraints. The manual bookkeeping workflow proves that the system doesn't just manage data, but securely facilitates actual hotel operations and financial auditing.</li>
+    <li><strong>Database Normalization vs. Operational Efficiency:</strong> Be prepared to explain the architectural choice behind the "Flattened Schema" for bookings. Explain that keeping <code>room_id</code> directly on the booking row makes availability queries extremely fast. Consequently, room relocations correctly require generating a new linked booking record rather than over-engineering a complex multi-room assignment table.</li>
+</ul>
+
+</body>
+</html>

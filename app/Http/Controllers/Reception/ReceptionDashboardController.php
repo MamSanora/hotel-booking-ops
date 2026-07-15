@@ -44,10 +44,39 @@ class ReceptionDashboardController extends Controller
             ->get();
 
         // All guests currently in the hotel.
-        $inHouseGuests = Booking::with(['guest', 'room'])
+        $inHouseGuests = Booking::with(['guest', 'room.roomType'])
             ->checkedIn()
             ->orderBy('check_out_date')
             ->get();
+
+        // For each in-house guest, find the next incoming booking on their room
+        // so we can: (a) cap the extension nights, (b) show a relocation warning.
+        $extensionLimits = [];
+        foreach ($inHouseGuests as $booking) {
+            if (! $booking->room_id) {
+                $extensionLimits[$booking->id] = ['max_nights' => 30, 'next_booking' => null];
+                continue;
+            }
+
+            $nextConflict = Booking::where('room_id', $booking->room_id)
+                ->where('id', '!=', $booking->id)
+                ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+                ->where('check_in_date', '>=', $booking->check_out_date->toDateString())
+                ->orderBy('check_in_date')
+                ->first();
+
+            if ($nextConflict) {
+                // How many nights can they extend? From current checkout to next check-in.
+                $maxNights = (int) $booking->check_out_date->diffInDays($nextConflict->check_in_date);
+            } else {
+                $maxNights = 30; // No upcoming conflict — generous cap
+            }
+
+            $extensionLimits[$booking->id] = [
+                'max_nights'   => $maxNights,
+                'next_booking' => $nextConflict,
+            ];
+        }
 
         // Pending room service requests
         $pendingRoomServices = RoomService::with(['booking.room', 'booking.guest', 'requestedItems.catalog'])
@@ -55,8 +84,7 @@ class ReceptionDashboardController extends Controller
             ->oldest()
             ->get();
 
-        // Recent booking history — checked-out or cancelled within the last 14 days.
-        // Read-only for context: lost-and-found, billing disputes, returning guests.
+        // Recent booking history — checked-out, cancelled, or relocated within the last 14 days.
         $recentHistory = Booking::with(['guest', 'room'])
             ->recentHistory()
             ->orderByDesc('updated_at')
@@ -66,10 +94,12 @@ class ReceptionDashboardController extends Controller
             'upcomingArrivals',
             'todayDepartures',
             'inHouseGuests',
+            'extensionLimits',
             'pendingRoomServices',
             'recentHistory',
         ));
     }
+
 
     /**
      * Check in a guest.
