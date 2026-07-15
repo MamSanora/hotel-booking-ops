@@ -331,7 +331,7 @@ class RoomController extends Controller
 
         if ($conflict) {
             return back()->with('error',
-                'Sorry — your room is already reserved by another guest during that period and cannot be extended to those dates.'
+                'Sorry — your room is already reserved by another guest during that period. To extend your stay by moving to an available room, please contact the front desk.'
             );
         }
 
