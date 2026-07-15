@@ -237,8 +237,16 @@
             <h5 class="font-semibold text-lg mb-2">Manage Rooms</h5>
             <p class="text-[0.85rem] text-gray-500">Add, edit, or remove hotel rooms.</p>
         </a>
+
+        {{-- Room Type Management --}}
+        <a href="{{ route('admin.room-types.index') }}" class="block bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-8 text-center transition-all hover:-translate-y-1 hover:bg-[#fdfaf6] hover:border-hotel-gold border border-[#f0ebe2] text-hotel-dark group">
+            <i class="bi bi-tag text-4xl text-hotel-gold block mb-4 group-hover:scale-110 transition-transform"></i>
+            <h5 class="font-semibold text-lg mb-2">Room Types</h5>
+            <p class="text-[0.85rem] text-gray-500">Set pricing, capacity, and categories.</p>
+        </a>
         
         {{-- Booking Management --}}
+
         <a href="{{ route('admin.bookings.index') }}" class="block bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-8 text-center transition-all hover:-translate-y-1 hover:bg-[#fdfaf6] hover:border-hotel-gold border border-[#f0ebe2] text-hotel-dark group">
             <i class="bi bi-journal-bookmark text-4xl text-hotel-gold block mb-4 group-hover:scale-110 transition-transform"></i>
             <h5 class="font-semibold text-lg mb-2">All Bookings</h5>

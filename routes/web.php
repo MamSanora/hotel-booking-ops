@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminRoomController;
+use App\Http\Controllers\Admin\AdminRoomTypeController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\GalleryController;
@@ -171,6 +172,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/rooms/{room}/edit',  [AdminRoomController::class, 'edit'])->name('rooms.edit');
         Route::put('/rooms/{room}',       [AdminRoomController::class, 'update'])->name('rooms.update');
         Route::delete('/rooms/{room}',    [AdminRoomController::class, 'destroy'])->name('rooms.destroy');
+
+        // Room type management (CRUD)
+        Route::get('/room-types',                     [AdminRoomTypeController::class, 'index'])->name('room-types.index');
+        Route::get('/room-types/create',              [AdminRoomTypeController::class, 'create'])->name('room-types.create');
+        Route::post('/room-types',                    [AdminRoomTypeController::class, 'store'])->name('room-types.store');
+        Route::get('/room-types/{roomType}/edit',     [AdminRoomTypeController::class, 'edit'])->name('room-types.edit');
+        Route::put('/room-types/{roomType}',          [AdminRoomTypeController::class, 'update'])->name('room-types.update');
+        Route::delete('/room-types/{roomType}',       [AdminRoomTypeController::class, 'destroy'])->name('room-types.destroy');
 
         // Booking management
         Route::get('/bookings',                       [AdminBookingController::class, 'index'])->name('bookings.index');

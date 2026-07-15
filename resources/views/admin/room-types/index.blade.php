@@ -1,18 +1,18 @@
 @extends('layouts.public')
 
-@section('title', 'Manage Rooms - Admin Dashboard')
+@section('title', 'Manage Room Types - Admin Dashboard')
 
 @section('content')
 
 <div class="bg-gradient-to-br from-hotel-dark to-hotel-accent py-12 mb-10 text-white">
     <div class="container mx-auto px-4 md:px-6">
-        <h1 class="font-playfair text-3xl md:text-[2.2rem] font-bold mb-2">Manage Rooms</h1>
-        <p class="text-white/70 text-[0.95rem]">Add, edit, or remove hotel rooms and update their status.</p>
+        <h1 class="font-playfair text-3xl md:text-[2.2rem] font-bold mb-2">Room Types</h1>
+        <p class="text-white/70 text-[0.95rem]">Define categories, pricing, and capacity for your hotel rooms.</p>
     </div>
 </div>
 
 <div class="container mx-auto px-4 md:px-6 pb-12">
-    
+
     {{-- Alerts --}}
     @if(session('success'))
         <div x-data="{ show: true }" x-show="show" class="flex justify-between items-center bg-green-50 border border-green-200 text-green-800 rounded-xl p-4 mb-8">
@@ -38,67 +38,65 @@
     @endif
 
     <div class="mb-6 flex flex-wrap gap-3 justify-between items-center">
-        <a href="{{ route('admin.dashboard') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">
-            <i class="bi bi-arrow-left mr-2"></i> Back to Dashboard
+        <a href="{{ route('admin.rooms.index') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">
+            <i class="bi bi-arrow-left mr-2"></i> Back to Rooms
         </a>
-        <div class="flex gap-3 flex-wrap">
-            <a href="{{ route('admin.room-types.index') }}" class="bg-white hover:bg-gray-50 text-hotel-dark border border-gray-200 px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center">
-                <i class="bi bi-tag mr-2 text-hotel-gold"></i> Room Types
-            </a>
-            <a href="{{ route('admin.rooms.create') }}" class="bg-hotel-gold hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center shadow-lg shadow-hotel-gold/20">
-                <i class="bi bi-plus-lg mr-2"></i> Add New Room
-            </a>
-        </div>
+        <a href="{{ route('admin.room-types.create') }}" class="bg-hotel-gold hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center shadow-lg shadow-hotel-gold/20">
+            <i class="bi bi-plus-lg mr-2"></i> Add New Room Type
+        </a>
     </div>
-
 
     <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
                     <tr>
-                        <th class="px-5 py-4 font-semibold">Room No.</th>
-                        <th class="px-5 py-4 font-semibold">Type</th>
+                        <th class="px-5 py-4 font-semibold">Room Type</th>
+                        <th class="px-5 py-4 font-semibold">Slug</th>
                         <th class="px-5 py-4 font-semibold">Capacity</th>
                         <th class="px-5 py-4 font-semibold">Price / Night</th>
-                        <th class="px-5 py-4 font-semibold">Status</th>
+                        <th class="px-5 py-4 font-semibold">Rooms</th>
                         <th class="px-5 py-4 font-semibold text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @forelse($rooms as $room)
+                    @forelse($roomTypes as $type)
                     <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-5 py-4 whitespace-nowrap">
-                            <strong class="font-playfair text-hotel-dark text-lg">{{ $room->room_number }}</strong>
+                        <td class="px-5 py-4">
+                            <div class="font-semibold text-hotel-dark text-[0.95rem]">{{ $type->display_name }}</div>
+                            @if($type->description)
+                                <div class="text-xs text-gray-400 mt-0.5 line-clamp-1 max-w-xs">{{ $type->description }}</div>
+                            @endif
                         </td>
                         <td class="px-5 py-4">
-                            <div class="font-semibold text-gray-800 text-[0.95rem]">{{ $room->displayType() }}</div>
+                            <code class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md">{{ $type->slug }}</code>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <div class="text-gray-700">
-                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $room->roomType?->capacity ?? '—' }} guests
+                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $type->capacity }} guests
                             </div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
-                            <div class="font-bold text-hotel-gold">${{ number_format($room->roomType?->price_per_night ?? 0, 2) }}</div>
+                            <div class="font-bold text-hotel-gold">${{ number_format($type->price_per_night, 2) }}<span class="text-gray-400 font-normal text-xs">/night</span></div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
-                            @if($room->current_status === 'available')
-                                <span class="bg-green-100 text-green-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Available</span>
-                            @elseif($room->current_status === 'occupied')
-                                <span class="bg-blue-100 text-blue-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Occupied</span>
-                            @else
-                                <span class="bg-red-100 text-red-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Maintenance</span>
-                            @endif
+                            <span class="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
+                                {{ $type->rooms_count }} room{{ $type->rooms_count !== 1 ? 's' : '' }}
+                            </span>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap text-right">
                             <div class="flex justify-end gap-2">
-                                <a href="{{ route('admin.rooms.edit', $room) }}" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-blue-100" title="Edit">
+                                <a href="{{ route('admin.room-types.edit', $type) }}"
+                                   class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-blue-100"
+                                   title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form action="{{ route('admin.rooms.destroy', $room) }}" method="POST">
+                                <form action="{{ route('admin.room-types.destroy', $type) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <button type="submit" onclick="return confirm('Permanently delete this room?')" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100" title="Delete">
+                                    <button type="submit"
+                                            onclick="return confirm('Delete room type \'{{ addslashes($type->display_name) }}\'? This is only possible if no rooms are assigned to it.')"
+                                            class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100"
+                                            title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -107,15 +105,18 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-5 py-8 text-center text-gray-500">No rooms found in the system.</td>
+                        <td colspan="6" class="px-5 py-10 text-center text-gray-400">
+                            <i class="bi bi-tag text-3xl block mb-2 opacity-40"></i>
+                            No room types found. <a href="{{ route('admin.room-types.create') }}" class="text-hotel-gold hover:underline">Add one now.</a>
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        
+
         <div class="p-5 border-t border-gray-100 bg-gray-50">
-            {{ $rooms->links() }}
+            {{ $roomTypes->links() }}
         </div>
     </div>
 </div>
