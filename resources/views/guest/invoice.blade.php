@@ -64,7 +64,7 @@
                     </div>
                     <div>
                         <p class="text-gray-500 mb-1 text-xs uppercase tracking-wider">Room</p>
-                        <p class="font-semibold">{{ $booking->room?->displayType() }} <span class="text-gray-400">({{ $booking->room?->room_number }})</span></p>
+                        <p class="font-semibold">{{ $booking->room?->displayType() }}</p>
                     </div>
                     <div>
                         <p class="text-gray-500 mb-1 text-xs uppercase tracking-wider">Duration</p>

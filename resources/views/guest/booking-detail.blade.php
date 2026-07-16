@@ -99,10 +99,9 @@
                         <i class="bi bi-building text-hotel-gold text-4xl"></i>
                     </div>
                     <div class="flex-grow">
-                        <div class="font-playfair text-xl font-bold text-hotel-dark mb-1">
+                        <div class="font-playfair text-xl font-bold text-hotel-dark mb-2">
                             {{ $booking->room?->displayType() ?? '—' }}
                         </div>
-                        <div class="text-gray-500 text-sm mb-3">Room {{ $booking->room?->room_number ?? '—' }}</div>
                         <div class="flex flex-wrap gap-3 text-sm">
                             <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->capacity ?? '—' }} guests</span>
                             <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>

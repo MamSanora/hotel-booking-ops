@@ -149,13 +149,8 @@
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="font-semibold text-[0.9rem] text-hotel-dark">
-                                        {{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}
+                                        {{ $booking->room?->displayType() ?? 'Unassigned Room' }}
                                     </div>
-                                    @if($booking->room)
-                                        <div class="text-gray-500 text-[0.78rem] mt-0.5">
-                                            Room {{ $booking->room->room_number }}
-                                        </div>
-                                    @endif
                                 </td>
                                 <td class="px-5 py-4 text-[0.9rem] text-gray-700 whitespace-nowrap">
                                     {{ $booking->check_in_date?->format('M d, Y') }}
@@ -254,10 +249,7 @@
                                     <span class="font-playfair font-bold text-gray-400 text-[1.05rem]">{{ $booking->referenceNumber() }}</span>
                                 </td>
                                 <td class="px-5 py-4 text-[0.9rem] text-gray-600">
-                                    {{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}
-                                    @if($booking->room)
-                                        <span class="text-gray-400 text-[0.78rem] ml-1">· No. {{ $booking->room->room_number }}</span>
-                                    @endif
+                                    {{ $booking->room?->displayType() ?? 'Unassigned Room' }}
                                 </td>
                                 <td class="px-5 py-4 text-[0.9rem] text-gray-600 whitespace-nowrap">
                                     {{ $booking->check_in_date?->format('M d, Y') }}
