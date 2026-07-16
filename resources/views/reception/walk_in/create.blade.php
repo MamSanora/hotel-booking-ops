@@ -68,9 +68,9 @@
 
                 <form action="{{ route('reception.walkin.store') }}" method="POST">
                     @csrf
-                    <!-- Hidden dates passed from search -->
-                    <input type="hidden" name="check_in" value="{{ $checkinDate }}">
-                    <input type="hidden" name="check_out" value="{{ $checkoutDate }}">
+                    {{-- Dates passed from the availability search --}}
+                    <input type="hidden" name="check_in_date" value="{{ $checkinDate }}">
+                    <input type="hidden" name="check_out_date" value="{{ $checkoutDate }}">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                         <div>
@@ -121,18 +121,30 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                         <div>
+                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Payment Tier</label>
+                            <select name="payment_tier" id="payment_tier" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]" required>
+                                <option value="100" selected>Full Payment (100%)</option>
+                                <option value="50">50% Deposit</option>
+                                <option value="20">20% Deposit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Amount Paid Now</label>
+                            <input type="number" name="amount_paid" id="amount_paid" value="{{ old('amount_paid', 0) }}" min="0" step="0.01" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]" required>
+                        </div>
+                        <div>
                             <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Payment Status</label>
                             <select name="payment_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]" required>
-                                <option value="paid">Paid</option>
-                                <option value="unpaid">Unpaid</option>
+                                <option value="full">Paid in Full</option>
+                                <option value="half">Partial / Deposit</option>
+                                <option value="pending">Pending</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Payment Method</label>
                             <select name="payment_method" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]" required>
                                 <option value="cash">Cash</option>
-                                <option value="bank_transfer">Bank Transfer (ABA)</option>
-                                <option value="card">Credit Card (POS)</option>
+                                <option value="khqr">KHQR (Bakong)</option>
                             </select>
                         </div>
                     </div>

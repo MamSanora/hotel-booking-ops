@@ -81,14 +81,22 @@ class PaymentCallbackController extends Controller
 
             // Booking transitions from 'pending' → 'booked' (confirmed + paid) ONLY if room is still available
             $room = \App\Models\Room::find($booking->room_id);
-            if (!$room || !$room->isAvailableForDates($booking->check_in_date, $booking->check_out_date, $booking->id)) {
+            // Race condition check: pass the booking's payment_tier so that
+            // existing lower-tier double-bookings don't incorrectly block this booking.
+            if (!$room || !$room->isAvailableForDates(
+                $booking->check_in_date,
+                $booking->check_out_date,
+                $booking->id,
+                $booking->payment_tier
+            )) {
                 $booking->update([
-                    'booking_status' => Booking::STATUS_CANCELLED,
-                    'special_requests' => '[PAYMENT RECEIVED BUT ROOM SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
+                    'booking_status'   => Booking::STATUS_SNATCHED,
+                    'special_requests' => '[RACE CONDITION: SAME-TIER BOOKING SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
                 ]);
 
-                Log::warning('ABA Callback: Payment verified but room was snatched', [
+                Log::warning('ABA Callback: Payment verified but same-tier race condition detected', [
                     'booking_id'     => $booking->id,
+                    'payment_tier'   => $booking->payment_tier,
                     'transaction_id' => $tranId,
                 ]);
 

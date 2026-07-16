@@ -51,15 +51,38 @@ class Booking extends Model
 
     public const STATUS_RELOCATED = 'relocated';
 
+    /**
+     * Snatched — set when two guests race to pay for the same tier on the
+     * same room and dates simultaneously. The slower payer loses and their
+     * booking is marked 'snatched' so staff can issue a refund and/or offer
+     * an alternate room. Distinct from 'cancelled' (guest-initiated).
+     */
+    public const STATUS_SNATCHED = 'snatched';
+
+    // ── Payment Tier Constants ─────────────────────────────────────────────
+
+    /** Guest pays 20% upfront; remainder settled at check-in. */
+    public const TIER_DEPOSIT_20 = 20;
+
+    /** Guest pays 50% upfront; remainder settled at check-in. */
+    public const TIER_DEPOSIT_50 = 50;
+
+    /** Guest pays the full amount upfront. */
+    public const TIER_FULL = 100;
+
+    /** All valid payment tiers. */
+    public const PAYMENT_TIERS = [self::TIER_DEPOSIT_20, self::TIER_DEPOSIT_50, self::TIER_FULL];
+
     /** Human-readable labels for each status value. */
     public const STATUS_LABELS = [
-        'pending' => 'Pending',
-        'booked' => 'Booked',
-        'checked-in' => 'Checked In',
+        'pending'     => 'Pending',
+        'booked'      => 'Booked',
+        'checked-in'  => 'Checked In',
         'checked-out' => 'Checked Out',
-        'cancelled' => 'Cancelled',
-        'no_show' => 'No Show',
-        'relocated' => 'Relocated',
+        'cancelled'   => 'Cancelled',
+        'no_show'     => 'No Show',
+        'relocated'   => 'Relocated',
+        'snatched'    => 'Snatched',
     ];
 
     // ── Guest Type Constants ───────────────────────────────────────────────
@@ -80,6 +103,7 @@ class Booking extends Model
         'check_out_date',
         'number_of_stay_extension',
         'total_price',
+        'payment_tier',
         'booking_status',
         'guest_type',
         'special_requests',
@@ -89,9 +113,10 @@ class Booking extends Model
     protected function casts(): array
     {
         return [
-            'check_in_date' => 'date',
-            'check_out_date' => 'date',
-            'total_price' => 'decimal:2',
+            'check_in_date'            => 'date',
+            'check_out_date'           => 'date',
+            'total_price'              => 'decimal:2',
+            'payment_tier'             => 'integer',
             'number_of_stay_extension' => 'integer',
         ];
     }
@@ -291,6 +316,29 @@ class Booking extends Model
         return $this->booking_status === self::STATUS_RELOCATED;
     }
 
+    public function isSnatched(): bool
+    {
+        return $this->booking_status === self::STATUS_SNATCHED;
+    }
+
+    /**
+     * The upfront amount due at the time of booking, based on payment_tier.
+     * E.g. for a $200 total at 50% tier, this returns 100.00.
+     */
+    public function depositAmount(): float
+    {
+        return round((float) $this->total_price * ($this->payment_tier / 100), 2);
+    }
+
+    /**
+     * The balance remaining to be settled at check-in.
+     * Returns 0 for full (100%) tier bookings.
+     */
+    public function remainingBalance(): float
+    {
+        return round((float) $this->total_price - $this->depositAmount(), 2);
+    }
+
     /**
      * Policy: Free up to 24 hours before check-in (14:00).
      */
@@ -333,14 +381,15 @@ class Booking extends Model
     public function statusBadgeClass(): string
     {
         return match ($this->booking_status) {
-            self::STATUS_PENDING => 'bg-yellow-100 text-yellow-800',
-            self::STATUS_BOOKED => 'bg-blue-100 text-blue-800',
-            self::STATUS_CHECKED_IN => 'bg-green-100 text-green-800',
+            self::STATUS_PENDING     => 'bg-yellow-100 text-yellow-800',
+            self::STATUS_BOOKED      => 'bg-blue-100 text-blue-800',
+            self::STATUS_CHECKED_IN  => 'bg-green-100 text-green-800',
             self::STATUS_CHECKED_OUT => 'bg-gray-100 text-gray-800',
-            self::STATUS_CANCELLED => 'bg-red-100 text-red-800',
-            self::STATUS_NO_SHOW => 'bg-orange-100 text-orange-800',
-            self::STATUS_RELOCATED => 'bg-purple-100 text-purple-800',
-            default => 'bg-gray-100 text-gray-600',
+            self::STATUS_CANCELLED   => 'bg-red-100 text-red-800',
+            self::STATUS_NO_SHOW     => 'bg-orange-100 text-orange-800',
+            self::STATUS_RELOCATED   => 'bg-purple-100 text-purple-800',
+            self::STATUS_SNATCHED    => 'bg-pink-100 text-pink-800',
+            default                  => 'bg-gray-100 text-gray-600',
         };
     }
 

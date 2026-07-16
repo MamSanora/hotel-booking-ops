@@ -143,27 +143,35 @@ class PaymentController extends Controller
         $isPaid = $this->bakongApiService->checkPayment($transaction);
 
         if ($isPaid) {
-            // Use the transaction's own amount, not the full booking total.
+            // Use the transaction's own amount_paid which already holds the correct
+            // deposit for the tier (set during booking creation in RoomController).
             $transaction->update([
                 'amount_paid'    => $transaction->amount_paid > 0
-                    ? $transaction->amount_paid  // already set (e.g. extension cost)
-                    : $booking->total_price,     // initial booking — use full total
+                    ? $transaction->amount_paid  // already set correctly
+                    : $booking->depositAmount(), // fallback safety
                 'payment_status' => Transaction::STATUS_FULL,
             ]);
 
-            // Only promote to 'booked' if the booking was pending/pending-adjacent.
+            // Only promote to 'booked' if the booking was still pending.
             // A checked-in guest paying for an extension stays checked-in.
             if ($booking->booking_status === Booking::STATUS_PENDING) {
                 $room = \App\Models\Room::find($booking->room_id);
-                if (!$room || !$room->isAvailableForDates($booking->check_in_date, $booking->check_out_date, $booking->id)) {
+                // Race condition check: is there now a SAME-tier (or higher) booking
+                // that completed payment before this one? Pass the booking's tier so
+                // we don't cancel just because a lower-tier double-booking exists.
+                if (!$room || !$room->isAvailableForDates(
+                    $booking->check_in_date,
+                    $booking->check_out_date,
+                    $booking->id,
+                    $booking->payment_tier
+                )) {
                     $booking->update([
-                        'booking_status' => Booking::STATUS_CANCELLED,
-                        'special_requests' => '[PAYMENT RECEIVED BUT ROOM SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
+                        'booking_status'   => Booking::STATUS_SNATCHED,
+                        'special_requests' => '[RACE CONDITION: SAME-TIER BOOKING SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
                     ]);
 
                     return response()->json([
                         'paid'     => true,
-                        // Redirect to failed page with session error
                         'redirect' => route('payment.failed'),
                     ]);
                 }
@@ -199,7 +207,7 @@ class PaymentController extends Controller
             $transaction->update([
                 'amount_paid'     => $transaction->amount_paid > 0
                     ? $transaction->amount_paid
-                    : $booking->total_price,
+                    : $booking->depositAmount(),
                 'payment_status'  => Transaction::STATUS_FULL,
                 'tracking_status' => 'SIMULATED',
             ]);
@@ -209,14 +217,19 @@ class PaymentController extends Controller
         // A checked-in guest paying for an extension stays checked-in.
         if ($booking->booking_status === Booking::STATUS_PENDING) {
             $room = \App\Models\Room::find($booking->room_id);
-            if (!$room || !$room->isAvailableForDates($booking->check_in_date, $booking->check_out_date, $booking->id)) {
+            if (!$room || !$room->isAvailableForDates(
+                $booking->check_in_date,
+                $booking->check_out_date,
+                $booking->id,
+                $booking->payment_tier
+            )) {
                 $booking->update([
-                    'booking_status' => Booking::STATUS_CANCELLED,
-                    'special_requests' => '[PAYMENT RECEIVED BUT ROOM SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
+                    'booking_status'   => Booking::STATUS_SNATCHED,
+                    'special_requests' => '[RACE CONDITION: SAME-TIER BOOKING SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
                 ]);
 
                 return redirect()->route('payment.failed')
-                    ->with('error', 'Payment simulated, but the room was booked by someone else moments ago! Refund required.');
+                    ->with('error', 'Payment simulated, but the room was booked by someone else at the same tier moments ago! Refund required.');
             }
 
             $booking->update(['booking_status' => Booking::STATUS_BOOKED]);

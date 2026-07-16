@@ -98,8 +98,17 @@ class RoomController extends Controller
     public function store(StoreBookingRequest $request, Room $room): RedirectResponse
     {
         $validated = $request->validated();
+        $requestedTier = (int) $validated['payment_tier'];
 
-        if (!$room->isAvailableForDates($validated['check_in_date'], $validated['check_out_date'])) {
+        // Tier-aware availability check.
+        // A room is unavailable at $requestedTier if an existing booked/checked-in
+        // booking already holds the room at the same or higher tier.
+        if (!$room->isAvailableForDates(
+            $validated['check_in_date'],
+            $validated['check_out_date'],
+            null,
+            $requestedTier
+        )) {
             return back()
                 ->withErrors(['check_in_date' => 'This room is not available for the selected dates. Please choose different dates or another room.'])
                 ->withInput();
@@ -108,17 +117,22 @@ class RoomController extends Controller
         // GuestAuth → guest_id (bookings are linked to Guest, not GuestAuth).
         $guestId = Auth::user()->guest_id;
 
-        $booking = DB::transaction(function () use ($validated, $room, $guestId) {
+        $booking = DB::transaction(function () use ($validated, $room, $guestId, $requestedTier) {
             $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                 ->diffInDays(Carbon::parse($validated['check_out_date'])));
 
             $total = $nights * (float) $room->roomType->price_per_night;
 
-            // Check if there's already a pending booking for this guest, room, and dates.
+            // Deposit = total × (tier / 100). For 100% tier this equals total.
+            $depositAmount = round($total * ($requestedTier / 100), 2);
+
+            // Check if there's already a pending booking for this guest, room,
+            // dates, AND the same tier. Same tier = they hit back and re-submitted.
             $existingBooking = Booking::where('guest_id', $guestId)
                 ->where('room_id', $room->id)
                 ->where('check_in_date', $validated['check_in_date'])
                 ->where('check_out_date', $validated['check_out_date'])
+                ->where('payment_tier', $requestedTier)
                 ->where('booking_status', Booking::STATUS_PENDING)
                 ->first();
 
@@ -139,7 +153,7 @@ class RoomController extends Controller
                 } elseif (!$transaction) {
                     Transaction::create([
                         'booking_id'     => $existingBooking->id,
-                        'amount_paid'    => 0,
+                        'amount_paid'    => $depositAmount,
                         'payment_for'    => Transaction::FOR_BOOKING,
                         'payment_method' => $validated['payment_method'],
                         'payment_status' => Transaction::STATUS_PENDING,
@@ -151,21 +165,22 @@ class RoomController extends Controller
 
             // Create the booking in 'pending' status — confirmed after payment.
             $booking = Booking::create([
-                'guest_id' => $guestId,
-                'room_id' => $room->id,
-                'check_in_date' => $validated['check_in_date'],
-                'check_out_date' => $validated['check_out_date'],
-                'total_price' => $total,
-                'booking_status' => Booking::STATUS_PENDING,
-                'guest_type' => Booking::GUEST_TYPE_USER,
+                'guest_id'         => $guestId,
+                'room_id'          => $room->id,
+                'check_in_date'    => $validated['check_in_date'],
+                'check_out_date'   => $validated['check_out_date'],
+                'total_price'      => $total,
+                'payment_tier'     => $requestedTier,
+                'booking_status'   => Booking::STATUS_PENDING,
+                'guest_type'       => Booking::GUEST_TYPE_USER,
                 'special_requests' => $validated['special_requests'] ?? null,
             ]);
 
-            // Create a pending transaction with the guest's chosen payment method.
+            // Create a pending transaction with the deposit amount.
             // PaymentController@show will route to the correct payment flow.
             Transaction::create([
                 'booking_id'     => $booking->id,
-                'amount_paid'    => 0,
+                'amount_paid'    => $depositAmount,
                 'payment_for'    => Transaction::FOR_BOOKING,
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => Transaction::STATUS_PENDING,

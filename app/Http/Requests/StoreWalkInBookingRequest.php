@@ -48,8 +48,11 @@ class StoreWalkInBookingRequest extends FormRequest
 
             // ── Payment ──────────────────────────────────────────────────────
             'payment_method' => ['required', Rule::in(['cash', 'khqr'])],
-            'amount_paid' => ['required', 'numeric', 'min:0'],
+            'amount_paid'    => ['required', 'numeric', 'min:0'],
             'payment_status' => ['required', Rule::in(['pending', 'half', 'full'])],
+            // The percentage of the total price paid upfront.
+            // 20 = 20% deposit, 50 = 50% deposit, 100 = full payment.
+            'payment_tier'   => ['required', 'integer', 'in:20,50,100'],
             'special_requests' => ['nullable', 'string', 'max:1000'],
         ];
     }

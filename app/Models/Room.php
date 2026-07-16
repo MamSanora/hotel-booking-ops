@@ -93,19 +93,38 @@ class Room extends Model
     }
 
     /**
-     * Filter rooms available for a given date range.
-     * Excludes rooms with active or booked bookings overlapping the period.
+     * Filter rooms available for a given date range, optionally filtered by
+     * the requested payment tier.
+     *
+     * Availability logic:
+     *   A room is considered BLOCKED if it already has an overlapping active
+     *   booking whose payment_tier >= $requestedTier.
+     *
+     *   Examples:
+     *     Tier 20 requested → blocked by any existing 20, 50, or 100-tier booking
+     *     Tier 50 requested → blocked only by existing 50 or 100-tier bookings
+     *     Tier 100 requested → blocked only by existing 100-tier bookings
+     *
+     *   When $requestedTier is null (e.g. search listing), we show the room as
+     *   available unless there is already a full-price (100) booking, so that
+     *   partially-booked rooms stay visible on the listings page.
      */
     public function scopeAvailableForDates(
         Builder $query,
         string $checkIn,
         string $checkOut,
-        ?int $excludeBookingId = null
+        ?int $excludeBookingId = null,
+        ?int $requestedTier = null
     ): Builder {
-        return $query->whereDoesntHave('bookings', function (Builder $q) use ($checkIn, $checkOut, $excludeBookingId) {
+        // When no tier is given (search listing), treat as 100 so only full-price
+        // bookings hide the room from guests browsing — partial bookings don't.
+        $effectiveTier = $requestedTier ?? 100;
+
+        return $query->whereDoesntHave('bookings', function (Builder $q) use ($checkIn, $checkOut, $excludeBookingId, $effectiveTier) {
             $q->whereIn('booking_status', ['booked', 'checked-in'])
                 ->where('check_in_date', '<', $checkOut)
                 ->where('check_out_date', '>', $checkIn)
+                ->where('payment_tier', '>=', $effectiveTier)
                 ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId));
         });
     }
@@ -124,15 +143,27 @@ class Room extends Model
 
     /**
      * Check if this specific room is available for a date range.
+     *
+     * @param  string    $checkIn        Check-in date string (Y-m-d).
+     * @param  string    $checkOut       Check-out date string (Y-m-d).
+     * @param  int|null  $excludeBookingId  Exclude the current booking from the check (for extensions).
+     * @param  int|null  $requestedTier  Payment tier being requested (20, 50, 100).
+     *                                  When provided, only bookings at >= this tier block availability.
+     *                                  When null, defaults to 100 (only full-price blocks).
      */
-    public function isAvailableForDates(string $checkIn, string $checkOut, ?int $excludeBookingId = null): bool
-    {
-
+    public function isAvailableForDates(
+        string $checkIn,
+        string $checkOut,
+        ?int $excludeBookingId = null,
+        ?int $requestedTier = null
+    ): bool {
+        $effectiveTier = $requestedTier ?? 100;
 
         return !$this->bookings()
             ->whereIn('booking_status', ['booked', 'checked-in'])
             ->where('check_in_date', '<', $checkOut)
             ->where('check_out_date', '>', $checkIn)
+            ->where('payment_tier', '>=', $effectiveTier)
             ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
             ->exists();
     }

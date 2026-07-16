@@ -31,6 +31,9 @@ class StoreBookingRequest extends FormRequest
                 'string',
                 'in:' . Transaction::METHOD_KHQR . ',' . Transaction::METHOD_ABA,
             ],
+            // The percentage of the total price paid upfront.
+            // 20 = 20% deposit, 50 = 50% deposit, 100 = full payment.
+            'payment_tier' => ['required', 'integer', 'in:20,50,100'],
         ];
     }
 

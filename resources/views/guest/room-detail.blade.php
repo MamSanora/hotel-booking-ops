@@ -221,6 +221,44 @@
                                 <span>Estimated Total</span>
                                 <span id="totalPrice" class="text-hotel-gold text-xl">&mdash;</span>
                             </div>
+                            <div class="flex justify-between items-center text-[0.95rem] font-semibold text-hotel-dark" id="depositRow" style="display:none !important">
+                                <span>Amount Due Today</span>
+                                <span id="depositAmount" class="text-green-700">&mdash;</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[0.82rem] text-gray-500" id="balanceRow" style="display:none !important">
+                                <span>Remaining Balance (at check-in)</span>
+                                <span id="balanceAmount">&mdash;</span>
+                            </div>
+                        </div>
+
+                        {{-- Payment Tier Selector --}}
+                        <div class="mb-6">
+                            <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Payment Option</label>
+                            <div class="space-y-2.5">
+                                @foreach([
+                                    ['value' => 100, 'label' => 'Full Payment',     'desc'  => 'Pay the full amount now and your reservation is fully secured.'],
+                                    ['value' => 50,  'label' => '50% Deposit',      'desc'  => 'Pay 50% now, settle the remaining balance at check-in.'],
+                                    ['value' => 20,  'label' => '20% Deposit',      'desc'  => 'Pay 20% now to hold your reservation, balance due at check-in.'],
+                                ] as $tier)
+                                    <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 cursor-pointer transition-all border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]">
+                                        <input type="radio"
+                                               name="payment_tier"
+                                               value="{{ $tier['value'] }}"
+                                               id="tier_{{ $tier['value'] }}"
+                                               {{ $tier['value'] === 100 ? 'checked' : '' }}
+                                               class="mt-0.5 accent-hotel-gold shrink-0 tier-radio">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-semibold text-hotel-dark text-[0.9rem]">{{ $tier['label'] }}</span>
+                                            </div>
+                                            <p class="text-[0.78rem] text-gray-500 mt-0.5">{{ $tier['desc'] }}</p>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('payment_tier')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         {{-- Payment Method Selector (dynamic via PaymentGatewayManager) --}}
@@ -317,6 +355,15 @@
     const checkOutEl  = document.getElementById('check_out_date');
     const nightEl     = document.getElementById('nightCount');
     const totalEl     = document.getElementById('totalPrice');
+    const depositRow  = document.getElementById('depositRow');
+    const balanceRow  = document.getElementById('balanceRow');
+    const depositEl   = document.getElementById('depositAmount');
+    const balanceEl   = document.getElementById('balanceAmount');
+
+    function getSelectedTier() {
+        const checked = document.querySelector('input.tier-radio:checked');
+        return checked ? parseInt(checked.value, 10) : 100;
+    }
 
     function calculatePrice() {
         if (!checkInEl || !checkOutEl) return;
@@ -325,11 +372,27 @@
         if (checkInEl.value && checkOutEl.value && co > ci) {
             const nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
             const total  = nights * pricePerNight;
-            nightEl.textContent = nights + (nights === 1 ? ' night' : ' nights');
-            totalEl.textContent = '$' + total.toFixed(2);
+            const tier   = getSelectedTier();
+            const deposit = Math.round(total * tier) / 100;
+            const balance = total - deposit;
+
+            nightEl.textContent  = nights + (nights === 1 ? ' night' : ' nights');
+            totalEl.textContent  = '$' + total.toFixed(2);
+
+            if (tier < 100) {
+                depositEl.textContent = '$' + deposit.toFixed(2);
+                balanceEl.textContent = '$' + balance.toFixed(2);
+                depositRow.style.removeProperty('display');
+                balanceRow.style.removeProperty('display');
+            } else {
+                depositRow.style.setProperty('display', 'none', 'important');
+                balanceRow.style.setProperty('display', 'none', 'important');
+            }
         } else {
             nightEl.textContent = '—';
             totalEl.textContent = '—';
+            depositRow.style.setProperty('display', 'none', 'important');
+            balanceRow.style.setProperty('display', 'none', 'important');
         }
     }
 
@@ -344,6 +407,12 @@
             calculatePrice();
         });
         checkOutEl.addEventListener('change', calculatePrice);
+
+        // Recalculate whenever a tier radio is changed.
+        document.querySelectorAll('input.tier-radio').forEach(function (radio) {
+            radio.addEventListener('change', calculatePrice);
+        });
+
         calculatePrice();
     }
 </script>
