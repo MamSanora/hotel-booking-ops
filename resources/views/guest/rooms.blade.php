@@ -70,23 +70,16 @@
          TYPE FILTER PILLS
          ========================================== --}}
     <div class="flex flex-wrap gap-2 mb-6">
-        @php
-            $typeLabels = [
-                'standard_twin'   => 'Standard Twin',
-                'standard_double' => 'Standard Double',
-                'deluxe_double'   => 'Deluxe Double',
-            ];
-        @endphp
         <a href="{{ route('rooms.index', request()->except('type')) }}"
            class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
                   {{ !request('type') ? 'bg-hotel-dark border-hotel-dark text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white' }}">
-            All Rooms ({{ $rooms->count() }})
+            All Types ({{ $roomTypes->count() }})
         </a>
-        @foreach($typeLabels as $slug => $label)
-            <a href="{{ route('rooms.index', array_merge(request()->all(), ['type' => $slug])) }}"
+        @foreach($roomTypes as $rt)
+            <a href="{{ route('rooms.index', array_merge(request()->all(), ['type' => $rt->slug])) }}"
                class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
-                      {{ request('type') === $slug ? 'bg-hotel-dark border-hotel-dark text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white' }}">
-                {{ $label }}
+                      {{ request('type') === $rt->slug ? 'bg-hotel-dark border-hotel-dark text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white' }}">
+                {{ $rt->display_name }}
             </a>
         @endforeach
     </div>
@@ -94,7 +87,7 @@
     {{-- Results count --}}
     <p class="text-gray-500 text-sm mb-8">
         <i class="bi bi-grid mr-1"></i>
-        Showing <strong class="text-gray-800">{{ $rooms->count() }}</strong> room(s)
+        Showing <strong class="text-gray-800">{{ $roomTypes->count() }}</strong> room type(s)
         @if(request('checkin') && request('checkout'))
             available between
             <strong class="text-gray-800">{{ \Carbon\Carbon::parse(request('checkin'))->format('M d, Y') }}</strong> and
@@ -113,41 +106,42 @@
         ];
     @endphp
 
-    @if($rooms->count() > 0)
+    @if($roomTypes->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            @foreach($rooms as $room)
+            @foreach($roomTypes as $roomType)
                 @php
-                    $img = $roomImages[$room->roomType?->slug] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80';
+                    $img = $roomImages[$roomType->slug] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80';
+                    $isAvailable = $availability[$roomType->id] ?? true;
+                    // Pick a representative physical room for the detail-page link.
+                    $representativeRoom = $roomType->rooms()->where('current_status', '!=', 'maintenance')->first();
                 @endphp
                 <div class="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
 
-                    {{-- Status Badge --}}
-                    @if($room->current_status === 'available')
+                    {{-- Availability Badge --}}
+                    @if($isAvailable)
                         <span class="absolute top-4 right-4 bg-green-500 text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">Available</span>
-                    @elseif($room->current_status === 'occupied')
-                        <span class="absolute top-4 right-4 bg-red-500 text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">Occupied</span>
                     @else
-                        <span class="absolute top-4 right-4 bg-yellow-400 text-gray-900 text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">Maintenance</span>
+                        <span class="absolute top-4 right-4 bg-red-500 text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">Fully Booked</span>
                     @endif
 
-                    <img src="{{ $img }}" alt="{{ $room->displayType() }}" class="w-full h-[220px] object-cover">
+                    <img src="{{ $img }}" alt="{{ $roomType->display_name }}" class="w-full h-[220px] object-cover">
 
                     <div class="p-6 flex flex-col flex-grow">
-                        {{-- Room Number & Price --}}
+                        {{-- Type Name & Price --}}
                         <div class="flex justify-between items-center mb-3">
                             <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded">
-                                <i class="bi bi-hash mr-1"></i>Room {{ $room->room_number }}
-                                &middot; <i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->capacity }} guests
+                                <i class="bi bi-people mr-1"></i>Up to {{ $roomType->capacity }} guests
+                                &middot; {{ $roomType->rooms()->where('current_status', '!=', 'maintenance')->count() }} rooms
                             </span>
                             <div class="font-playfair text-2xl font-bold text-hotel-gold">
-                                ${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}
+                                ${{ number_format($roomType->price_per_night ?? 0, 0) }}
                                 <span class="text-[0.8rem] text-gray-400 font-sans font-normal">/night</span>
                             </div>
                         </div>
 
-                        <h5 class="font-bold text-xl text-hotel-dark mb-2">{{ $room->displayType() }}</h5>
+                        <h5 class="font-bold text-xl text-hotel-dark mb-2">{{ $roomType->display_name }}</h5>
                         <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
-                            {{ Str::limit($room->roomType?->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.', 90) }}
+                            {{ Str::limit($roomType->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.', 90) }}
                         </p>
 
                         {{-- Amenity Tags --}}
@@ -165,18 +159,20 @@
 
                         {{-- Action Buttons --}}
                         <div class="flex gap-3">
-                            <a href="{{ route('rooms.show', $room) }}" class="flex-1 text-center bg-transparent hover:bg-hotel-dark text-hotel-dark hover:text-white border-[1.5px] border-hotel-dark font-semibold text-[0.9rem] py-2 rounded-lg transition-colors duration-200">
-                                Details
-                            </a>
-                            @if($room->current_status === 'available')
-                                <a href="{{ route('rooms.show', $room) }}{{ request('checkin') ? '?checkin='.request('checkin').'&checkout='.request('checkout') : '' }}"
-                                   class="flex-1 text-center bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-semibold py-2 rounded-lg transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_4px_15px_rgba(200,169,110,0.4)]">
-                                    <i class="bi bi-calendar-plus mr-1"></i>Book
+                            @if($representativeRoom)
+                                <a href="{{ route('rooms.show', $representativeRoom) }}{{ $checkinDate ? '?checkin='.$checkinDate.'&checkout='.$checkoutDate : '' }}" class="flex-1 text-center bg-transparent hover:bg-hotel-dark text-hotel-dark hover:text-white border-[1.5px] border-hotel-dark font-semibold text-[0.9rem] py-2 rounded-lg transition-colors duration-200">
+                                    Details
                                 </a>
-                            @else
-                                <span class="flex-1 text-center bg-gray-50 text-gray-400 border border-gray-200 font-semibold text-[0.9rem] py-2 rounded-lg cursor-not-allowed">
-                                    Unavailable
-                                </span>
+                                @if($isAvailable)
+                                    <a href="{{ route('rooms.show', $representativeRoom) }}{{ $checkinDate ? '?checkin='.$checkinDate.'&checkout='.$checkoutDate : '' }}"
+                                       class="flex-1 text-center bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-semibold py-2 rounded-lg transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_4px_15px_rgba(200,169,110,0.4)]">
+                                        <i class="bi bi-calendar-plus mr-1"></i>Book
+                                    </a>
+                                @else
+                                    <span class="flex-1 text-center bg-gray-50 text-gray-400 border border-gray-200 font-semibold text-[0.9rem] py-2 rounded-lg cursor-not-allowed">
+                                        Fully Booked
+                                    </span>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -186,9 +182,9 @@
     @else
         <div class="bg-hotel-light rounded-2xl text-center py-16 px-4">
             <i class="bi bi-calendar-x text-[3.5rem] text-hotel-gold mb-4 inline-block"></i>
-            <h4 class="font-bold text-2xl text-hotel-dark mb-3">No Rooms Available</h4>
+            <h4 class="font-bold text-2xl text-hotel-dark mb-3">No Room Types Found</h4>
             <p class="text-gray-500 mb-6">
-                No rooms match your search for the selected dates and filters.<br>
+                No room types match your filters.<br>
                 Try different dates or remove filters.
             </p>
             <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold px-6 py-2.5 rounded-lg transition-colors duration-200">

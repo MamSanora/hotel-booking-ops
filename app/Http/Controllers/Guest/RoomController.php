@@ -39,7 +39,7 @@ class RoomController extends Controller
      */
     public function home(): View
     {
-        // Show one representative available room per room type for the homepage cards.
+        // Show one representative room per room type for the homepage cards.
         $featuredRooms = Room::available()
             ->with('roomType')
             ->get()
@@ -51,7 +51,8 @@ class RoomController extends Controller
     }
 
     /**
-     * Room listing page — available rooms with optional date/type filter.
+     * Room listing page — now shows one card per Room Type (not per physical room).
+     * Availability reflects virtual capacity (overbooking-aware).
      */
     public function index(Request $request): View
     {
@@ -59,26 +60,39 @@ class RoomController extends Controller
         $checkoutDate = $request->input('checkout');
         $typeFilter   = $request->input('type');
 
-        $query = Room::available()->with('roomType');
+        $roomTypes = RoomType::with('rooms')->get();
 
-        // Filter by room type slug via the relationship.
+        // For each room type, compute virtual availability status.
+        // We pass this to the view so it can show "Available" / "Fully Booked" badges.
+        $availability = [];
+        foreach ($roomTypes as $rt) {
+            if ($checkinDate && $checkoutDate) {
+                // Use virtual capacity: available if at least one more tier-100 slot exists.
+                $availability[$rt->id] = $rt->hasAvailableVirtualCapacity(
+                    $checkinDate,
+                    $checkoutDate,
+                    Booking::TIER_FULL   // most conservative check for the listing
+                );
+            } else {
+                // No date filter: show as available if any physical room is not in maintenance.
+                $availability[$rt->id] = $rt->rooms()->where('current_status', '!=', 'maintenance')->exists();
+            }
+        }
+
+        // Filter by type slug if requested.
         if ($typeFilter) {
-            $query->whereHas('roomType', fn ($q) => $q->where('slug', $typeFilter));
+            $roomTypes = $roomTypes->filter(fn ($rt) => $rt->slug === $typeFilter)->values();
         }
 
-        // Filter by date availability if both dates are provided.
-        if ($checkinDate && $checkoutDate) {
-            $query->availableForDates($checkinDate, $checkoutDate);
-        }
-
-        $rooms     = $query->orderBy('room_number')->get();
-        $roomTypes = RoomType::all()->keyBy('slug');
-
-        return view('guest.rooms', compact('rooms', 'roomTypes', 'checkinDate', 'checkoutDate'));
+        // We still need $rooms for backward compat with count() calls in views;
+        // pass $roomTypes as the main collection, $rooms as an empty placeholder.
+        return view('guest.rooms', compact('roomTypes', 'availability', 'checkinDate', 'checkoutDate', 'typeFilter'));
     }
 
     /**
-     * Room detail page — full room info and the booking form.
+     * Room detail page — still accepts a physical Room model for the URL
+     * (so existing links and routes work unchanged), but the view only shows
+     * Room Type information, not the physical room number.
      */
     public function show(Room $room): View
     {
@@ -97,39 +111,58 @@ class RoomController extends Controller
      */
     public function store(StoreBookingRequest $request, Room $room): RedirectResponse
     {
-        $validated = $request->validated();
+        $validated     = $request->validated();
         $requestedTier = (int) $validated['payment_tier'];
+        $roomType      = $room->roomType;
 
-        // Tier-aware availability check.
-        // A room is unavailable at $requestedTier if an existing booked/checked-in
-        // booking already holds the room at the same or higher tier.
-        if (!$room->isAvailableForDates(
+        // ── Step 1: Predictive overbooking check ────────────────────────────
+        // Check virtual capacity at the Room Type level (not physical room level).
+        // A 10% overbooking buffer is applied — e.g., 10 physical rooms = 11 virtual slots.
+        // Tier priority is also applied: a 50%-tier guest only competes against
+        // 50%+ tier bookings, allowing higher-tier guests to always find capacity.
+        if (!$roomType->hasAvailableVirtualCapacity(
             $validated['check_in_date'],
             $validated['check_out_date'],
-            null,
             $requestedTier
         )) {
             return back()
-                ->withErrors(['check_in_date' => 'This room is not available for the selected dates. Please choose different dates or another room.'])
+                ->withErrors(['check_in_date' => 'This room type is fully booked for the selected dates. Please choose different dates or another room type.'])
                 ->withInput();
+        }
+
+        // ── Step 2: Auto-assign the best physical room ──────────────────────
+        // The guest doesn't pick a physical room — we do it for them.
+        // We prefer a completely empty room; fall back to a room with only
+        // lower-tier bookings (tier priority allows this).
+        $assignedRoom = $roomType->pickAvailableRoom(
+            $validated['check_in_date'],
+            $validated['check_out_date'],
+            $requestedTier
+        );
+
+        // Safety net: if pickAvailableRoom returns null (shouldn't happen after
+        // the virtual capacity check, but defend against a race window), use
+        // the original room from the URL as a last resort.
+        if (!$assignedRoom) {
+            $assignedRoom = $room;
         }
 
         // GuestAuth → guest_id (bookings are linked to Guest, not GuestAuth).
         $guestId = Auth::user()->guest_id;
 
-        $booking = DB::transaction(function () use ($validated, $room, $guestId, $requestedTier) {
+        $booking = DB::transaction(function () use ($validated, $assignedRoom, $roomType, $guestId, $requestedTier) {
             $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                 ->diffInDays(Carbon::parse($validated['check_out_date'])));
 
-            $total = $nights * (float) $room->roomType->price_per_night;
+            $total = $nights * (float) $roomType->price_per_night;
 
             // Deposit = total × (tier / 100). For 100% tier this equals total.
             $depositAmount = round($total * ($requestedTier / 100), 2);
 
-            // Check if there's already a pending booking for this guest, room,
-            // dates, AND the same tier. Same tier = they hit back and re-submitted.
+            // Check if there's already a pending booking for this guest, same type,
+            // dates, AND the same tier (i.e. they hit back and re-submitted).
             $existingBooking = Booking::where('guest_id', $guestId)
-                ->where('room_id', $room->id)
+                ->whereHas('room', fn ($q) => $q->where('room_type_id', $assignedRoom->room_type_id))
                 ->where('check_in_date', $validated['check_in_date'])
                 ->where('check_out_date', $validated['check_out_date'])
                 ->where('payment_tier', $requestedTier)
@@ -166,7 +199,7 @@ class RoomController extends Controller
             // Create the booking in 'pending' status — confirmed after payment.
             $booking = Booking::create([
                 'guest_id'         => $guestId,
-                'room_id'          => $room->id,
+                'room_id'          => $assignedRoom->id,
                 'check_in_date'    => $validated['check_in_date'],
                 'check_out_date'   => $validated['check_out_date'],
                 'total_price'      => $total,
@@ -177,7 +210,6 @@ class RoomController extends Controller
             ]);
 
             // Create a pending transaction with the deposit amount.
-            // PaymentController@show will route to the correct payment flow.
             Transaction::create([
                 'booking_id'     => $booking->id,
                 'amount_paid'    => $depositAmount,

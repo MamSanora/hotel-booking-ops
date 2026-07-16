@@ -2,7 +2,7 @@
 
 @inject('gatewayManager', 'App\Services\PaymentGatewayManager')
 
-@section('title', $room->displayType() . ' — Room ' . $room->room_number)
+@section('title', $room->displayType())
 
 @section('content')
 
@@ -22,7 +22,7 @@
                 <li class="text-white/30">/</li>
                 <li><a href="{{ route('rooms.index') }}" class="hover:text-white transition-colors">Rooms</a></li>
                 <li class="text-white/30">/</li>
-                <li class="text-hotel-gold" aria-current="page">Room {{ $room->room_number }}</li>
+                <li class="text-hotel-gold" aria-current="page">{{ $room->displayType() }}</li>
             </ol>
         </nav>
     </div>
@@ -49,9 +49,6 @@
 
             {{-- Room Basics --}}
             <div class="flex flex-wrap gap-2.5 mb-8">
-                <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
-                    <i class="bi bi-hash text-hotel-gold"></i>Room {{ $room->room_number }}
-                </span>
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
                     <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->roomType?->capacity }} guests
                 </span>
