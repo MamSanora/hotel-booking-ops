@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guest;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -26,24 +27,36 @@ class GuestDashboardController extends Controller
         // GuestAuth → Guest → bookings()
         $guestId = Auth::user()->guest_id;
 
-        // Upcoming: active or confirmed bookings ordered by check-in date.
+        // Upcoming: active or confirmed bookings ordered by check-in date,
+        // and check-out date is today or in the future.
+        // Exclude all terminal/non-actionable statuses so they don't linger.
         $upcomingBookings = Booking::with(['room'])
             ->where('guest_id', $guestId)
             ->whereNotIn('booking_status', [
                 Booking::STATUS_CHECKED_OUT,
                 Booking::STATUS_CANCELLED,
                 Booking::STATUS_NO_SHOW,
+                Booking::STATUS_RELOCATED,
+                Booking::STATUS_SNATCHED,
             ])
+            ->whereDate('check_out_date', '>=', today())
             ->orderBy('check_in_date')
             ->get();
 
-        // Past: completed or cancelled bookings, most recent first.
+        // Past: completed, cancelled, relocated, snatched, no-show — or any
+        // booking where the check-out date has already passed (safety net for
+        // statuses the Night Audit hasn't caught yet).
         $pastBookings = Booking::with(['room'])
             ->where('guest_id', $guestId)
-            ->whereIn('booking_status', [
-                Booking::STATUS_CHECKED_OUT,
-                Booking::STATUS_CANCELLED,
-            ])
+            ->where(function ($query) {
+                $query->whereIn('booking_status', [
+                    Booking::STATUS_CHECKED_OUT,
+                    Booking::STATUS_CANCELLED,
+                    Booking::STATUS_NO_SHOW,
+                    Booking::STATUS_RELOCATED,
+                    Booking::STATUS_SNATCHED,
+                ])->orWhereDate('check_out_date', '<', today());
+            })
             ->orderByDesc('check_out_date')
             ->limit(10)
             ->get();
