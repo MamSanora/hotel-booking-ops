@@ -14,24 +14,61 @@
     <div class="absolute inset-0 bg-gradient-to-br from-hotel-dark/80 via-hotel-dark/60 to-transparent"></div>
 
     <div class="relative z-10 container mx-auto px-4 md:px-6 py-24">
-        <div class="max-w-2xl">
-            <span class="inline-block text-hotel-gold font-semibold uppercase tracking-widest text-xs mb-4 border border-hotel-gold/40 bg-hotel-gold/10 px-4 py-1.5 rounded-full">
-                Phnom Penh, Cambodia
-            </span>
-            <h1 class="font-playfair text-5xl lg:text-[3.8rem] font-extrabold text-white leading-tight mb-6">
-                Your Home Away<br>From Home.
-            </h1>
-            <p class="text-white/75 text-lg leading-relaxed mb-10 max-w-lg">
-                Discover the warmth of Cambodian hospitality at Dara Meas Hotel — 47 elegantly appointed rooms, 24/7 service, and memories that last a lifetime.
-            </p>
-            <div class="flex flex-wrap gap-4">
-                <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-8 py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(200,169,110,0.45)] text-[1.05rem]">
-                    <i class="bi bi-door-open mr-2"></i> Browse Our Rooms
-                </a>
-                <a href="{{ route('about') }}" class="inline-flex items-center bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3.5 rounded-xl border border-white/25 hover:border-white/40 transition-all duration-300 text-[1.05rem]">
-                    <i class="bi bi-info-circle mr-2"></i> About Us
-                </a>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+            {{-- LEFT: Hero text & CTA buttons --}}
+            <div>
+                <span class="inline-block text-hotel-gold font-semibold uppercase tracking-widest text-xs mb-4 border border-hotel-gold/40 bg-hotel-gold/10 px-4 py-1.5 rounded-full">
+                    Phnom Penh, Cambodia
+                </span>
+                <h1 class="font-playfair text-5xl lg:text-[3.8rem] font-extrabold text-white leading-tight mb-6">
+                    Your Home Away<br>From Home.
+                </h1>
+                <p class="text-white/75 text-lg leading-relaxed mb-10 max-w-lg">
+                    Discover the warmth of Cambodian hospitality at Dara Meas Hotel — 47 elegantly appointed rooms, 24/7 service, and memories that last a lifetime.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-8 py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(200,169,110,0.45)] text-[1.05rem]">
+                        <i class="bi bi-door-open mr-2"></i> Browse Our Rooms
+                    </a>
+                    <a href="{{ route('about') }}" class="inline-flex items-center bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3.5 rounded-xl border border-white/25 hover:border-white/40 transition-all duration-300 text-[1.05rem]">
+                        <i class="bi bi-info-circle mr-2"></i> About Us
+                    </a>
+                </div>
             </div>
+
+            {{-- RIGHT: Check Availability card --}}
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-[0_8px_40px_rgba(0,0,0,0.25)]">
+                <h3 class="font-playfair text-xl font-bold text-white mb-1">
+                    <i class="bi bi-calendar2-check text-hotel-gold mr-2"></i>Check Availability
+                </h3>
+                <p class="text-white/60 text-sm mb-5">Find available rooms for your preferred dates.</p>
+                <form action="{{ route('rooms.index') }}" method="GET" class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block font-semibold text-[0.7rem] uppercase text-white/70 tracking-wider mb-1.5">Check-In</label>
+                        <input type="date" name="checkin" min="{{ date('Y-m-d') }}"
+                               class="w-full border-[1.5px] border-white/20 bg-white/10 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none placeholder-white/40 [color-scheme:dark]">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[0.7rem] uppercase text-white/70 tracking-wider mb-1.5">Check-Out</label>
+                        <input type="date" name="checkout"
+                               class="w-full border-[1.5px] border-white/20 bg-white/10 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none [color-scheme:dark]">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[0.7rem] uppercase text-white/70 tracking-wider mb-1.5">Room Type</label>
+                        <select name="type" class="w-full border-[1.5px] border-white/20 bg-hotel-dark/60 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none">
+                            <option value="">Any Type</option>
+                            <option value="standard_twin">Standard Twin</option>
+                            <option value="standard_double">Standard Double</option>
+                            <option value="deluxe_double">Deluxe Double</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold rounded-xl px-4 py-3.5 transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-[0_4px_16px_rgba(200,169,110,0.5)] hover:-translate-y-0.5">
+                        <i class="bi bi-search"></i> Search Rooms
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
 
@@ -59,41 +96,7 @@
     </div>
 </div>
 
-{{-- ==========================================
-     QUICK SEARCH BAR
-     ========================================== --}}
-<div class="container mx-auto px-4 md:px-6 mb-20">
-    <div class="bg-white rounded-2xl shadow-[0_4px_30px_rgba(0,0,0,0.10)] p-6 md:p-8 border border-[#f0ebe2]">
-        <h3 class="font-playfair text-2xl font-bold text-hotel-dark mb-2">Check Availability</h3>
-        <p class="text-gray-500 text-sm mb-6">Find and book available rooms for your preferred dates.</p>
-        <form action="{{ route('rooms.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-            <div>
-                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Check-In</label>
-                <input type="date" name="checkin" min="{{ date('Y-m-d') }}"
-                       class="w-full border-[1.5px] border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none">
-            </div>
-            <div>
-                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Check-Out</label>
-                <input type="date" name="checkout"
-                       class="w-full border-[1.5px] border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none">
-            </div>
-            <div>
-                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Room Type</label>
-                <select name="type" class="w-full border-[1.5px] border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                    <option value="">Any Type</option>
-                    <option value="standard_twin">Standard Twin</option>
-                    <option value="standard_double">Standard Double</option>
-                    <option value="deluxe_double">Deluxe Double</option>
-                </select>
-            </div>
-            <div>
-                <button type="submit" class="w-full bg-hotel-dark hover:bg-hotel-accent text-white font-bold rounded-xl px-4 py-3 transition-colors duration-200 flex items-center justify-center gap-2">
-                    <i class="bi bi-search"></i> Search
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+{{-- Quick Search Bar moved into the hero section above --}}
 
 {{-- ==========================================
      FEATURED ROOMS

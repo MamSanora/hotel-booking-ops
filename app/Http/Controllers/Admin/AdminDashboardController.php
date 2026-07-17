@@ -17,9 +17,10 @@ use Throwable;
  * Displays live hotel statistics on the admin dashboard:
  *   - Room availability summary
  *   - Booking lifecycle counts
- *   - Today's arrivals and departures
+ *   - Today's arrivals and departures (with guest name lists)
  *   - Revenue (monthly + 7-day chart)
  *   - Registered guest account count
+ *   - Occupancy rate percentage
  *   - System backup status (last backup timestamp + health indicator)
  *
  * Route: GET /admin/dashboard
@@ -32,6 +33,7 @@ class AdminDashboardController extends Controller
         $totalRooms     = Room::count();
         $availableRooms = Room::available()->count();
         $occupiedRooms  = Room::occupied()->count();
+        $occupancyRate  = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0;
 
         // ── Booking Statistics ────────────────────────────────────────────
         $activeBookings = Booking::active()->count();
@@ -41,6 +43,18 @@ class AdminDashboardController extends Controller
 
         // Guests expected to check out today (status = checked-in, date = today)
         $todayDepartures = Booking::departingToday()->count();
+
+        // ── Today's Arrivals List (with guest name + room) ─────────────────
+        $arrivalsToday = Booking::arrivingToday()
+            ->with(['guest', 'room.roomType'])
+            ->orderBy('check_in_date')
+            ->get();
+
+        // ── Today's Departures List (with guest name + room) ───────────────
+        $departuresToday = Booking::departingToday()
+            ->with(['guest', 'room.roomType'])
+            ->orderBy('check_out_date')
+            ->get();
 
         // ── Revenue ───────────────────────────────────────────────────────
         // Sum of all fully-paid transactions this calendar month
@@ -107,9 +121,12 @@ class AdminDashboardController extends Controller
             'totalRooms',
             'availableRooms',
             'occupiedRooms',
+            'occupancyRate',
             'activeBookings',
             'todayArrivals',
             'todayDepartures',
+            'arrivalsToday',
+            'departuresToday',
             'monthlyRevenue',
             'totalGuests',
             'revenueLast7Days',
