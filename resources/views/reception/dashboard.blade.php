@@ -113,6 +113,86 @@
         @endif
 
         {{-- ==========================================
+             TODAY'S GUEST MOVEMENT
+             ========================================== --}}
+        <div>
+            <h2 class="font-playfair text-2xl font-bold text-hotel-dark border-b-2 border-gray-200 pb-3 mb-6 flex items-center">
+                <i class="bi bi-people text-teal-500 mr-3"></i>Today's Guest Movement
+                <span class="ml-3 text-sm font-normal text-gray-400">{{ now()->format('l, F j, Y') }}</span>
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {{-- Arrivals List --}}
+                <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-[#f0ebe2] overflow-hidden">
+                    <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-teal-50/50">
+                        <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center"><i class="bi bi-box-arrow-in-right text-lg"></i></div>
+                        <div>
+                            <div class="font-semibold text-hotel-dark text-sm">Check-Ins Today</div>
+                            <div class="text-teal-600 text-xs font-bold">{{ $arrivalsToday->count() }} guest{{ $arrivalsToday->count() !== 1 ? 's' : '' }} arriving</div>
+                        </div>
+                    </div>
+                    @if($arrivalsToday->count() > 0)
+                        <ul class="divide-y divide-gray-50">
+                            @foreach($arrivalsToday as $booking)
+                            <li class="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold shrink-0">{{ strtoupper(substr($booking->guest?->full_name ?? 'G', 0, 1)) }}</div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-hotel-dark">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
+                                        <div class="text-xs text-gray-400">{{ $booking->referenceNumber() }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs font-bold text-hotel-dark">Room {{ $booking->room?->room_number ?? '-' }}</div>
+                                    <div class="text-[0.7rem] text-gray-400">{{ $booking->room?->roomType?->display_name ?? '' }}</div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="px-6 py-8 text-center text-gray-400">
+                            <i class="bi bi-calendar-x text-3xl block mb-2 text-gray-300"></i>
+                            <p class="text-sm">No arrivals scheduled for today.</p>
+                        </div>
+                    @endif
+                </div>
+                {{-- Departures List --}}
+                <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-[#f0ebe2] overflow-hidden">
+                    <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-red-50/50">
+                        <div class="w-9 h-9 rounded-xl bg-red-100 text-red-500 flex items-center justify-center"><i class="bi bi-box-arrow-right text-lg"></i></div>
+                        <div>
+                            <div class="font-semibold text-hotel-dark text-sm">Check-Outs Today</div>
+                            <div class="text-red-500 text-xs font-bold">{{ $todayDepartures->count() }} guest{{ $todayDepartures->count() !== 1 ? 's' : '' }} departing</div>
+                        </div>
+                    </div>
+                    @if($todayDepartures->count() > 0)
+                        <ul class="divide-y divide-gray-50">
+                            @foreach($todayDepartures as $booking)
+                            <li class="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">{{ strtoupper(substr($booking->guest?->full_name ?? 'G', 0, 1)) }}</div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-hotel-dark">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
+                                        <div class="text-xs text-gray-400">{{ $booking->referenceNumber() }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs font-bold text-hotel-dark">Room {{ $booking->room?->room_number ?? '-' }}</div>
+                                    <div class="text-[0.7rem] text-gray-400">{{ $booking->room?->roomType?->display_name ?? '' }}</div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="px-6 py-8 text-center text-gray-400">
+                            <i class="bi bi-calendar-x text-3xl block mb-2 text-gray-300"></i>
+                            <p class="text-sm">No departures scheduled for today.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- ==========================================
              UPCOMING ARRIVALS
              ========================================== --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 md:p-8">

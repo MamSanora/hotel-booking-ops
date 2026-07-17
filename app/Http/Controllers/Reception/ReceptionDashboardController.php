@@ -37,8 +37,14 @@ class ReceptionDashboardController extends Controller
             ->orderBy('check_in_date')
             ->get();
 
+        // Guests arriving specifically today (for Today's Guest Movement block).
+        $arrivalsToday = Booking::with(['guest', 'room.roomType'])
+            ->arrivingToday()
+            ->orderBy('check_in_date')
+            ->get();
+
         // Guests departing today — currently checked in.
-        $todayDepartures = Booking::with(['guest', 'room'])
+        $todayDepartures = Booking::with(['guest', 'room.roomType'])
             ->departingToday()
             ->orderBy('check_out_date')
             ->get();
@@ -92,6 +98,7 @@ class ReceptionDashboardController extends Controller
 
         return view('reception.dashboard', compact(
             'upcomingArrivals',
+            'arrivalsToday',
             'todayDepartures',
             'inHouseGuests',
             'extensionLimits',
