@@ -27,10 +27,7 @@
                     <i class="bi bi-door-open text-hotel-gold text-base"></i>
                     <div>
                         <span class="text-gray-500 block">Room</span>
-                        <strong class="text-hotel-dark">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}</strong>
-                        @if($booking->room)
-                            <span class="text-gray-500 text-[0.78rem] ml-1">No. {{ $booking->room->room_number }}</span>
-                        @endif
+                        <strong class="text-hotel-dark">{{ $booking->room?->displayType() ?? 'Room' }}</strong>
                     </div>
                 </div>
                 <div class="flex items-center gap-2.5 text-[0.88rem]">

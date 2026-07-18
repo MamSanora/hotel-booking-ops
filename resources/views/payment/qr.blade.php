@@ -223,7 +223,7 @@
                             </div>
                             <div class="text-right">
                                 <p class="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-0.5">Room</p>
-                                <p class="text-sm font-extrabold text-gray-800">#{{ $booking->room?->room_number ?? $booking->room_id }}</p>
+                                <p class="text-sm font-extrabold text-gray-800">{{ $booking->room?->displayType() ?? 'Reserved' }}</p>
                             </div>
                         </div>
                     </div>
@@ -374,7 +374,7 @@
                         @endif
                         <div class="flex justify-between py-2.5">
                             <span class="text-gray-400 font-medium">Room</span>
-                            <span class="font-bold text-gray-800">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }} · #{{ $booking->room?->room_number }}</span>
+                            <span class="font-bold text-gray-800">{{ $booking->room?->displayType() ?? 'Room' }}</span>
                         </div>
                         <div class="flex justify-between py-2.5">
                             <span class="text-gray-400 font-medium">Check-in</span>

@@ -59,7 +59,7 @@
                             </div>
                             <div class="text-right">
                                 <div class="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">Room</div>
-                                <div class="text-sm font-bold text-gray-800 mt-0.5">#{{ $booking->room?->room_number ?? $booking->room_id }}</div>
+                                <div class="text-sm font-bold text-gray-800 mt-0.5">{{ $booking->room?->displayType() ?? 'Reserved' }}</div>
                             </div>
                         </div>
                     </div>
@@ -197,7 +197,7 @@
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Room Type</span>
-                            <span class="font-semibold text-gray-900">{{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}</span>
+                            <span class="font-semibold text-gray-900">{{ $booking->room?->displayType() ?? 'Room' }}</span>
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Check-in</span>

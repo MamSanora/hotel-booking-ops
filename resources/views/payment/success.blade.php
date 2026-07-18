@@ -30,12 +30,7 @@
                 <div class="flex justify-between items-center py-3.5 border-b border-[#f0ebe2] text-[0.92rem]">
                     <span class="text-gray-500 font-semibold flex items-center"><i class="bi bi-door-open mr-2 text-hotel-gold"></i>Room</span>
                     <span class="text-hotel-dark font-semibold text-right">
-                        {{ $booking->room?->displayType() ?? 'Room #'.$booking->room_id }}
-                        @if($booking->room)
-                            <span class="text-gray-400 font-normal text-[0.82rem] block sm:inline">
-                                (No. {{ $booking->room->room_number }})
-                            </span>
-                        @endif
+                        {{ $booking->room?->displayType() ?? 'Room' }}
                     </span>
                 </div>
 
