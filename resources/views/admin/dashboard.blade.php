@@ -258,18 +258,103 @@
     {{-- ==========================================
          ANALYTICS CHARTS
          ========================================== --}}
-    <h2 class="font-playfair text-2xl font-bold text-hotel-dark border-b-2 border-gray-200 pb-3 mb-6 flex items-center">
-        <i class="bi bi-bar-chart-line text-blue-500 mr-3"></i>Financial &amp; Booking Analytics
-    </h2>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-200 pb-3 mb-6">
+        <h2 class="font-playfair text-2xl font-bold text-hotel-dark flex items-center">
+            <i class="bi bi-bar-chart-line text-blue-500 mr-3"></i>Financial &amp; Booking Analytics
+        </h2>
+        {{-- Period Quick-Select --}}
+        <div class="flex flex-wrap items-center gap-2" id="analytics-period-controls">
+            <button data-period="7"   class="analytics-preset-btn active" id="preset-7">7D</button>
+            <button data-period="30"  class="analytics-preset-btn"        id="preset-30">30D</button>
+            <button data-period="90"  class="analytics-preset-btn"        id="preset-90">90D</button>
+            <button data-period="365" class="analytics-preset-btn"        id="preset-365">1Y</button>
+            <button data-period="all" class="analytics-preset-btn"        id="preset-all">All</button>
+            <button onclick="document.getElementById('analytics-custom-range').classList.toggle('hidden')" class="analytics-preset-btn" id="preset-custom">
+                <i class="bi bi-calendar-range"></i> Custom
+            </button>
+        </div>
+    </div>
+
+    {{-- Custom date range picker (hidden by default) --}}
+    <div id="analytics-custom-range" class="hidden bg-[#fdfaf6] border border-[#f0ebe2] rounded-2xl p-4 mb-6 flex flex-wrap items-end gap-4">
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">From</label>
+            <input type="date" id="custom-start" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold">
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">To</label>
+            <input type="date" id="custom-end" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold">
+        </div>
+        <button onclick="applyCustomRange()" class="bg-hotel-dark text-white text-sm font-semibold px-5 py-2 rounded-xl hover:bg-hotel-accent transition-colors">
+            <i class="bi bi-funnel mr-1"></i> Apply
+        </button>
+    </div>
+
+    {{-- KPI summary pills for the selected period --}}
+    <div class="flex flex-wrap gap-3 mb-6">
+        <div class="bg-white border border-[#f0ebe2] rounded-xl px-5 py-3 flex items-center gap-3 shadow-sm">
+            <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center"><i class="bi bi-currency-dollar"></i></div>
+            <div>
+                <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Period Revenue</div>
+                <div id="kpi-revenue" class="font-playfair text-xl font-bold text-hotel-dark">—</div>
+            </div>
+        </div>
+        <div class="bg-white border border-[#f0ebe2] rounded-xl px-5 py-3 flex items-center gap-3 shadow-sm">
+            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="bi bi-calendar-check"></i></div>
+            <div>
+                <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Bookings</div>
+                <div id="kpi-bookings" class="font-playfair text-xl font-bold text-hotel-dark">—</div>
+            </div>
+        </div>
+        <div class="bg-white border border-[#f0ebe2] rounded-xl px-5 py-3 flex items-center gap-3 shadow-sm">
+            <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Completed Stays</div>
+                <div id="kpi-completed" class="font-playfair text-xl font-bold text-hotel-dark">—</div>
+            </div>
+        </div>
+        <div class="ml-auto text-xs text-gray-400 self-center italic" id="analytics-period-label">Loading…</div>
+    </div>
+
+    {{-- Chart Grid: 2×2 --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+
+        {{-- Revenue over time --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
-            <h5 class="font-semibold text-lg mb-4 text-hotel-dark">Revenue (Last 7 Days)</h5>
-            <div class="relative w-full" style="height:250px;"><canvas id="revenueChart"></canvas></div>
+            <div class="flex items-center justify-between mb-4">
+                <h5 class="font-semibold text-base text-hotel-dark">Revenue Over Time</h5>
+                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Paid only</span>
+            </div>
+            <div id="chart-revenue" style="height:240px;"></div>
         </div>
+
+        {{-- Booking Volume over time --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
-            <h5 class="font-semibold text-lg mb-4 text-hotel-dark">Booking Distribution</h5>
-            <div class="relative w-full" style="height:250px;"><canvas id="bookingsChart"></canvas></div>
+            <div class="flex items-center justify-between mb-4">
+                <h5 class="font-semibold text-base text-hotel-dark">Booking Volume</h5>
+                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">All statuses</span>
+            </div>
+            <div id="chart-booking-volume" style="height:240px;"></div>
         </div>
+
+        {{-- Revenue by Room Type --}}
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h5 class="font-semibold text-base text-hotel-dark">Revenue by Room Type</h5>
+                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Paid revenue</span>
+            </div>
+            <div id="chart-revenue-by-type" style="height:240px;"></div>
+        </div>
+
+        {{-- Booking Status Distribution --}}
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h5 class="font-semibold text-base text-hotel-dark">Booking Status Distribution</h5>
+                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">For period</span>
+            </div>
+            <div id="chart-booking-status" style="height:240px;"></div>
+        </div>
+
     </div>
 
     {{-- ==========================================
@@ -428,47 +513,202 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+.analytics-preset-btn {
+    padding: 0.3rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.analytics-preset-btn:hover {
+    border-color: #c8a96e;
+    color: #c8a96e;
+    background: #fdfaf6;
+}
+.analytics-preset-btn.active {
+    background: #1a2636;
+    border-color: #1a2636;
+    color: #fff;
+}
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const ANALYTICS_URL = '{{ route("admin.dashboard.analytics") }}';
+    const GOLD  = '#c8a96e';
+    const DARK  = '#1a2636';
+    const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#6b7280','#14b8a6','#f97316'];
 
-    // ── Revenue Chart ──────────────────────────────────────────
-    const revenueData = @json($revenueLast7Days);
-    new Chart(document.getElementById('revenueChart'), {
-        type: 'line',
-        data: {
-            labels: revenueData.map(d => d.date),
-            datasets: [{
-                label: 'Revenue ($)',
-                data: revenueData.map(d => d.revenue),
-                borderColor: '#c8a96e',
-                backgroundColor: 'rgba(200,169,110,0.12)',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#c8a96e',
-                pointRadius: 5,
-                pointHoverRadius: 7,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
-        }
+    // ── ApexChart instances ────────────────────────────────────
+    const defaultOpts = {
+        chart: { toolbar: { show: false }, fontFamily: 'Inter, sans-serif', animations: { easing: 'easeinout', speed: 600 } },
+        noData: { text: 'No data for this period', style: { color: '#9ca3af', fontSize: '13px' } },
+    };
+
+    const revenueChart = new ApexCharts(document.getElementById('chart-revenue'), {
+        ...defaultOpts,
+        chart: { ...defaultOpts.chart, type: 'area', height: 240 },
+        series: [{ name: 'Revenue ($)', data: [] }],
+        xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 }, tickAmount: 8 },
+        yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
+        colors: [GOLD],
+        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02 } },
+        stroke: { curve: 'smooth', width: 3 },
+        dataLabels: { enabled: false },
+        tooltip: { y: { formatter: v => '$' + parseFloat(v).toFixed(2) } },
+        grid: { borderColor: '#f3f4f6' },
+    });
+    revenueChart.render();
+
+    const volumeChart = new ApexCharts(document.getElementById('chart-booking-volume'), {
+        ...defaultOpts,
+        chart: { ...defaultOpts.chart, type: 'bar', height: 240 },
+        series: [{ name: 'Bookings', data: [] }],
+        xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 }, tickAmount: 8 },
+        yaxis: { labels: { formatter: v => Math.round(v) } },
+        colors: ['#6366f1'],
+        plotOptions: { bar: { borderRadius: 5, columnWidth: '55%' } },
+        dataLabels: { enabled: false },
+        grid: { borderColor: '#f3f4f6' },
+    });
+    volumeChart.render();
+
+    const typeChart = new ApexCharts(document.getElementById('chart-revenue-by-type'), {
+        ...defaultOpts,
+        chart: { ...defaultOpts.chart, type: 'bar', height: 240 },
+        series: [{ name: 'Revenue ($)', data: [] }],
+        xaxis: { categories: [] },
+        yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
+        colors: [GOLD, '#10b981', '#3b82f6'],
+        plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
+        dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toFixed(0) },
+        legend: { show: false },
+        tooltip: { y: { formatter: v => '$' + parseFloat(v).toFixed(2) } },
+        grid: { borderColor: '#f3f4f6' },
+    });
+    typeChart.render();
+
+    const statusChart = new ApexCharts(document.getElementById('chart-booking-status'), {
+        ...defaultOpts,
+        chart: { ...defaultOpts.chart, type: 'donut', height: 240 },
+        series: [],
+        labels: [],
+        colors: COLORS,
+        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, total: { show: true, label: 'Total', formatter: w => w.globals.seriesTotals.reduce((a,b) => a+b,0) } } } } },
+        dataLabels: { enabled: false },
+        legend: { position: 'right', fontSize: '12px' },
+    });
+    statusChart.render();
+
+    // ── KPI updater ────────────────────────────────────────────
+    function updateKPIs(summary, label) {
+        document.getElementById('kpi-revenue').textContent   = '$' + parseFloat(summary.total_revenue).toFixed(2);
+        document.getElementById('kpi-bookings').textContent  = summary.total_bookings;
+        document.getElementById('kpi-completed').textContent = summary.completed_bookings;
+        document.getElementById('analytics-period-label').textContent = label;
+    }
+
+    // ── Main data fetch + chart update ─────────────────────────
+    function loadAnalytics(startDate, endDate) {
+        // Show loading state
+        document.getElementById('kpi-revenue').textContent   = '…';
+        document.getElementById('kpi-bookings').textContent  = '…';
+        document.getElementById('kpi-completed').textContent = '…';
+
+        let url = ANALYTICS_URL;
+        if (startDate) url += '?start_date=' + startDate + '&end_date=' + endDate;
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                // Revenue area chart
+                revenueChart.updateOptions({
+                    series: [{ name: 'Revenue ($)', data: data.revenue.map(d => d.value) }],
+                    xaxis:  { categories: data.revenue.map(d => d.label) },
+                });
+
+                // Booking volume bar chart
+                volumeChart.updateOptions({
+                    series: [{ name: 'Bookings', data: data.bookingVolume.map(d => d.value) }],
+                    xaxis:  { categories: data.bookingVolume.map(d => d.label) },
+                });
+
+                // Revenue by room type horizontal bar
+                typeChart.updateOptions({
+                    series: [{ name: 'Revenue ($)', data: data.revenueByType.map(d => parseFloat(d.value)) }],
+                    xaxis:  { categories: data.revenueByType.map(d => d.label) },
+                });
+
+                // Status distribution donut
+                if (data.bookingStatuses.length > 0) {
+                    statusChart.updateOptions({
+                        series: data.bookingStatuses.map(d => d.value),
+                        labels: data.bookingStatuses.map(d => d.label),
+                    });
+                } else {
+                    statusChart.updateOptions({ series: [], labels: [] });
+                }
+
+                updateKPIs(data.summary, data.period.label);
+            })
+            .catch(() => {
+                document.getElementById('analytics-period-label').textContent = 'Error loading data';
+            });
+    }
+
+    // ── Preset buttons ─────────────────────────────────────────
+    function setActivePreset(id) {
+        document.querySelectorAll('.analytics-preset-btn').forEach(b => b.classList.remove('active'));
+        const el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }
+
+    document.querySelectorAll('.analytics-preset-btn[data-period]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const period = this.dataset.period;
+            setActivePreset(this.id);
+            document.getElementById('analytics-custom-range').classList.add('hidden');
+
+            if (period === 'all') {
+                loadAnalytics(null, null);
+                return;
+            }
+            const end   = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - (parseInt(period) - 1));
+            loadAnalytics(fmtDate(start), fmtDate(end));
+        });
     });
 
-    // ── Booking Distribution Chart ─────────────────────────────
-    const bookingsData = @json($bookingsByStatus);
-    new Chart(document.getElementById('bookingsChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(bookingsData).map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g,' ')),
-            datasets: [{ data: Object.values(bookingsData), backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#6b7280'], borderWidth: 0 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } }
-    });
+    function fmtDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    window.applyCustomRange = function() {
+        const s = document.getElementById('custom-start').value;
+        const e = document.getElementById('custom-end').value;
+        if (!s || !e) { alert('Please select both a start and end date.'); return; }
+        setActivePreset('preset-custom');
+        loadAnalytics(s, e);
+    };
+
+    // Seed custom date inputs with sensible defaults
+    const today = new Date();
+    const monthAgo = new Date(); monthAgo.setDate(today.getDate() - 29);
+    document.getElementById('custom-end').value   = fmtDate(today);
+    document.getElementById('custom-start').value = fmtDate(monthAgo);
+
+    // ── Boot: load default 7-day view ──────────────────────────
+    const initEnd   = new Date();
+    const initStart = new Date();
+    initStart.setDate(initStart.getDate() - 6);
+    loadAnalytics(fmtDate(initStart), fmtDate(initEnd));
+
 
     // ── Live Clock ─────────────────────────────────────────────
     function updateClock() {

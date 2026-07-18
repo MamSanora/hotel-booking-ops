@@ -162,6 +162,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Dashboard
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        // Analytics AJAX endpoint — powers the dynamic chart date-range filter
+        Route::get('/dashboard/analytics', [AdminDashboardController::class, 'analytics'])->name('dashboard.analytics');
+
         // Manual backup trigger (rate-limited inside the controller)
         Route::post('/backup/run', [BackupController::class, 'run'])->name('backup.run');
 
