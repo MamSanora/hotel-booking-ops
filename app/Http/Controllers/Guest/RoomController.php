@@ -236,7 +236,7 @@ class RoomController extends Controller
 
         abort_if($booking->guest_id !== $guestId, 403);
 
-        $booking->load(['room', 'transactions']);
+        $booking->load(['room.roomType', 'transactions']);
 
         $catalogItems = ItemsCatalog::orderBy('category')->get();
         $roomServices = RoomService::where('booking_id', $booking->id)
@@ -301,30 +301,30 @@ class RoomController extends Controller
 
         $validated = $request->validate([
             'guest_notes' => 'nullable|string|max:500',
-            'items' => 'nullable|array',
-            'items.*' => 'integer|min:1|max:10',
+            'items'       => 'nullable|array',
+            'items.*'     => 'nullable|integer|min:0|max:10',
         ]);
 
-        if (empty($validated['items']) && empty($validated['guest_notes'])) {
+        $items = array_filter($validated['items'] ?? [], fn ($quantity) => ! is_null($quantity) && ((int) $quantity) > 0);
+
+        if (empty($items) && empty($validated['guest_notes'])) {
             return back()->with('error', 'Please select at least one item or provide a note.');
         }
 
-        DB::transaction(function () use ($booking, $validated) {
+        DB::transaction(function () use ($booking, $validated, $items) {
             $service = RoomService::create([
-                'booking_id' => $booking->id,
-                'request_type' => RoomService::TYPE_REQUEST,
-                'guest_notes' => $validated['guest_notes'] ?? null,
+                'booking_id'     => $booking->id,
+                'request_type'   => RoomService::TYPE_REQUEST,
+                'guest_notes'    => $validated['guest_notes'] ?? null,
                 'request_status' => RoomService::STATUS_PENDING,
             ]);
 
-            if (! empty($validated['items'])) {
-                foreach ($validated['items'] as $catalogId => $quantity) {
-                    RequestedItem::create([
-                        'request_id' => $service->id,
-                        'catalog_id' => $catalogId,
-                        'amount_per_item' => $quantity,
-                    ]);
-                }
+            foreach ($items as $catalogId => $quantity) {
+                RequestedItem::create([
+                    'request_id'      => $service->id,
+                    'catalog_id'      => $catalogId,
+                    'amount_per_item' => (int) $quantity,
+                ]);
             }
         });
 

@@ -53,12 +53,12 @@
     <!-- ==========================================
          NAVBAR
          ========================================== -->
-    <nav x-data="{ mobileMenuOpen: false }" class="sticky top-0 z-50 bg-gradient-to-br from-hotel-dark to-hotel-accent shadow-lg py-3">
+    <nav x-data="{ mobileMenuOpen: false }" class="sticky top-0 z-50 backdrop-blur-md bg-gradient-to-r from-hotel-dark/95 to-hotel-accent/95 border-b border-white/10 shadow-lg py-3">
         <div class="container mx-auto px-4 md:px-6">
             <div class="flex items-center justify-between">
                 
                 <!-- Brand Logo -->
-                <a href="{{ url('/') }}" class="flex items-center">
+                <a href="{{ url('/') }}" class="flex items-center gap-2">
                     <img src="{{ asset('images/logo.png') }}" alt="Dara Meas Hotel" class="h-10 w-auto object-contain">
                 </a>
 
@@ -76,6 +76,13 @@
                     <a href="{{ route('contact') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('contact*') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
                         <i class="bi bi-envelope mr-1"></i> Contact
                     </a>
+                    
+                    {{-- Localization Pill --}}
+                    <div class="hidden xl:flex items-center gap-2 text-[0.72rem] bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-white/80 font-medium ml-2">
+                        <span><i class="bi bi-globe2 text-hotel-gold mr-1"></i>ខ្មែរ / EN</span>
+                        <span class="text-white/30">|</span>
+                        <span>USD ($) & KHR (៛)</span>
+                    </div>
                 </div>
 
                 <!-- Desktop Auth Section -->

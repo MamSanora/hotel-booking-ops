@@ -37,7 +37,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // ── Step 1: Seed room_types from the existing rooms data ─────────────
+        // ── Step 1: Seed room_types with standard defaults plus existing rooms data ──
+        $defaults = [
+            ['slug' => 'standard_twin',   'display_name' => 'Standard Twin',   'capacity' => 2, 'price_per_night' => 35.00],
+            ['slug' => 'standard_double', 'display_name' => 'Standard Double', 'capacity' => 2, 'price_per_night' => 50.00],
+            ['slug' => 'deluxe_double',   'display_name' => 'Deluxe Double',   'capacity' => 2, 'price_per_night' => 80.00],
+            ['slug' => 'family_room',     'display_name' => 'Family Room',     'capacity' => 4, 'price_per_night' => 120.00],
+            ['slug' => 'suite',           'display_name' => 'Suite',           'capacity' => 4, 'price_per_night' => 180.00],
+        ];
+
+        foreach ($defaults as $def) {
+            DB::table('room_types')->insertOrIgnore(array_merge($def, [
+                'description' => null,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]));
+        }
+
         $existingTypes = DB::table('rooms')
             ->select('room_type', 'price_per_night', 'capacity', 'description')
             ->whereNotNull('room_type')
@@ -82,9 +98,11 @@ return new class extends Migration
         // ── Step 4: Swap constraint to RESTRICT, then make NOT NULL ──────────
         // MySQL cannot make a nullOnDelete FK column NOT NULL, so we drop and
         // re-add the constraint with RESTRICT before changing nullability.
-        DB::statement('ALTER TABLE rooms DROP FOREIGN KEY rooms_room_type_id_foreign');
-        DB::statement('ALTER TABLE rooms MODIFY room_type_id BIGINT UNSIGNED NOT NULL');
-        DB::statement('ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_id_foreign FOREIGN KEY (room_type_id) REFERENCES room_types(id) ON DELETE RESTRICT');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE rooms DROP FOREIGN KEY rooms_room_type_id_foreign');
+            DB::statement('ALTER TABLE rooms MODIFY room_type_id BIGINT UNSIGNED NOT NULL');
+            DB::statement('ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_id_foreign FOREIGN KEY (room_type_id) REFERENCES room_types(id) ON DELETE RESTRICT');
+        }
 
         // ── Step 5: Drop the redundant columns ───────────────────────────────
         Schema::table('rooms', function (Blueprint $table) {

@@ -7,9 +7,9 @@
 {{-- ==========================================
      PAGE BANNER
      ========================================== --}}
-<div class="relative bg-gradient-to-br from-hotel-dark to-hotel-accent py-12 lg:py-16 overflow-hidden">
+<div class="relative bg-hotel-dark py-12 lg:py-16 overflow-hidden" style="background-image: url('{{ asset('images/dara_meas_hero_lobby.png') }}'); background-size: cover; background-position: center;">
     <!-- Background Image Overlay -->
-    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542314831-c6a4d27ece11?w=1600&q=60')] bg-cover bg-center opacity-[0.08]"></div>
+    <div class="absolute inset-0 bg-hotel-dark/90" style="background: linear-gradient(135deg, rgba(26,26,46,0.92) 0%, rgba(26,26,46,0.85) 100%);"></div>
     
     <div class="container mx-auto px-4 md:px-6 relative z-10">
         <h1 class="font-playfair text-3xl lg:text-[2.2rem] font-bold text-white mb-2">
@@ -85,6 +85,61 @@
             </a>
         </div>
         
+    </div>
+</div>
+
+{{-- ==========================================
+     NEIGHBORHOOD & PROXIMITY GUIDE
+     ========================================== --}}
+<div class="bg-hotel-light py-20 border-t border-[#e8e0d0]">
+    <div class="container mx-auto px-4 md:px-6">
+        <div class="max-w-3xl mx-auto text-center mb-12">
+            <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block">Toul Kork District</span>
+            <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2 mb-4">
+                Neighborhood & Travel Times
+            </h2>
+            <p class="text-gray-600 leading-relaxed text-[1.02rem]">
+                Located away from the high-traffic riverfront crowds yet only minutes from Phnom Penh's major business and cultural centers, Dara Meas Hotel provides tranquil rest with rapid citywide transit.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe2] hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 rounded-xl bg-hotel-dark text-hotel-gold flex items-center justify-center text-xl mb-4">
+                    <i class="bi bi-airplane-fill"></i>
+                </div>
+                <h4 class="font-bold text-hotel-dark text-lg mb-1">Phnom Penh Airport</h4>
+                <p class="text-hotel-gold font-semibold text-xs mb-3">15–20 Minutes by Car</p>
+                <p class="text-gray-500 text-xs leading-relaxed">Direct connection to Pochentong via Russian Boulevard. Airport Tuk-Tuk or SUV transfers available upon booking.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe2] hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 rounded-xl bg-hotel-dark text-hotel-gold flex items-center justify-center text-xl mb-4">
+                    <i class="bi bi-bank2"></i>
+                </div>
+                <h4 class="font-bold text-hotel-dark text-lg mb-1">Royal Palace & Museum</h4>
+                <p class="text-hotel-gold font-semibold text-xs mb-3">12–15 Minutes by Tuk-Tuk</p>
+                <p class="text-gray-500 text-xs leading-relaxed">Visit the historic Royal Residence, Silver Pagoda, and the National Museum of Cambodia effortlessly.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe2] hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 rounded-xl bg-hotel-dark text-hotel-gold flex items-center justify-center text-xl mb-4">
+                    <i class="bi bi-bag-check-fill"></i>
+                </div>
+                <h4 class="font-bold text-hotel-dark text-lg mb-1">Central Market</h4>
+                <p class="text-hotel-gold font-semibold text-xs mb-3">8–10 Minutes by Tuk-Tuk</p>
+                <p class="text-gray-500 text-xs leading-relaxed">Quick trip to Phsar Thmey (Central Market), Vattanac Capital Tower, and Canadia Bank headquarters.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe2] hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 rounded-xl bg-hotel-dark text-hotel-gold flex items-center justify-center text-xl mb-4">
+                    <i class="bi bi-cup-hot-fill"></i>
+                </div>
+                <h4 class="font-bold text-hotel-dark text-lg mb-1">Toul Kork Cafés</h4>
+                <p class="text-hotel-gold font-semibold text-xs mb-3">2 Minutes Walk</p>
+                <p class="text-gray-500 text-xs leading-relaxed">Surrounded by vibrant local coffee shops, supermarkets, pharmacies, and authentic Cambodian eateries right outside.</p>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -105,13 +105,18 @@
                     </tr>
                     <tr>
                         <td colspan="2" class="py-2"></td>
-                        <td class="py-2 px-4 text-right text-gray-500 text-sm">VAT (10% Included)</td>
-                        <td class="py-2 px-4 text-right text-gray-500">${{ number_format($booking->total_price * 0.10, 2) }}</td>
+                        <td class="py-2 px-4 text-right text-gray-500 text-sm">VAT (10% & Accommodation Included)</td>
+                        <td class="py-2 px-4 text-right text-emerald-600 font-medium text-xs">Included</td>
                     </tr>
                     <tr class="border-t-2 border-gray-900">
                         <td colspan="2" class="py-5"></td>
-                        <td class="py-5 px-4 text-right font-bold text-lg text-gray-900">Total Paid</td>
+                        <td class="py-5 px-4 text-right font-bold text-lg text-gray-900">Total Paid (USD)</td>
                         <td class="py-5 px-4 text-right font-bold text-xl text-[#b8935a]">${{ number_format($booking->total_price, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="py-2"></td>
+                        <td class="py-2 px-4 text-right font-semibold text-gray-600 text-sm">Approx. KHR Equivalent (៛)</td>
+                        <td class="py-2 px-4 text-right font-bold text-base text-gray-800">៛ {{ number_format($booking->total_price * 4100) }}</td>
                     </tr>
                 </tfoot>
             </table>

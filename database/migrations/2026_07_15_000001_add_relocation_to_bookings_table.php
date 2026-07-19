@@ -38,15 +38,17 @@ return new class extends Migration
 
         // Modify the ENUM to include 'relocated'.
         // Laravel Blueprint doesn't support ENUM modification natively; use raw SQL.
-        DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
-            'pending',
-            'booked',
-            'checked-in',
-            'checked-out',
-            'cancelled',
-            'no_show',
-            'relocated'
-        ) NOT NULL DEFAULT 'booked'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
+                'pending',
+                'booked',
+                'checked-in',
+                'checked-out',
+                'cancelled',
+                'no_show',
+                'relocated'
+            ) NOT NULL DEFAULT 'booked'");
+        }
 
         // Add special_requests if not present
         if (!Schema::hasColumn('bookings', 'special_requests')) {
@@ -63,13 +65,15 @@ return new class extends Migration
             $table->dropColumn('relocated_to_booking_id');
         });
 
-        DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
-            'pending',
-            'booked',
-            'checked-in',
-            'checked-out',
-            'cancelled',
-            'no_show'
-        ) NOT NULL DEFAULT 'booked'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
+                'pending',
+                'booked',
+                'checked-in',
+                'checked-out',
+                'cancelled',
+                'no_show'
+            ) NOT NULL DEFAULT 'booked'");
+        }
     }
 };

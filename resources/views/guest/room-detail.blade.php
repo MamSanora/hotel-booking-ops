@@ -39,13 +39,15 @@
             {{-- Main Room Image --}}
             @php
                 $roomImages = [
-                    'standard_twin'   => 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=85',
-                    'standard_double' => 'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?w=900&q=85',
-                    'deluxe_double'   => 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=900&q=85',
+                    'standard_twin'   => asset('images/dara_room_twin.png'),
+                    'standard_double' => asset('images/dara_room_double.png'),
+                    'deluxe_double'   => asset('images/dara_room_deluxe.png'),
                 ];
-                $img = $roomImages[$room->roomType?->slug] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=85';
+                $img = $roomImages[$room->roomType?->slug] ?? asset('images/dara_room_double.png');
             @endphp
-            <img src="{{ $img }}" alt="{{ $room->displayType() }}" class="w-full h-[300px] sm:h-[400px] object-cover rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8">
+            <div class="relative overflow-hidden rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8">
+                <img src="{{ $img }}" alt="{{ $room->displayType() }}" class="w-full h-[300px] sm:h-[400px] object-cover hover:scale-102 transition-transform duration-500">
+            </div>
 
             {{-- Room Basics --}}
             <div class="flex flex-wrap gap-2.5 mb-8">
@@ -205,26 +207,34 @@
                         </div>
 
                         {{-- Price Summary --}}
-                        <div class="bg-hotel-light rounded-xl p-5 my-6 space-y-2" id="priceSummary">
+                        <div class="bg-hotel-light rounded-xl p-5 my-6 space-y-2.5 border border-[#e8e0d0]" id="priceSummary">
                             <div class="flex justify-between text-[0.9rem] text-gray-600">
-                                <span>Price per night</span>
+                                <span>Rate per night</span>
                                 <span class="font-medium text-gray-800">${{ number_format($room->roomType?->price_per_night ?? 0, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-[0.9rem] text-gray-600">
                                 <span>Number of nights</span>
                                 <span id="nightCount" class="font-medium text-gray-800">&mdash;</span>
                             </div>
-                            <div class="flex justify-between items-center text-[1.05rem] font-bold text-hotel-dark border-t border-[#e0d8cc] pt-3 mt-3">
-                                <span>Estimated Total</span>
+                            <div class="flex justify-between items-center text-[1.08rem] font-bold text-hotel-dark border-t border-[#e0d8cc] pt-3 mt-3">
+                                <span>Estimated Total (USD)</span>
                                 <span id="totalPrice" class="text-hotel-gold text-xl">&mdash;</span>
                             </div>
-                            <div class="flex justify-between items-center text-[0.95rem] font-semibold text-hotel-dark" id="depositRow" style="display:none !important">
+                            <div class="flex justify-between items-center text-[0.82rem] font-semibold text-gray-500 bg-white/60 px-3 py-1.5 rounded-lg border border-gray-200">
+                                <span>Approx. KHR Equivalent (៛)</span>
+                                <span id="khrPrice" class="text-gray-700 font-bold">&mdash;</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[0.95rem] font-semibold text-hotel-dark pt-1" id="depositRow" style="display:none !important">
                                 <span>Amount Due Today</span>
                                 <span id="depositAmount" class="text-green-700">&mdash;</span>
                             </div>
                             <div class="flex justify-between items-center text-[0.82rem] text-gray-500" id="balanceRow" style="display:none !important">
                                 <span>Remaining Balance (at check-in)</span>
                                 <span id="balanceAmount">&mdash;</span>
+                            </div>
+                            <div class="pt-2 border-t border-[#e0d8cc]/60 flex items-center gap-1.5 text-[0.76rem] text-emerald-700 font-medium">
+                                <i class="bi bi-shield-check text-base"></i>
+                                <span>Taxes & basic amenities included · No hidden fees.</span>
                             </div>
                         </div>
 
@@ -352,6 +362,7 @@
     const checkOutEl  = document.getElementById('check_out_date');
     const nightEl     = document.getElementById('nightCount');
     const totalEl     = document.getElementById('totalPrice');
+    const khrEl       = document.getElementById('khrPrice');
     const depositRow  = document.getElementById('depositRow');
     const balanceRow  = document.getElementById('balanceRow');
     const depositEl   = document.getElementById('depositAmount');
@@ -369,12 +380,14 @@
         if (checkInEl.value && checkOutEl.value && co > ci) {
             const nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
             const total  = nights * pricePerNight;
+            const khrTotal = Math.round(total * 4100);
             const tier   = getSelectedTier();
             const deposit = Math.round(total * tier) / 100;
             const balance = total - deposit;
 
             nightEl.textContent  = nights + (nights === 1 ? ' night' : ' nights');
             totalEl.textContent  = '$' + total.toFixed(2);
+            if (khrEl) khrEl.textContent = '៛ ' + khrTotal.toLocaleString();
 
             if (tier < 100) {
                 depositEl.textContent = '$' + deposit.toFixed(2);
@@ -388,6 +401,7 @@
         } else {
             nightEl.textContent = '—';
             totalEl.textContent = '—';
+            if (khrEl) khrEl.textContent = '—';
             depositRow.style.setProperty('display', 'none', 'important');
             balanceRow.style.setProperty('display', 'none', 'important');
         }

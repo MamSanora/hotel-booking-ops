@@ -144,16 +144,24 @@
             </div>
 
             {{-- Payment Summary --}}
-            <div class="p-6 border-b border-[#f0ebe2]">
-                <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Payment Summary</h2>
-                <div class="space-y-2 text-sm text-gray-600">
+            <div class="p-6 border-b border-[#f0ebe2] bg-hotel-light/50">
+                <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Payment Summary & Rate Calculation</h2>
+                <div class="space-y-2.5 text-sm text-gray-600">
                     <div class="flex justify-between">
-                        <span>${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }} × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
-                        <span>${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</span>
+                        <span>Room Rate (${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }})</span>
+                        <span class="font-medium text-gray-800">${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</span>
                     </div>
-                    <div class="border-t border-dashed border-gray-200 pt-2 flex justify-between font-bold text-hotel-dark text-base">
-                        <span>Total Amount</span>
-                        <span class="text-hotel-gold">${{ number_format($booking->total_price ?? $booking->total_price, 2) }}</span>
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>10% VAT & 2% Accommodation Tax</span>
+                        <span class="text-emerald-700 font-semibold">Included</span>
+                    </div>
+                    <div class="border-t border-dashed border-gray-300 pt-2.5 flex justify-between font-bold text-hotel-dark text-base">
+                        <span>Total Amount (USD)</span>
+                        <span class="text-hotel-gold text-lg">${{ number_format($booking->total_price ?? 0, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-white px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-600">
+                        <span class="font-semibold text-gray-700"><i class="bi bi-currency-exchange text-hotel-gold mr-1"></i> Approx. KHR Equivalent:</span>
+                        <span class="font-bold text-gray-900 text-sm">៛ {{ number_format(($booking->total_price ?? 0) * 4100) }}</span>
                     </div>
                 </div>
             </div>
@@ -217,7 +225,7 @@
                             @foreach($catalogItems as $item)
                             <div class="flex items-center justify-between border border-gray-200 rounded-lg p-3 hover:border-hotel-gold transition-colors bg-gray-50/50">
                                 <span class="text-sm font-medium text-gray-700">{{ $item->item_name }}</span>
-                                <input type="number" name="items[{{ $item->id }}]" min="0" max="10" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold">
+                                <input type="number" name="items[{{ $item->id }}]" min="0" max="10" placeholder="0" value="{{ old('items.' . $item->id) }}" class="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold">
                             </div>
                             @endforeach
                         </div>
@@ -226,7 +234,7 @@
                     
                     <div class="mb-5">
                         <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-2">Special Notes / Complaints</label>
-                        <textarea name="guest_notes" rows="3" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 outline-none resize-none placeholder-gray-400" placeholder="e.g. Please bring extra towels, or AC is not working well..."></textarea>
+                        <textarea name="guest_notes" rows="3" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 outline-none resize-none placeholder-gray-400" placeholder="e.g. Please bring extra towels, or AC is not working well...">{{ old('guest_notes') }}</textarea>
                     </div>
                     
                     <button type="submit" class="bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-6 py-2.5 rounded-xl transition-colors inline-flex items-center">

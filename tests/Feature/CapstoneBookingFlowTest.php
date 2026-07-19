@@ -5,6 +5,7 @@ use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\GuestAuth;
 use App\Models\Room;
+use App\Models\RoomType;
 use App\Models\Staff;
 use App\Models\Transaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,11 +28,9 @@ it('loads public hotel pages successfully', function () {
 
 it('displays room details page for an available room', function () {
     $room = Room::create([
-        'room_number'     => '101',
-        'room_type'       => 'standard_twin',
-        'price_per_night' => 35.00,
-        'current_status'  => Room::STATUS_AVAILABLE,
-        'max_occupancy'   => 2,
+        'room_number'    => '101',
+        'room_type_id'   => RoomType::where('slug', 'standard_twin')->first()->id,
+        'current_status' => Room::STATUS_AVAILABLE,
     ]);
 
     get('/rooms/' . $room->id)->assertStatus(200);
@@ -89,11 +88,9 @@ it('creates a pending booking and routes to the KHQR payment page', function () 
     ]);
 
     $room = Room::create([
-        'room_number'     => '201',
-        'room_type'       => 'standard_double',
-        'price_per_night' => 50.00,
-        'current_status'  => Room::STATUS_AVAILABLE,
-        'max_occupancy'   => 2,
+        'room_number'    => '201',
+        'room_type_id'   => RoomType::where('slug', 'standard_double')->first()->id,
+        'current_status' => Room::STATUS_AVAILABLE,
     ]);
 
     actingAs($guestAuth, 'web');
@@ -105,6 +102,7 @@ it('creates a pending booking and routes to the KHQR payment page', function () 
         'check_in_date'    => $checkIn,
         'check_out_date'   => $checkOut,
         'payment_method'   => Transaction::METHOD_KHQR,
+        'payment_tier'     => 100,
         'special_requests' => 'High floor please',
     ]);
 
@@ -125,10 +123,9 @@ it('prevents double booking on overlapping dates for the same room', function ()
     ]);
 
     $room = Room::create([
-        'room_number'     => '301',
-        'room_type'       => 'deluxe_double',
-        'price_per_night' => 80.00,
-        'current_status'  => Room::STATUS_AVAILABLE,
+        'room_number'    => '301',
+        'room_type_id'   => RoomType::where('slug', 'deluxe_double')->first()->id,
+        'current_status' => Room::STATUS_AVAILABLE,
     ]);
 
     $checkIn = now()->addDays(5)->format('Y-m-d');
@@ -151,6 +148,7 @@ it('prevents double booking on overlapping dates for the same room', function ()
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
         'payment_method' => Transaction::METHOD_KHQR,
+        'payment_tier'   => 100,
     ]);
 
     $response->assertSessionHasErrors('check_in_date');

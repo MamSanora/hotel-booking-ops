@@ -96,13 +96,62 @@
     </p>
 
     {{-- ==========================================
+         CAMBODIAN TRUST & PAYMENT SECURITY BAR (POINT 4)
+         ========================================== --}}
+    <div class="bg-gradient-to-r from-hotel-dark via-[#24243e] to-hotel-dark rounded-2xl p-5 md:p-6 text-white shadow-[0_8px_25px_rgba(26,26,46,0.15)] border border-white/10 mb-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-center divide-y sm:divide-y-0 sm:divide-x divide-white/10 text-center sm:text-left">
+            
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-qr-code"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">ABA PayWay & KHQR</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Instant Bakong scan & pay accepted.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0 sm:pl-5">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">No Hidden Fees</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">All room taxes & amenities included.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0 lg:pl-5">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">Instant Confirmation</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Direct SMS & email receipt.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0 lg:pl-5">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-award"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">Best Rate Guarantee</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Direct rates starting at $35/night.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {{-- ==========================================
          ROOM GRID
          ========================================== --}}
     @php
         $roomImages = [
-            'standard_twin'   => 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80',
-            'standard_double' => 'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?w=600&q=80',
-            'deluxe_double'   => 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80',
+            'standard_twin'   => asset('images/dara_room_twin.png'),
+            'standard_double' => asset('images/dara_room_double.png'),
+            'deluxe_double'   => asset('images/dara_room_deluxe.png'),
         ];
     @endphp
 
@@ -110,21 +159,28 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($roomTypes as $roomType)
                 @php
-                    $img = $roomImages[$roomType->slug] ?? 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80';
+                    $img = $roomImages[$roomType->slug] ?? asset('images/dara_room_double.png');
                     $isAvailable = $availability[$roomType->id] ?? true;
                     // Pick a representative physical room for the detail-page link.
                     $representativeRoom = $roomType->rooms()->where('current_status', '!=', 'maintenance')->first();
                 @endphp
-                <div class="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+                <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
 
-                    {{-- Availability Badge --}}
-                    @if($isAvailable)
-                        <span class="absolute top-4 right-4 bg-green-500 text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">Available</span>
-                    @else
-                        <span class="absolute top-4 right-4 bg-red-500 text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">Fully Booked</span>
-                    @endif
+                    {{-- Image with hover zoom --}}
+                    <div class="relative overflow-hidden h-[220px]">
+                        <img src="{{ $img }}" alt="{{ $roomType->display_name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
-                    <img src="{{ $img }}" alt="{{ $roomType->display_name }}" class="w-full h-[220px] object-cover">
+                        {{-- Availability Badge --}}
+                        @if($isAvailable)
+                            <span class="absolute top-4 right-4 z-10 bg-emerald-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">
+                                <i class="bi bi-check-circle-fill mr-1"></i>Available
+                            </span>
+                        @else
+                            <span class="absolute top-4 right-4 z-10 bg-red-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">
+                                <i class="bi bi-x-circle-fill mr-1"></i>Fully Booked
+                            </span>
+                        @endif
+                    </div>
 
                     <div class="p-6 flex flex-col flex-grow">
                         {{-- Type Name & Price --}}
