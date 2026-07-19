@@ -53,7 +53,7 @@
                             <div>
                                 <div class="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">Amount Due</div>
                                 <div class="flex items-baseline gap-1.5 mt-0.5">
-                                    <span class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($booking->total_price, 2) }}</span>
+                                    <span class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($transaction->amount_paid, 2) }}</span>
                                     <span class="text-xs font-bold text-gray-500 uppercase">{{ $paymentData['currency'] ?? 'USD' }}</span>
                                 </div>
                             </div>
@@ -176,7 +176,7 @@
                         @foreach([
                             'Open <strong>ABA Mobile, Wing Bank, ACLEDA</strong> or your preferred banking app.',
                             'Tap <strong>KHQR / Scan QR</strong> and point your camera at the code.',
-                            'Verify the amount is <strong>$'. number_format($booking->total_price, 2) .' USD</strong>.',
+                            'Verify the amount is <strong>$'. number_format($transaction->amount_paid, 2) .' USD</strong>.',
                             'Once paid, this page will <strong>automatically redirect</strong> to your receipt.',
                         ] as $i => $step)
                         <div class="flex items-start gap-3">
@@ -209,7 +209,7 @@
                         </div>
                         <div class="pt-3 pb-1 flex justify-between items-center">
                             <span class="text-sm font-bold text-gray-800">Total Payable</span>
-                            <span class="text-sm font-bold text-[#E1232C]">${{ number_format($booking->total_price, 2) }} USD</span>
+                            <span class="text-sm font-bold text-[#E1232C]">${{ number_format($transaction->amount_paid, 2) }} USD</span>
                         </div>
                     </div>
                 </div>

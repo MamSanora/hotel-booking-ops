@@ -77,8 +77,9 @@
                 </div>
 
                 <div class="flex justify-between items-center py-4 text-[0.92rem]">
+                    @php $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->sum('amount_paid'); @endphp
                     <span class="text-hotel-dark font-bold text-base">Total Paid</span>
-                    <span class="font-playfair text-[1.5rem] text-[#2e7d32] font-bold text-right">${{ number_format($booking->total_price, 2) }}</span>
+                    <span class="font-playfair text-[1.5rem] text-[#2e7d32] font-bold text-right">${{ number_format($totalPaid, 2) }}</span>
                 </div>
 
             </div>

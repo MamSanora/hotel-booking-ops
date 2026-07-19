@@ -59,7 +59,7 @@
                 {{-- Amount Box --}}
                 <div class="bg-gradient-to-br from-hotel-gold to-[#b8935a] rounded-xl px-8 py-4 inline-block my-4">
                     <div class="text-white/75 text-[0.78rem] uppercase tracking-widest mb-1">Total Amount Due</div>
-                    <div class="text-white font-playfair text-[2.2rem] font-bold leading-tight">${{ number_format($booking->total_price, 2) }}</div>
+                    <div class="text-white font-playfair text-[2.2rem] font-bold leading-tight">${{ number_format($paymentData['amount'], 2) }}</div>
                 </div>
 
                 {{-- Spinner --}}

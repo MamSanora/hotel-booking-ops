@@ -161,8 +161,13 @@
                                 <td class="px-5 py-4 text-[0.95rem] font-semibold text-center text-gray-800">
                                     {{ $booking->nightCount() }}
                                 </td>
-                                <td class="px-5 py-4 font-bold text-hotel-gold whitespace-nowrap">
-                                    ${{ number_format($booking->total_price, 2) }}
+                                <td class="px-5 py-4 whitespace-nowrap">
+                                    <div class="text-[0.75rem] text-gray-500 font-semibold mb-0.5">Total: ${{ number_format($booking->total_price, 2) }}</div>
+                                    @if($booking->balanceDue() > 0)
+                                        <div class="text-[0.85rem] font-bold text-red-500">Due: ${{ number_format($booking->balanceDue(), 2) }}</div>
+                                    @else
+                                        <div class="text-[0.85rem] font-bold text-emerald-600">Paid in Full</div>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <span class="{{ $statusClass }} text-[0.75rem] font-bold px-3 py-1 rounded-full tracking-wide">
@@ -257,8 +262,13 @@
                                 <td class="px-5 py-4 text-[0.9rem] text-gray-600 whitespace-nowrap">
                                     {{ $booking->check_out_date?->format('M d, Y') }}
                                 </td>
-                                <td class="px-5 py-4 font-semibold text-gray-800 whitespace-nowrap">
-                                    ${{ number_format($booking->total_price, 2) }}
+                                <td class="px-5 py-4 whitespace-nowrap">
+                                    <div class="text-[0.75rem] text-gray-500 font-semibold mb-0.5">Total: ${{ number_format($booking->total_price, 2) }}</div>
+                                    @if($booking->balanceDue() > 0)
+                                        <div class="text-[0.85rem] font-bold text-red-500">Due: ${{ number_format($booking->balanceDue(), 2) }}</div>
+                                    @else
+                                        <div class="text-[0.85rem] font-bold text-emerald-600">Paid in Full</div>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <span class="{{ $statusClass }} text-[0.75rem] font-bold px-3 py-1 rounded-full tracking-wide">

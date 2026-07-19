@@ -69,7 +69,7 @@ class PaymentController extends Controller
      */
     protected function showKhqr(Booking $booking, Transaction $transaction): View
     {
-        $khqrData = $this->khqrService->generate($booking);
+        $khqrData = $this->khqrService->generate($booking, $transaction->amount_paid);
 
         $transaction->update([
             'khqr_string' => $khqrData['khqr_string'],
@@ -83,7 +83,7 @@ class PaymentController extends Controller
 
     protected function showPayWay(Booking $booking, Transaction $transaction): View|RedirectResponse
     {
-        $paymentData = $this->abaPayWayService->createPaymentData($booking);
+        $paymentData = $this->abaPayWayService->createPaymentData($booking, $transaction->amount_paid);
 
         if (! $paymentData['api_success']) {
             return redirect()->route('payment.show', $booking->id)

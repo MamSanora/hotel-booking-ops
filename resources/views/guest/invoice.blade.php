@@ -108,14 +108,25 @@
                         <td class="py-2 px-4 text-right text-gray-500 text-sm">VAT (10% & Accommodation Included)</td>
                         <td class="py-2 px-4 text-right text-emerald-600 font-medium text-xs">Included</td>
                     </tr>
+                    @php $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->sum('amount_paid'); @endphp
                     <tr class="border-t-2 border-gray-900">
-                        <td colspan="2" class="py-5"></td>
-                        <td class="py-5 px-4 text-right font-bold text-lg text-gray-900">Total Paid (USD)</td>
-                        <td class="py-5 px-4 text-right font-bold text-xl text-[#b8935a]">${{ number_format($booking->total_price, 2) }}</td>
+                        <td colspan="2" class="py-3"></td>
+                        <td class="py-3 px-4 text-right font-bold text-lg text-gray-900">Total Amount</td>
+                        <td class="py-3 px-4 text-right font-bold text-xl text-[#b8935a]">${{ number_format($booking->total_price, 2) }}</td>
                     </tr>
                     <tr>
                         <td colspan="2" class="py-2"></td>
-                        <td class="py-2 px-4 text-right font-semibold text-gray-600 text-sm">Approx. KHR Equivalent (៛)</td>
+                        <td class="py-2 px-4 text-right font-bold text-lg text-gray-900">Total Paid (USD)</td>
+                        <td class="py-2 px-4 text-right font-bold text-xl text-[#2e7d32]">${{ number_format($totalPaid, 2) }}</td>
+                    </tr>
+                    <tr class="border-b-2 border-gray-200">
+                        <td colspan="2" class="py-2"></td>
+                        <td class="py-2 px-4 text-right font-bold text-lg text-red-600">Balance Due</td>
+                        <td class="py-2 px-4 text-right font-bold text-xl text-red-600">${{ number_format(max(0, $booking->total_price - $totalPaid), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="py-2"></td>
+                        <td class="py-2 px-4 text-right font-semibold text-gray-600 text-sm">Approx. KHR Equivalent (Total)</td>
                         <td class="py-2 px-4 text-right font-bold text-base text-gray-800">៛ {{ number_format($booking->total_price * 4100) }}</td>
                     </tr>
                 </tfoot>

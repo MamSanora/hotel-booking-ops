@@ -159,8 +159,16 @@
                         <span>Total Amount (USD)</span>
                         <span class="text-hotel-gold text-lg">${{ number_format($booking->total_price ?? 0, 2) }}</span>
                     </div>
-                    <div class="flex justify-between items-center bg-white px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-600">
-                        <span class="font-semibold text-gray-700"><i class="bi bi-currency-exchange text-hotel-gold mr-1"></i> Approx. KHR Equivalent:</span>
+                    <div class="flex justify-between font-bold text-emerald-700 text-base">
+                        <span>Total Paid (USD)</span>
+                        <span class="text-lg">${{ number_format($booking->totalPaid(), 2) }}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-red-600 text-base pb-2 border-b border-dashed border-gray-300">
+                        <span>Balance Due (USD)</span>
+                        <span class="text-lg">${{ number_format($booking->balanceDue(), 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-white px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-600 mt-2">
+                        <span class="font-semibold text-gray-700"><i class="bi bi-currency-exchange text-hotel-gold mr-1"></i> Approx. KHR Equivalent (Total):</span>
                         <span class="font-bold text-gray-900 text-sm">៛ {{ number_format(($booking->total_price ?? 0) * 4100) }}</span>
                     </div>
                 </div>
@@ -184,16 +192,20 @@
                         <div class="text-right">
                             <div class="font-bold text-hotel-dark">${{ number_format($txn->amount_paid, 2) }}</div>
                             @php
-                                $txnColors = [
+                                $txnColor = match($txn->payment_status) {
                                     'pending' => 'bg-amber-100 text-amber-700',
                                     'partial' => 'bg-blue-100 text-blue-700',
                                     'full'    => 'bg-emerald-100 text-emerald-700',
                                     'failed'  => 'bg-red-100 text-red-600',
-                                ];
-                                $txnColor = $txnColors[$txn->payment_status] ?? 'bg-gray-100 text-gray-600';
+                                    default   => 'bg-gray-100 text-gray-600',
+                                };
+                                $txnLabel = match($txn->payment_status) {
+                                    'full' => 'Success',
+                                    default => ucfirst($txn->payment_status),
+                                };
                             @endphp
                             <span class="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1 {{ $txnColor }}">
-                                {{ ucfirst($txn->payment_status) }}
+                                {{ $txnLabel }}
                             </span>
                         </div>
                     </div>

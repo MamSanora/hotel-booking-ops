@@ -70,12 +70,13 @@ class KhqrService
      *     md5_hash:    string,
      * }
      */
-    public function generate(Booking $booking): array
+    public function generate(Booking $booking, ?float $amount = null): array
     {
-        $amount = number_format((float) $booking->total_price, 2, '.', '');
+        $paymentAmount = $amount ?? $booking->total_price;
+        $formattedAmount = number_format((float) $paymentAmount, 2, '.', '');
         $ref    = $booking->referenceNumber();
 
-        $khqr = $this->buildKhqrString($amount, $ref);
+        $khqr = $this->buildKhqrString($formattedAmount, $ref);
 
         return [
             'khqr_string' => $khqr,

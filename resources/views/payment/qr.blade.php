@@ -214,7 +214,7 @@
                                 <p class="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-0.5">Amount Due</p>
                                 <div class="flex items-baseline gap-1.5">
                                     <span class="text-[32px] font-black text-gray-900 leading-none tracking-tight">
-                                        {{ number_format($booking->total_price, 2) }}
+                                        {{ number_format($transaction->amount_paid, 2) }}
                                     </span>
                                     <span class="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider bg-gray-100 px-1.5 py-0.5 rounded-md">
                                         USD
@@ -345,7 +345,7 @@
                         @foreach([
                             ['Open your banking app', 'ABA Mobile, Wing Bank, ACLEDA or any Bakong-connected app'],
                             ['Tap KHQR / Scan QR', 'Point your phone camera at the QR code on the left'],
-                            ['Verify the details', 'Check the amount is <strong class="text-gray-800">$'.number_format($booking->total_price,2).' USD</strong>'],
+                            ['Verify the details', 'Check the amount is <strong class="text-gray-800">$'.number_format($transaction->amount_paid,2).' USD</strong>'],
                             ['Confirm payment', 'This page updates <strong class="text-gray-800">automatically</strong> — no refresh needed'],
                         ] as $i => [$title, $desc])
                         <div class="flex items-start gap-3">
@@ -386,7 +386,7 @@
                         </div>
                         <div class="flex justify-between py-3 mt-1">
                             <span class="font-extrabold text-gray-800 text-[13px]">Total Payable</span>
-                            <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($booking->total_price, 2) }} USD</span>
+                            <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
                         </div>
                     </div>
                 </div>

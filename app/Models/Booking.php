@@ -340,6 +340,25 @@ class Booking extends Model
     }
 
     /**
+     * The actual total amount paid so far, based on successful transactions.
+     * This handles deposits, full payments, and stay extensions dynamically.
+     */
+    public function totalPaid(): float
+    {
+        return (float) $this->transactions()
+            ->whereIn('payment_status', ['full', 'partial'])
+            ->sum('amount_paid');
+    }
+
+    /**
+     * The actual remaining balance left to pay (Total Price - Total Paid).
+     */
+    public function balanceDue(): float
+    {
+        return round(max(0, (float) $this->total_price - $this->totalPaid()), 2);
+    }
+
+    /**
      * Policy: Free up to 24 hours before check-in (14:00).
      */
     public function isRefundable(): bool

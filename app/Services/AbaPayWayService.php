@@ -127,12 +127,14 @@ class AbaPayWayService implements PaymentGatewayInterface
      * @param Booking $booking
      * @return array Contains tran_id, amount, qr_code_url, payment_link, and form payload
      */
-    public function createPaymentData(Booking $booking): array
+    public function createPaymentData(Booking $booking, ?float $amount = null): array
     {
         $reqTime   = now()->format('YmdHis');
         // Unique transaction reference number
         $tranId    = 'DMH-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT) . '-' . time();
-        $amount    = number_format($booking->total_price, 2, '.', '');
+        
+        $paymentAmount = $amount ?? $booking->total_price;
+        $formattedAmount    = number_format($paymentAmount, 2, '.', '');
         $returnUrl = route('payment.callback');
 
         // Items payload encoded in base64.
@@ -142,7 +144,7 @@ class AbaPayWayService implements PaymentGatewayInterface
             [
                 'name'     => "Room {$booking->room?->room_number} – {$roomLabel}",
                 'quantity' => '1',
-                'price'    => $amount,
+                'price'    => $formattedAmount,
             ],
         ];
         $items = base64_encode(json_encode($itemsArr));
@@ -156,7 +158,7 @@ class AbaPayWayService implements PaymentGatewayInterface
         $hash = $this->generateHash(
             $reqTime,
             $tranId,
-            $amount,
+            $formattedAmount,
             $items,
             $shipping,
             $type,
@@ -169,7 +171,7 @@ class AbaPayWayService implements PaymentGatewayInterface
         $payload = [
             'merchant_id'         => $this->merchantId,
             'tran_id'             => $tranId,
-            'amount'              => $amount,
+            'amount'              => $formattedAmount,
             'items'               => $items,
             'shipping'            => $shipping,
             'ctid'                => '',
@@ -201,7 +203,7 @@ class AbaPayWayService implements PaymentGatewayInterface
             'merchant_id'        => $this->merchantId,
             'transaction_id'     => $tranId,
             'merchant_reference' => $booking->referenceNumber(),
-            'amount'             => $amount,
+            'amount'             => $formattedAmount,
             'currency'           => $this->currency,
             'req_time'           => $reqTime,
             'hash'               => $hash,
