@@ -17,20 +17,26 @@
             {{-- LEFT: Hero text & CTA buttons --}}
             <div>
                 <span class="inline-flex items-center gap-1.5 text-hotel-gold font-semibold uppercase tracking-widest text-xs mb-4 border border-hotel-gold/40 bg-hotel-gold/15 px-4 py-1.5 rounded-full backdrop-blur-sm">
-                    <i class="bi bi-geo-alt-fill text-[0.8rem]"></i> Toul Kork, Phnom Penh &middot; 2-Star Boutique Hospitality
+                    <i class="bi bi-geo-alt-fill text-[0.8rem]"></i>
+                    <span data-en="Toul Kork, Phnom Penh · 2-Star Boutique Hospitality" data-km="ទួលគោក, ភ្នំពេញ · សណ្ឋាគារ ២ ផ្កាយ">Toul Kork, Phnom Penh · 2-Star Boutique Hospitality</span>
                 </span>
                 <h1 class="font-playfair text-5xl lg:text-[3.8rem] font-extrabold text-white leading-tight mb-6">
-                    Warm Hospitality.<br>Authentic Comfort.
+                    <span data-en="Warm Hospitality." data-km="ភាពស្វាគមន៍ ពិតប្រាកដ។">Warm Hospitality.</span><br>
+                    <span data-en="Authentic Comfort." data-km="ផាសុខភាព សុទ្ធសាធ។">Authentic Comfort.</span>
                 </h1>
-                <p class="text-white/80 text-lg leading-relaxed mb-10 max-w-lg font-light">
+                <p class="text-white/80 text-lg leading-relaxed mb-10 max-w-lg font-light"
+                   data-en="Welcome to Dara Meas Hotel — a clean, welcoming 2-star boutique hotel located right in Toul Kork, Phnom Penh. Enjoy 47 spotless rooms, 24/7 service, and transparent rates starting at $35/night."
+                   data-km="សូមស្វាគមន៍មកកាន់សណ្ឋាគារ ដារា មាស — សណ្ឋាគារ ២ ផ្កាយ ស្អាត សប្បាយ ស្ថិតក្នុងទួលគោក ភ្នំពេញ។ ចំណុះ ៤៧ បន្ទប់ ។ ថ្លៃចាប់ពី $35/យប់។">
                     Welcome to Dara Meas Hotel — a clean, welcoming 2-star boutique hotel located right in Toul Kork, Phnom Penh. Enjoy 47 spotless rooms, 24/7 service, and transparent rates starting at $35/night.
                 </p>
                 <div class="flex flex-wrap gap-4">
                     <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-gradient-to-r from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-hotel-dark font-bold px-8 py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(200,169,110,0.45)] text-[1.05rem]">
-                        <i class="bi bi-door-open mr-2"></i> Browse Our Rooms
+                        <i class="bi bi-door-open mr-2"></i>
+                        <span data-en="Browse Our Rooms" data-km="មើលបន្ទប់">Browse Our Rooms</span>
                     </a>
                     <a href="{{ route('about') }}" class="inline-flex items-center bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3.5 rounded-xl border border-white/25 hover:border-white/40 transition-all duration-300 text-[1.05rem] backdrop-blur-sm">
-                        <i class="bi bi-info-circle mr-2"></i> About Us
+                        <i class="bi bi-info-circle mr-2"></i>
+                        <span data-en="About Us" data-km="អំពីយើង">About Us</span>
                     </a>
                 </div>
             </div>
@@ -38,31 +44,38 @@
             {{-- RIGHT: Check Availability card --}}
             <div class="bg-white/15 backdrop-blur-xl border border-white/25 rounded-2xl p-6 md:p-7 shadow-[0_12px_45px_rgba(0,0,0,0.35)]">
                 <h3 class="font-playfair text-xl font-bold text-white mb-1 flex items-center">
-                    <i class="bi bi-calendar2-check text-hotel-gold mr-2.5"></i>Check Availability
+                    <i class="bi bi-calendar2-check text-hotel-gold mr-2.5"></i>
+                    <span data-en="Check Availability" data-km="ពិនិត្យការចុះឈ្មោះ">Check Availability</span>
                 </h3>
-                <p class="text-white/70 text-sm mb-5">Find real-time availability and best rates for your stay.</p>
+                <p class="text-white/70 text-sm mb-5"
+                   data-en="Find real-time availability and best rates for your stay."
+                   data-km="ស្វែងរកបន្ទប់ ជាមួយតម្លៃល្អបំផុតសម្រាប់ការស្នាក់នៅ។">Find real-time availability and best rates for your stay.</p>
                 <form action="{{ route('rooms.index') }}" method="GET" class="grid grid-cols-1 gap-4">
                     <div>
-                        <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5">Check-In Date</label>
+                        <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5"
+                               data-en="Check-In Date" data-km="កាលបរិច្ឆេទចូល">Check-In Date</label>
                         <input type="date" name="checkin" min="{{ date('Y-m-d') }}"
                                class="w-full border border-white/30 bg-white/15 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none placeholder-white/40 [color-scheme:dark]">
                     </div>
                     <div>
-                        <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5">Check-Out Date</label>
+                        <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5"
+                               data-en="Check-Out Date" data-km="កាលបរិច្ឆេទចេញ">Check-Out Date</label>
                         <input type="date" name="checkout"
                                class="w-full border border-white/30 bg-white/15 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none [color-scheme:dark]">
                     </div>
                     <div>
-                        <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5">Room Type</label>
+                        <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5"
+                               data-en="Room Type" data-km="ប្រភេទបន្ទប់">Room Type</label>
                         <select name="type" class="w-full border border-white/30 bg-hotel-dark/80 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none">
-                            <option value="">All Room Types ($35 - $80)</option>
-                            <option value="standard_twin">Standard Twin ($35/night)</option>
-                            <option value="standard_double">Standard Double ($50/night)</option>
-                            <option value="deluxe_double">Deluxe Double ($80/night)</option>
+                            <option value="" data-en="All Room Types ($35 - $80)" data-km="ប្រភេទបន្ទប់ទាំងអស់">All Room Types ($35 - $80)</option>
+                            <option value="standard_twin" data-en="Standard Twin ($35/night)" data-km="ស្ទែនដឹតវីន ($35/យប់)">Standard Twin ($35/night)</option>
+                            <option value="standard_double" data-en="Standard Double ($50/night)" data-km="ស្ទែនដឹតដូប ($50/យប់)">Standard Double ($50/night)</option>
+                            <option value="deluxe_double" data-en="Deluxe Double ($80/night)" data-km="ឌីឡុចដូប ($80/យប់)">Deluxe Double ($80/night)</option>
                         </select>
                     </div>
                     <button type="submit" class="w-full bg-gradient-to-r from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-hotel-dark font-bold rounded-xl px-4 py-3.5 mt-1 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-[0_6px_20px_rgba(200,169,110,0.5)] hover:-translate-y-0.5">
-                        <i class="bi bi-search"></i> Search Rooms
+                        <i class="bi bi-search"></i>
+                        <span data-en="Search Rooms" data-km="ស្វែងរកបន្ទប់">Search Rooms</span>
                     </button>
                 </form>
             </div>
@@ -80,15 +93,16 @@
 <div class="container mx-auto px-4 md:px-6 -mt-6 relative z-20 mb-16">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach([
-            ['bi-building', '47', 'Guest Rooms'],
-            ['bi-calendar2-check', '2019', 'Est. Year'],
-            ['bi-clock', '24/7', 'Front Desk'],
-            ['bi-geo-alt', 'Phnom Penh', 'Prime Location'],
-        ] as [$icon, $value, $label])
+            ['bi-building',       '47',        'Guest Rooms',    'បន្ទប់អតិថិជន'],
+            ['bi-calendar2-check','2019',       'Est. Year',      'ឆ្នាំបង្កើត'],
+            ['bi-clock',          '24/7',       'Front Desk',     'ទទួលភ្ញៀវ'],
+            ['bi-geo-alt',        'Phnom Penh', 'Prime Location', 'ទីតាំងល្អ'],
+        ] as [$icon, $value, $label, $labelKm])
         <div class="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.09)] p-5 text-center border border-[#f0ebe2]">
             <i class="bi {{ $icon }} text-hotel-gold text-2xl block mb-2"></i>
             <div class="font-playfair text-2xl font-bold text-hotel-dark">{{ $value }}</div>
-            <div class="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-0.5">{{ $label }}</div>
+            <div class="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-0.5"
+                 data-en="{{ $label }}" data-km="{{ $labelKm }}">{{ $label }}</div>
         </div>
         @endforeach
     </div>
@@ -152,9 +166,13 @@
      ========================================== --}}
 <div class="container mx-auto px-4 md:px-6 mb-20">
     <div class="text-center mb-12">
-        <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block">Our Accommodations</span>
-        <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2">Our Room Types</h2>
-        <p class="text-gray-500 text-[0.95rem] mt-3 max-w-xl mx-auto">From standard comfort to deluxe double rooms — each room crafted for a peaceful stay in Phnom Penh.</p>
+        <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block"
+              data-en="Our Accommodations" data-km="បន្ទប់របស់យើង">Our Accommodations</span>
+        <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2"
+            data-en="Our Room Types" data-km="ប្រភេទបន្ទប់">Our Room Types</h2>
+        <p class="text-gray-500 text-[0.95rem] mt-3 max-w-xl mx-auto"
+           data-en="From standard comfort to deluxe double rooms — each room crafted for a peaceful stay in Phnom Penh."
+           data-km="ចាប់ពីបន្ទប់ស្ទែនដឹត រហូតដល់ ឌីឡុចដូប — គ្រប់បន្ទប់ ត្រូវបានរៀបចំ ដើម្បីការស្នាក់នៅ ស្ងប់ស្ងាត់ ក្នុងភ្នំពេញ។">From standard comfort to deluxe double rooms — each room crafted for a peaceful stay in Phnom Penh.</p>
     </div>
 
     @php
@@ -168,39 +186,50 @@
     @if($featuredRooms->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($featuredRooms as $room)
+            @php
+                $roomsLeft = $room->roomType?->getAvailableCount() ?? 0;
+            @endphp
             <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col">
                 <div class="relative overflow-hidden h-[220px]">
                     <img src="{{ $roomImages[$room->roomType?->slug] ?? $roomImages['standard_double'] }}"
                          alt="{{ $room->displayType() }}"
                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    <div class="absolute top-4 left-4 z-10">
-                        <span class="bg-hotel-dark/85 backdrop-blur-sm text-hotel-gold border border-hotel-gold/30 text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                    <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
+                        <span class="bg-hotel-dark/85 backdrop-blur-sm text-hotel-gold border border-hotel-gold/30 text-xs font-bold px-3 py-1 rounded-full shadow-md w-fit">
                             {{ $room->displayType() }}
                         </span>
                     </div>
+                    @if($roomsLeft > 0)
+                        <div class="absolute top-4 right-4 z-10">
+                            <span class="bg-emerald-600/95 backdrop-blur-md text-white border border-emerald-400/30 text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
+                                <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
+                            </span>
+                        </div>
+                    @endif
                 </div>
                 <div class="p-6 flex flex-col flex-grow">
                     <div class="flex justify-between items-center mb-3">
-                        <span class="text-gray-500 text-xs"><i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->capacity }} guests</span>
+                        <span class="text-gray-600 text-xs font-medium"><i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->capacity }} guests</span>
                         <div class="font-playfair text-2xl font-bold text-hotel-gold">
-                            ${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}
-                            <span class="text-[0.75rem] text-gray-400 font-sans font-normal">/night</span>
+                            <span data-price-usd="{{ $room->roomType?->price_per_night ?? 0 }}">${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}</span>
+                            <span class="text-[0.75rem] text-gray-400 font-sans font-normal"
+                                  data-night-label data-night-label-km="/យប់">/night</span>
                         </div>
                     </div>
                     <p class="text-gray-500 text-sm leading-relaxed mb-5 flex-grow">
                         {{ Str::limit($room->roomType?->description ?? 'A comfortable and well-appointed room for your stay in Phnom Penh.', 80) }}
                     </p>
                     <a href="{{ route('rooms.show', $room) }}"
-                       class="w-full text-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold py-2.5 rounded-xl transition-colors duration-200">
-                        View Details & Book
-                    </a>
+                       class="w-full text-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold py-2.5 rounded-xl transition-colors duration-200"
+                       data-en="View Details & Book" data-km="មើលព័ត៌មាន &amp; កក់">View Details &amp; Book</a>
                 </div>
             </div>
             @endforeach
         </div>
         <div class="text-center mt-10">
             <a href="{{ route('rooms.index') }}" class="inline-flex items-center border-[1.5px] border-hotel-dark text-hotel-dark hover:bg-hotel-dark hover:text-white font-semibold px-8 py-3 rounded-xl transition-colors duration-200">
-                <i class="bi bi-grid mr-2"></i> View All Rooms
+                <i class="bi bi-grid mr-2"></i>
+                <span data-en="View All Rooms" data-km="មើលបន្ទប់ទាំងអស់">View All Rooms</span>
             </a>
         </div>
     @else
@@ -229,22 +258,24 @@
 <div class="bg-hotel-light py-20 mb-0">
     <div class="container mx-auto px-4 md:px-6">
         <div class="text-center mb-12">
-            <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block">Why Us?</span>
-            <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2">Experience Dara Meas</h2>
+            <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block"
+                  data-en="Why Us?" data-km="ហេតុអ្វីបានជាយើង?">Why Us?</span>
+            <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2"
+                data-en="Experience Dara Meas" data-km="បទពិសោធ ដារា មាស">Experience Dara Meas</h2>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach([
-                ['bi-wifi',         'Free Wi-Fi',       'High-speed internet in all rooms and public areas.'],
-                ['bi-shield-check', 'Safe & Secure',    '24-hour security and reception, always at your service.'],
-                ['bi-qr-code-scan', 'Easy Payment',     'Convenient ABA PayWay QR code payments accepted.'],
-                ['bi-clock',        '24/7 Check-In',    'Flexible check-in times to match your schedule.'],
-            ] as [$icon, $title, $desc])
+                ['bi-wifi',         'Free Wi-Fi',       'High-speed internet in all rooms and public areas.',   'Wi-Fi ឥតគិតថ្លៃ',    'អ៊ីនធឺណិតល្បឿនលឿន គ្រប់ជួរ។'],
+                ['bi-shield-check', 'Safe & Secure',    '24-hour security and reception, always at your service.','សុវត្ថិភាព ២៤ ម៉ោង', 'សន្តិសុខ ២៤ ម៉ោង ការទទួលភ្ញៀវ គ្រប់ពេល។'],
+                ['bi-qr-code-scan', 'Easy Payment',     'Convenient ABA PayWay QR code payments accepted.',    'ការទូទាត់ ងាយស្រួល', 'ទទួលយក ABA PayWay QR ។'],
+                ['bi-clock',        '24/7 Check-In',    'Flexible check-in times to match your schedule.',      'ចូលសណ្ឋាគារ ២៤/៧',  'ម៉ោងចូល ងាយបត់បែន។'],
+            ] as [$icon, $title, $desc, $titleKm, $descKm])
             <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-[#f0ebe2]">
                 <div class="w-14 h-14 rounded-full bg-hotel-gold/10 flex items-center justify-center mx-auto mb-4">
                     <i class="bi {{ $icon }} text-hotel-gold text-2xl"></i>
                 </div>
-                <h5 class="font-bold text-lg text-hotel-dark mb-2">{{ $title }}</h5>
-                <p class="text-gray-500 text-[0.88rem] leading-relaxed">{{ $desc }}</p>
+                <h5 class="font-bold text-lg text-hotel-dark mb-2" data-en="{{ $title }}" data-km="{{ $titleKm }}">{{ $title }}</h5>
+                <p class="text-gray-500 text-[0.88rem] leading-relaxed" data-en="{{ $desc }}" data-km="{{ $descKm }}">{{ $desc }}</p>
             </div>
             @endforeach
         </div>
@@ -466,17 +497,39 @@
      ========================================== --}}
 <div class="bg-gradient-to-br from-hotel-dark to-hotel-accent py-16 text-white text-center">
     <div class="container mx-auto px-4 md:px-6">
-        <h2 class="font-playfair text-3xl md:text-4xl font-bold mb-4">Ready to Book Your Stay?</h2>
-        <p class="text-white/70 mb-8 text-[1.05rem]">Reserve your room today and experience the warmth of Dara Meas hospitality.</p>
+        <h2 class="font-playfair text-3xl md:text-4xl font-bold mb-4"
+            data-en="Ready to Book Your Stay?" data-km="រួចរាល់ក្នុងការកក់ ?">Ready to Book Your Stay?</h2>
+        <p class="text-white/70 mb-8 text-[1.05rem]"
+           data-en="Reserve your room today and experience the warmth of Dara Meas hospitality."
+           data-km="កក់បន្ទប់ថ្ងៃនេះ ហើយបទពិសោធការស្វាគមន៍ ដ៏ក្ដៅក្រ ។">Reserve your room today and experience the warmth of Dara Meas hospitality.</p>
         <div class="flex flex-wrap justify-center gap-4">
             <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-8 py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-                <i class="bi bi-calendar-check mr-2"></i> Book Now
+                <i class="bi bi-calendar-check mr-2"></i>
+                <span data-en="Book Now" data-km="កក់ឥឡូវ">Book Now</span>
             </a>
             <a href="{{ route('contact') }}" class="inline-flex items-center bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3.5 rounded-xl border border-white/25 transition-all duration-300">
-                <i class="bi bi-telephone mr-2"></i> Contact Us
+                <i class="bi bi-telephone mr-2"></i>
+                <span data-en="Contact Us" data-km="ទាក់ទងមកយើង">Contact Us</span>
             </a>
         </div>
     </div>
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    const checkinEl  = document.querySelector('input[name="checkin"]');
+    const checkoutEl = document.querySelector('input[name="checkout"]');
+    if (checkinEl && checkoutEl) {
+        checkinEl.addEventListener('change', function () {
+            checkoutEl.min = this.value;
+            if (checkoutEl.value && checkoutEl.value <= this.value) {
+                const d = new Date(this.value);
+                d.setDate(d.getDate() + 1);
+                checkoutEl.value = d.toISOString().split('T')[0];
+            }
+        });
+    }
+</script>
+@endpush

@@ -65,23 +65,43 @@
                 <!-- Desktop Navigation Links -->
                 <div class="hidden lg:flex items-center space-x-2 xl:space-x-4">
                     <a href="{{ url('/') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('/') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
-                        <i class="bi bi-house mr-1"></i> Home
+                        <i class="bi bi-house mr-1"></i>
+                        <span data-en="Home" data-km="ទំព័រដើម">Home</span>
                     </a>
                     <a href="{{ route('rooms.index') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('rooms*') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
-                        <i class="bi bi-door-open mr-1"></i> Rooms
+                        <i class="bi bi-door-open mr-1"></i>
+                        <span data-en="Rooms" data-km="បន្ទប់">Rooms</span>
                     </a>
                     <a href="{{ route('about') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('about*') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
-                        <i class="bi bi-info-circle mr-1"></i> About
+                        <i class="bi bi-info-circle mr-1"></i>
+                        <span data-en="About" data-km="អំពីយើង">About</span>
                     </a>
                     <a href="{{ route('contact') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('contact*') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
-                        <i class="bi bi-envelope mr-1"></i> Contact
+                        <i class="bi bi-envelope mr-1"></i>
+                        <span data-en="Contact" data-km="ទំនាក់ទំនង">Contact</span>
                     </a>
                     
-                    {{-- Localization Pill --}}
-                    <div class="hidden xl:flex items-center gap-2 text-[0.72rem] bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-white/80 font-medium ml-2">
-                        <span><i class="bi bi-globe2 text-hotel-gold mr-1"></i>ខ្មែរ / EN</span>
-                        <span class="text-white/30">|</span>
-                        <span>USD ($) & KHR (៛)</span>
+                    {{-- Localization Pill — Language & Currency Toggle --}}
+                    <div id="locale-pill" class="hidden xl:flex items-center gap-0 text-[0.72rem] bg-white/10 border border-white/20 rounded-full overflow-hidden ml-2 shadow-inner">
+                        {{-- Language toggle --}}
+                        <button
+                            onclick="dmhToggleLang()"
+                            title="Switch language"
+                            class="flex items-center gap-1.5 px-3 py-1.5 text-white/85 hover:bg-white/15 hover:text-white transition-all duration-200 font-medium cursor-pointer"
+                        >
+                            <i class="bi bi-globe2 text-hotel-gold"></i>
+                            <span id="pill-lang-active" class="font-semibold">EN</span>
+                        </button>
+                        {{-- Divider --}}
+                        <span class="text-white/25 text-xs">|</span>
+                        {{-- Currency toggle --}}
+                        <button
+                            onclick="dmhToggleCurrency()"
+                            title="Switch currency"
+                            class="flex items-center gap-1 px-3 py-1.5 text-white/85 hover:bg-white/15 hover:text-white transition-all duration-200 font-medium cursor-pointer"
+                        >
+                            <span id="pill-currency-active">USD ($)</span>
+                        </button>
                     </div>
                 </div>
 
@@ -222,7 +242,7 @@
     <!-- ==========================================
          FOOTER
          ========================================== -->
-    <footer class="bg-hotel-dark text-white/75 pt-12 pb-6 mt-16">
+    <footer class="bg-hotel-dark text-white/75 pt-12 pb-6 border-t border-white/10">
         <div class="container mx-auto px-4 md:px-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-6">
                 

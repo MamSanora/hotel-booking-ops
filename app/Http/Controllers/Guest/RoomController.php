@@ -62,9 +62,10 @@ class RoomController extends Controller
 
         $roomTypes = RoomType::with('rooms')->get();
 
-        // For each room type, compute virtual availability status.
-        // We pass this to the view so it can show "Available" / "Fully Booked" badges.
+        // For each room type, compute virtual availability status and remaining counts.
+        // We pass this to the view so it can show "Available" / "Fully Booked" badges and "X rooms left".
         $availability = [];
+        $availableCounts = [];
         foreach ($roomTypes as $rt) {
             if ($checkinDate && $checkoutDate) {
                 // Use virtual capacity: available if at least one more tier-100 slot exists.
@@ -77,6 +78,7 @@ class RoomController extends Controller
                 // No date filter: show as available if any physical room is not in maintenance.
                 $availability[$rt->id] = $rt->rooms()->where('current_status', '!=', 'maintenance')->exists();
             }
+            $availableCounts[$rt->id] = $rt->getAvailableCount($checkinDate, $checkoutDate);
         }
 
         // Filter by type slug if requested.
@@ -86,7 +88,7 @@ class RoomController extends Controller
 
         // We still need $rooms for backward compat with count() calls in views;
         // pass $roomTypes as the main collection, $rooms as an empty placeholder.
-        return view('guest.rooms', compact('roomTypes', 'availability', 'checkinDate', 'checkoutDate', 'typeFilter'));
+        return view('guest.rooms', compact('roomTypes', 'availability', 'availableCounts', 'checkinDate', 'checkoutDate', 'typeFilter'));
     }
 
     /**
@@ -170,10 +172,11 @@ class RoomController extends Controller
                 ->first();
 
             if ($existingBooking) {
-                // Update special requests if they changed
-                if (array_key_exists('special_requests', $validated)) {
-                    $existingBooking->update(['special_requests' => $validated['special_requests']]);
-                }
+                // Update total price and special requests if needed
+                $existingBooking->update([
+                    'total_price'      => $total,
+                    'special_requests' => $validated['special_requests'] ?? $existingBooking->special_requests,
+                ]);
 
                 // Check for existing pending transaction
                 $transaction = $existingBooking->transactions()
@@ -181,9 +184,12 @@ class RoomController extends Controller
                     ->latest()
                     ->first();
 
-                if ($transaction && $transaction->payment_method !== $validated['payment_method']) {
-                    $transaction->update(['payment_method' => $validated['payment_method']]);
-                } elseif (!$transaction) {
+                if ($transaction) {
+                    $transaction->update([
+                        'amount_paid'    => $depositAmount,
+                        'payment_method' => $validated['payment_method'],
+                    ]);
+                } else {
                     Transaction::create([
                         'booking_id'     => $existingBooking->id,
                         'amount_paid'    => $depositAmount,

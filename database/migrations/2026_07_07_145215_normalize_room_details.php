@@ -20,14 +20,14 @@ return new class extends Migration
         // Standard Double
         DB::table('rooms')->where('room_type', 'standard_double')->update([
             'capacity' => 2,
-            'price_per_night' => 40.00,
+            'price_per_night' => 50.00,
             'description' => 'Cosy 24–28 m² room with a queen-size bed, flat-screen TV, mini-fridge, and daily housekeeping. Great for couples visiting Phnom Penh.',
         ]);
 
         // Deluxe Double
         DB::table('rooms')->where('room_type', 'deluxe_double')->update([
             'capacity' => 2,
-            'price_per_night' => 55.00,
+            'price_per_night' => 80.00,
             'description' => 'Spacious 32–36 m² room on the upper floors featuring a king-size bed, seating area, enhanced amenities, and city views.',
         ]);
     }

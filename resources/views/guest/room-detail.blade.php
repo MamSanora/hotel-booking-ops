@@ -44,13 +44,26 @@
                     'deluxe_double'   => asset('images/dara_room_deluxe.png'),
                 ];
                 $img = $roomImages[$room->roomType?->slug] ?? asset('images/dara_room_double.png');
+                $roomsLeft = $room->roomType?->getAvailableCount(request('checkin'), request('checkout')) ?? 0;
             @endphp
             <div class="relative overflow-hidden rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8">
                 <img src="{{ $img }}" alt="{{ $room->displayType() }}" class="w-full h-[300px] sm:h-[400px] object-cover hover:scale-102 transition-transform duration-500">
+                @if($roomsLeft > 0)
+                    <div class="absolute top-4 right-4 z-10">
+                        <span class="bg-emerald-600/95 backdrop-blur-md text-white border border-emerald-400/30 text-sm font-bold px-4 py-2 rounded-full shadow-md flex items-center gap-2">
+                            <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
+                        </span>
+                    </div>
+                @endif
             </div>
 
             {{-- Room Basics --}}
             <div class="flex flex-wrap gap-2.5 mb-8">
+                @if($roomsLeft > 0)
+                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[0.82rem] font-bold px-3.5 py-1.5 rounded-lg">
+                        <i class="bi bi-check-circle-fill text-emerald-600"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
+                    </span>
+                @endif
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
                     <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->roomType?->capacity }} guests
                 </span>

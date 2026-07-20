@@ -108,7 +108,7 @@
                         <td class="py-2 px-4 text-right text-gray-500 text-sm">VAT (10% & Accommodation Included)</td>
                         <td class="py-2 px-4 text-right text-emerald-600 font-medium text-xs">Included</td>
                     </tr>
-                    @php $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->sum('amount_paid'); @endphp
+                    @php $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'half'])->sum('amount_paid'); @endphp
                     <tr class="border-t-2 border-gray-900">
                         <td colspan="2" class="py-3"></td>
                         <td class="py-3 px-4 text-right font-bold text-lg text-gray-900">Total Amount</td>
@@ -148,7 +148,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @foreach($booking->transactions as $txn)
-                            @if($txn->payment_status === 'full' || $txn->payment_status === 'partial')
+                            @if($txn->payment_status === 'full' || $txn->payment_status === 'half')
                             <tr>
                                 <td class="py-4 px-5 text-gray-600">{{ $txn->created_at->format('d M Y, H:i') }}</td>
                                 <td class="py-4 px-5 font-medium text-gray-700">

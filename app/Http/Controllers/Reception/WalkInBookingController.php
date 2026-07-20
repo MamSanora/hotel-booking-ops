@@ -7,6 +7,7 @@ use App\Http\Requests\StoreWalkInBookingRequest;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Room;
+use App\Models\RoomType;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +44,8 @@ class WalkInBookingController extends Controller
             ->orderBy('room_number')
             ->get();
 
-        $roomTypes = Room::ROOM_TYPES;
+        // Room types from the RoomType model (keyed slug => display name).
+        $roomTypes = RoomType::orderBy('display_name')->pluck('display_name', 'slug');
 
         return view('reception.walk_in.create', compact(
             'availableRooms',

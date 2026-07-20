@@ -15,8 +15,8 @@ class RoomFactory extends Factory
     /** Type-level defaults for capacity and nightly price. */
     private const TYPE_DEFAULTS = [
         'standard_twin'   => ['capacity' => 2, 'price' => 35.00],
-        'standard_double' => ['capacity' => 2, 'price' => 40.00],
-        'deluxe_double'   => ['capacity' => 2, 'price' => 55.00],
+        'standard_double' => ['capacity' => 2, 'price' => 50.00],
+        'deluxe_double'   => ['capacity' => 2, 'price' => 80.00],
     ];
 
     public function definition(): array

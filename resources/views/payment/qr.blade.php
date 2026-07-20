@@ -384,10 +384,29 @@
                             <span class="text-gray-400 font-medium">Check-out</span>
                             <span class="font-bold text-gray-800">{{ $booking->check_out_date?->format('D, d M Y') }}</span>
                         </div>
-                        <div class="flex justify-between py-3 mt-1">
-                            <span class="font-extrabold text-gray-800 text-[13px]">Total Payable</span>
+                        @if($booking->payment_tier < 100)
+                        <div class="flex justify-between py-2.5">
+                            <span class="text-gray-400 font-medium">Total Room Price</span>
+                            <span class="font-bold text-gray-800">${{ number_format($booking->total_price, 2) }} USD</span>
+                        </div>
+                        <div class="flex justify-between py-2.5">
+                            <span class="text-gray-400 font-medium">Payment Option</span>
+                            <span class="font-bold text-gray-800">{{ $booking->payment_tier }}% Deposit</span>
+                        </div>
+                        <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
+                            <span class="font-extrabold text-gray-800 text-[13px]">Deposit Payable Now</span>
                             <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
                         </div>
+                        <div class="flex justify-between py-2.5 bg-gray-50 px-2.5 rounded-lg mt-1 text-xs">
+                            <span class="text-gray-500 font-medium">Balance Due at Check-in</span>
+                            <span class="font-bold text-gray-800">${{ number_format($booking->remainingBalance(), 2) }} USD</span>
+                        </div>
+                        @else
+                        <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
+                            <span class="font-extrabold text-gray-800 text-[13px]">Total Payable (100% Full)</span>
+                            <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                        </div>
+                        @endif
                     </div>
                 </div>
 

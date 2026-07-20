@@ -258,4 +258,30 @@ class RoomType extends Model
             ->orderBy('conflict_count', 'asc')
             ->first();
     }
+
+    /**
+     * Compute remaining available physical rooms count for a given date range (or today if null).
+     */
+    public function getAvailableCount(?string $checkIn = null, ?string $checkOut = null): int
+    {
+        $physicalCount = $this->rooms()->where('current_status', '!=', 'maintenance')->count();
+
+        $checkIn  = $checkIn ?: now()->toDateString();
+        $checkOut = $checkOut ?: now()->addDay()->toDateString();
+
+        $activeBookings = Booking::where(function ($q) {
+                $q->whereHas('room', fn ($q2) => $q2->where('room_type_id', $this->id));
+            })
+            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
+            ->where('check_in_date', '<', $checkOut)
+            ->where('check_out_date', '>', $checkIn)
+            ->count();
+
+        $remaining = $physicalCount - $activeBookings;
+        if ($this->hasAvailableVirtualCapacity($checkIn, $checkOut)) {
+            return max(1, $remaining);
+        }
+
+        return max(0, $remaining);
+    }
 }

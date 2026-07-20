@@ -166,18 +166,21 @@
                 @endphp
                 <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
 
+                    @php
+                        $roomsLeft = $availableCounts[$roomType->id] ?? $roomType->getAvailableCount($checkinDate, $checkoutDate);
+                    @endphp
                     {{-- Image with hover zoom --}}
                     <div class="relative overflow-hidden h-[220px]">
                         <img src="{{ $img }}" alt="{{ $roomType->display_name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
                         {{-- Availability Badge --}}
-                        @if($isAvailable)
-                            <span class="absolute top-4 right-4 z-10 bg-emerald-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">
-                                <i class="bi bi-check-circle-fill mr-1"></i>Available
+                        @if($isAvailable && $roomsLeft > 0)
+                            <span class="absolute top-4 right-4 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full tracking-wide shadow-md flex items-center gap-1.5 border border-emerald-400/30">
+                                <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
                             </span>
                         @else
-                            <span class="absolute top-4 right-4 z-10 bg-red-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">
-                                <i class="bi bi-x-circle-fill mr-1"></i>Fully Booked
+                            <span class="absolute top-4 right-4 z-10 bg-red-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3.5 py-1.5 rounded-full tracking-wider shadow-sm flex items-center gap-1.5">
+                                <i class="bi bi-x-circle-fill"></i>Fully Booked
                             </span>
                         @endif
                     </div>
@@ -185,13 +188,12 @@
                     <div class="p-6 flex flex-col flex-grow">
                         {{-- Type Name & Price --}}
                         <div class="flex justify-between items-center mb-3">
-                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
                                 <i class="bi bi-people mr-1"></i>Up to {{ $roomType->capacity }} guests
-                                &middot; {{ $roomType->rooms()->where('current_status', '!=', 'maintenance')->count() }} rooms
+                                &middot; <span class="text-emerald-700 font-semibold">{{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left</span>
                             </span>
                             <div class="font-playfair text-2xl font-bold text-hotel-gold">
-                                ${{ number_format($roomType->price_per_night ?? 0, 0) }}
-                                <span class="text-[0.8rem] text-gray-400 font-sans font-normal">/night</span>
+                                <span data-price-usd="{{ $roomType->price_per_night ?? 0 }}">${{ number_format($roomType->price_per_night ?? 0, 0) }}</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
                             </div>
                         </div>
 
