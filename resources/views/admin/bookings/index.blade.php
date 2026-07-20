@@ -81,7 +81,7 @@
                     @php
                         // Determine the transaction state once per row.
                         $latestTxn        = $booking->transactions->sortByDesc('created_at')->first();
-                        $hasFullTxn       = $booking->transactions->where('payment_status', \App\Models\Transaction::STATUS_FULL)->isNotEmpty();
+                        $hasFullTxn       = $booking->transactions->whereIn('payment_status', [\App\Models\Transaction::STATUS_FULL, \App\Models\Transaction::STATUS_HALF])->isNotEmpty();
                         $hasRefundedTxn   = $booking->transactions->where('payment_status', \App\Models\Transaction::STATUS_REFUNDED)->isNotEmpty();
                         $needsRefund      = $booking->booking_status === 'cancelled' && $hasFullTxn && !$hasRefundedTxn;
                     @endphp

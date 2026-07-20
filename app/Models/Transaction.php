@@ -91,7 +91,7 @@ class Transaction extends Model
      */
     public function scopeSuccessful(Builder $query): Builder
     {
-        return $query->where('payment_status', self::STATUS_FULL);
+        return $query->whereIn('payment_status', [self::STATUS_FULL, self::STATUS_HALF]);
     }
 
     /**

@@ -25,6 +25,16 @@ class StoreWalkInBookingRequest extends FormRequest
         return Auth::guard('staff')->check();
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('phone_number') && $this->has('phone')) {
+            $this->merge(['phone_number' => $this->input('phone')]);
+        }
+        if (!$this->has('guest_type') || empty($this->input('guest_type'))) {
+            $this->merge(['guest_type' => 'walk-in']);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -33,6 +43,9 @@ class StoreWalkInBookingRequest extends FormRequest
             'gender' => ['nullable', Rule::in(['male', 'female', 'other', 'prefer_not_to_say'])],
             'nationality' => ['nullable', 'string', 'max:50'],
             'phone_number' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'adults' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'children' => ['nullable', 'integer', 'min:0', 'max:10'],
 
             // ── Booking Details ──────────────────────────────────────────────
             'room_id' => [

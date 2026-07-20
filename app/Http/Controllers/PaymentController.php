@@ -143,13 +143,15 @@ class PaymentController extends Controller
         $isPaid = $this->bakongApiService->checkPayment($transaction);
 
         if ($isPaid) {
-            // Use the transaction's own amount_paid which already holds the correct
-            // deposit for the tier (set during booking creation in RoomController).
+            $amount = $transaction->amount_paid > 0
+                ? $transaction->amount_paid
+                : $booking->depositAmount();
+
             $transaction->update([
-                'amount_paid'    => $transaction->amount_paid > 0
-                    ? $transaction->amount_paid  // already set correctly
-                    : $booking->depositAmount(), // fallback safety
-                'payment_status' => Transaction::STATUS_FULL,
+                'amount_paid'    => $amount,
+                'payment_status' => ($amount + 0.01 >= (float)$booking->total_price)
+                    ? Transaction::STATUS_FULL
+                    : Transaction::STATUS_HALF,
             ]);
 
             // Only promote to 'booked' if the booking was still pending.
@@ -204,11 +206,15 @@ class PaymentController extends Controller
             ->first();
 
         if ($transaction) {
+            $amount = $transaction->amount_paid > 0
+                ? $transaction->amount_paid
+                : $booking->depositAmount();
+
             $transaction->update([
-                'amount_paid'     => $transaction->amount_paid > 0
-                    ? $transaction->amount_paid
-                    : $booking->depositAmount(),
-                'payment_status'  => Transaction::STATUS_FULL,
+                'amount_paid'     => $amount,
+                'payment_status'  => ($amount + 0.01 >= (float)$booking->total_price)
+                    ? Transaction::STATUS_FULL
+                    : Transaction::STATUS_HALF,
                 'tracking_status' => 'SIMULATED',
             ]);
         }

@@ -48,6 +48,20 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 mb-8">
+            <div class="flex items-center gap-3 font-semibold mb-2">
+                <i class="bi bi-exclamation-triangle text-red-600 text-lg"></i>
+                <span>Please fix the following errors:</span>
+            </div>
+            <ul class="list-disc list-inside text-sm pl-6 space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="space-y-8">
         
         {{-- ==========================================
@@ -310,7 +324,7 @@
                                         <div class="text-gray-500 text-[0.8rem] mt-0.5">Room {{ $booking->room?->room_number ?? '-' }}</div>
                                     </td>
                                     <td class="px-5 py-4 whitespace-nowrap">
-                                        @php $paid = $booking->transactions?->where('payment_status', 'full')->count() > 0; @endphp
+                                        @php $paid = $booking->totalPaid() + 0.01 >= (float) $booking->total_price; @endphp
                                         @if($paid)
                                             <span class="bg-green-100 text-green-800 text-[0.75rem] font-bold px-3 py-1 rounded-full">Paid</span>
                                         @else
@@ -322,8 +336,9 @@
                                             <form action="{{ route('reception.payment.manual', $booking->id) }}" method="POST" class="inline-block">
                                                 @csrf
                                                 <input type="hidden" name="payment_method" value="cash">
-                                                <input type="hidden" name="amount" value="{{ $booking->total_price }}">
-                                                <button type="submit" onclick="return confirm('Mark as paid via Cash?')" class="inline-flex items-center bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-2 rounded-lg text-sm transition-colors border border-blue-200" title="Receive Cash">
+                                                <input type="hidden" name="amount_paid" value="{{ max(0, $booking->total_price - $booking->totalPaid()) }}">
+                                                <input type="hidden" name="payment_for" value="booking">
+                                                <button type="submit" onclick="return confirm('Mark remaining balance as paid via Cash?')" class="inline-flex items-center bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-2 rounded-lg text-sm transition-colors border border-blue-200" title="Receive Cash">
                                                     <i class="bi bi-cash mr-1"></i>Pay
                                                 </button>
                                             </form>
@@ -385,11 +400,11 @@
                                         <div class="text-gray-800 font-medium text-[0.95rem]">Room {{ $booking->room?->room_number ?? '-' }}</div>
                                     </td>
                                     <td class="px-5 py-4 whitespace-nowrap">
-                                        @php $paid = $booking->transactions?->where('payment_status', 'full')->count() > 0; @endphp
+                                        @php $paid = $booking->totalPaid() + 0.01 >= (float) $booking->total_price; @endphp
                                         @if($paid)
                                             <span class="text-green-600 font-medium flex items-center gap-1.5"><i class="bi bi-check-circle"></i> Settled</span>
                                         @else
-                                            <strong class="text-red-500 font-bold">Due: ${{ number_format($booking->total_price, 2) }}</strong>
+                                            <strong class="text-red-500 font-bold">Due: ${{ number_format(max(0, $booking->total_price - $booking->totalPaid()), 2) }}</strong>
                                         @endif
                                     </td>
                                     <td class="px-5 py-4 whitespace-nowrap text-right">

@@ -268,14 +268,14 @@ class RoomController extends Controller
         }
 
         $isRefundable = $booking->isRefundable();
-        $hasPaid = $booking->transactions()->where('payment_status', Transaction::STATUS_FULL)->exists();
+        $hasPaid = $booking->transactions()->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])->exists();
 
         DB::transaction(function () use ($booking, $isRefundable, $hasPaid) {
             $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
 
             if ($isRefundable && $hasPaid) {
                 $booking->transactions()
-                    ->where('payment_status', Transaction::STATUS_FULL)
+                    ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
                     ->update(['payment_status' => Transaction::STATUS_REFUNDED]);
             }
         });

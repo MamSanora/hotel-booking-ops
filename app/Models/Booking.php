@@ -180,7 +180,7 @@ class Booking extends Model
     public function latestFullTransaction(): ?Transaction
     {
         return $this->transactions()
-            ->where('payment_status', 'full')
+            ->whereIn('payment_status', ['full', 'half'])
             ->latest()
             ->first();
     }

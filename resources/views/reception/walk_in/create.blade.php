@@ -74,12 +74,35 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                         <div>
-                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Guest Full Name</label>
+                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Guest Full Name <span class="text-red-500">*</span></label>
                             <input type="text" name="full_name" value="{{ old('full_name') }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
                         </div>
                         <div>
-                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Phone Number</label>
-                            <input type="text" name="phone" value="{{ old('phone') }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Phone Number <span class="text-red-500">*</span></label>
+                            <input type="text" name="phone_number" value="{{ old('phone_number', old('phone')) }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                        </div>
+                        <div>
+                            <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Booking Origin / Type <span class="text-red-500">*</span></label>
+                            <select name="guest_type" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]" required>
+                                <option value="walk-in" {{ old('guest_type', 'walk-in') == 'walk-in' ? 'selected' : '' }}>Walk-in Guest (Desk)</option>
+                                <option value="phone" {{ old('guest_type') == 'phone' ? 'selected' : '' }}>Phone Reservation</option>
+                                <option value="other" {{ old('guest_type') == 'other' ? 'selected' : '' }}>Other Proxy Booking</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Gender</label>
+                                <select name="gender" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                                    <option value="">Select Gender</option>
+                                    <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
+                                    <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
+                                    <option value="other" {{ old('gender') == 'other' ? 'selected' : '' }}>Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Nationality</label>
+                                <input type="text" name="nationality" value="{{ old('nationality', 'Cambodian') }}" placeholder="e.g. Cambodian" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                            </div>
                         </div>
                         <div>
                             <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Email (Optional)</label>
@@ -107,7 +130,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-2 border border-gray-100 rounded-xl bg-gray-50/50">
                                 @foreach($availableRooms as $room)
                                     <label class="flex items-center p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-hotel-gold hover:shadow-md transition-all has-[:checked]:border-hotel-gold has-[:checked]:ring-1 has-[:checked]:ring-hotel-gold">
-                                        <input type="radio" name="room_id" value="{{ $room->id }}" class="text-hotel-gold focus:ring-hotel-gold w-4 h-4" required {{ old('room_id') == $room->id ? 'checked' : '' }}>
+                                        <input type="radio" name="room_id" value="{{ $room->id }}" data-price="{{ $room->roomType?->price_per_night ?? 0 }}" class="text-hotel-gold focus:ring-hotel-gold w-4 h-4 room-radio" required {{ old('room_id') == $room->id ? 'checked' : '' }}>
                                         <div class="ml-3">
                                             <div class="font-bold text-gray-800">Room {{ $room->room_number }}</div>
                                             <div class="text-sm text-gray-500">{{ $room->displayType() }}</div>
@@ -165,5 +188,50 @@
 
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roomRadios = document.querySelectorAll('.room-radio');
+    const paymentTierSelect = document.getElementById('payment_tier');
+    const amountPaidInput = document.getElementById('amount_paid');
+    const paymentStatusSelect = document.querySelector('select[name="payment_status"]');
+
+    // Calculate nights from dates
+    const checkinStr = '{{ $checkinDate }}';
+    const checkoutStr = '{{ $checkoutDate }}';
+    let nights = 1;
+    if (checkinStr && checkoutStr) {
+        const diffTime = Math.abs(new Date(checkoutStr) - new Date(checkinStr));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) nights = diffDays;
+    }
+
+    function recalculate() {
+        const selectedRoom = document.querySelector('.room-radio:checked');
+        if (!selectedRoom) return;
+
+        const pricePerNight = parseFloat(selectedRoom.dataset.price || 0);
+        const total = pricePerNight * nights;
+        const tier = parseInt(paymentTierSelect.value || 100);
+        const amount = (total * tier) / 100;
+
+        amountPaidInput.value = amount.toFixed(2);
+
+        if (tier === 100) {
+            paymentStatusSelect.value = 'full';
+        } else if (tier === 50 || tier === 20) {
+            paymentStatusSelect.value = 'half';
+        } else {
+            paymentStatusSelect.value = 'pending';
+        }
+    }
+
+    roomRadios.forEach(radio => radio.addEventListener('change', recalculate));
+    if (paymentTierSelect) paymentTierSelect.addEventListener('change', recalculate);
+
+    // Initial check if a room was already selected
+    recalculate();
+});
+</script>
 
 @endsection

@@ -72,10 +72,15 @@ class PaymentCallbackController extends Controller
         $isVerified = $this->payWayService->verifyTransaction($tranId, $request->all());
 
         if ($isVerified) {
-            // ── Payment Verified ────────────────────────────────────────────
+            $amount = $transaction->amount_paid > 0
+                ? $transaction->amount_paid
+                : $booking->depositAmount();
+
             $transaction->update([
-                'amount_paid'    => $booking->total_price,
-                'payment_status' => Transaction::STATUS_FULL,
+                'amount_paid'    => $amount,
+                'payment_status' => ($amount + 0.01 >= (float) $booking->total_price)
+                    ? Transaction::STATUS_FULL
+                    : Transaction::STATUS_HALF,
                 'apv'            => $request->input('apv'), // Bank approval code from ABA
             ]);
 

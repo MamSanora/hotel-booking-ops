@@ -143,13 +143,13 @@ class ReceptionDashboardController extends Controller
             return back()->with('error', 'Only checked-in guests can be checked out.');
         }
 
-        // Verify the booking has at least one fully-paid transaction.
-        $hasFullPayment = $booking->transactions()
-            ->where('payment_status', Transaction::STATUS_FULL)
-            ->exists();
+        // Verify the booking balance has been fully settled (total paid >= total price)
+        $totalPaid = $booking->transactions()
+            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
+            ->sum('amount_paid');
 
-        if (! $hasFullPayment) {
-            return back()->with('error', 'Cannot check out — the outstanding balance must be settled first.');
+        if ($totalPaid + 0.01 < (float) $booking->total_price) {
+            return back()->with('error', 'Cannot check out — the outstanding balance of $' . number_format(max(0, (float)$booking->total_price - $totalPaid), 2) . ' must be settled first.');
         }
 
         $booking->update(['booking_status' => Booking::STATUS_CHECKED_OUT]);
@@ -177,10 +177,12 @@ class ReceptionDashboardController extends Controller
         ]);
 
         // Determine if this is a partial or full payment.
-        $remaining = (float) $booking->total_price
-            - $booking->transactions()->where('payment_status', Transaction::STATUS_FULL)->sum('amount_paid');
+        $alreadyPaid = $booking->transactions()
+            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
+            ->sum('amount_paid');
+        $remaining = max(0, (float) $booking->total_price - $alreadyPaid);
 
-        $paymentStatus = ((float) $validated['amount_paid'] >= $remaining)
+        $paymentStatus = (($alreadyPaid + (float) $validated['amount_paid'] + 0.01) >= (float) $booking->total_price)
             ? Transaction::STATUS_FULL
             : Transaction::STATUS_HALF;
 
