@@ -810,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
             lunarDayRaw = diffDays;
             isWaxing = lunarDayRaw <= 15;
             halfDay = isWaxing ? lunarDayRaw : lunarDayRaw - 15;
-            moonPhase = isWaxing ? 'ខ្នើត' : 'រោច';
+            moonPhase = isWaxing ? 'កើត' : 'រោច';
             lunarMonthIdx = matched.monthIdx;
             lunarMonthKh = matched.nameKh || khmerMonths[lunarMonthIdx];
             lunarMonthEn = matched.nameEn || khmerMonthsEn[lunarMonthIdx];
@@ -828,7 +828,7 @@ document.addEventListener('DOMContentLoaded', function() {
             lunarMonthIdx = ((Math.floor((jd - 2451549.5) / synodicMonth + 0.5)) % 12 + 12) % 12;
             isWaxing = lunarDayRaw <= 15;
             halfDay = isWaxing ? lunarDayRaw : lunarDayRaw - 15;
-            moonPhase = isWaxing ? 'ខ្នើត' : 'រោច';
+            moonPhase = isWaxing ? 'កើត' : 'រោច';
             isSila = (halfDay === 8 || (isWaxing && halfDay === 15) || (!isWaxing && (halfDay === 14 || halfDay === 15)));
             lunarMonthKh = khmerMonths[lunarMonthIdx];
             lunarMonthEn = khmerMonthsEn[lunarMonthIdx];
