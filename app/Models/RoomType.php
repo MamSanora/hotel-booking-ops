@@ -25,15 +25,17 @@ class RoomType extends Model
     use HasFactory;
 
     /**
-     * Overbooking multiplier: allows selling more bookings than there are
-     * physical rooms of a given type, hedging against statistical no-shows.
+     * Overbooking multiplier — stored per room-type in the database so that
+     * the nightly OptimizeOverbooking command can tune each type independently
+     * based on observed no-show and relocation rates.
      *
-     * 1.10 means: if there are 10 physical rooms of this type,
-     * the system will allow up to floor(10 * 1.10) = 11 virtual slots.
+     * Default: 1.10 (10 physical rooms → 11 virtual slots).
+     * Runtime bounds: clamped between 1.00 (no overbooking) and 1.50.
      *
-     * Adjust this constant to raise or lower the overbooking buffer.
+     * @see database/migrations/2026_07_21_200654_add_overbooking_multiplier_to_room_types_table.php
+     * @see app/Console/Commands/OptimizeOverbooking.php
      */
-    public const OVERBOOKING_MULTIPLIER = 1.10;
+    // overbooking_multiplier — $this->overbooking_multiplier (float, from DB)
 
     /**
      * Protection-level step fraction.
@@ -56,6 +58,7 @@ class RoomType extends Model
         'slug',
         'display_name',
         'capacity',
+        'overbooking_multiplier',
         'price_per_night',
         'description',
     ];
@@ -63,8 +66,9 @@ class RoomType extends Model
     protected function casts(): array
     {
         return [
-            'price_per_night' => 'decimal:2',
-            'capacity'        => 'integer',
+            'price_per_night'       => 'decimal:2',
+            'capacity'              => 'integer',
+            'overbooking_multiplier' => 'float',
         ];
     }
 
@@ -148,8 +152,8 @@ class RoomType extends Model
      * "The Theory and Practice of Revenue Management", §2.1.1 and §2.1.1.3.
      *
      * Algorithm:
-     *   1. virtualCapacity  = floor(physicalRooms × OVERBOOKING_MULTIPLIER)
-     *      e.g. 10 rooms × 1.10 = 11 virtual slots.
+     *   1. virtualCapacity  = floor(physicalRooms × overbooking_multiplier)
+     *      e.g. 10 rooms × 1.10 = 11 virtual slots (default multiplier).
      *
      *   2. Compute the nested booking limit for the requested tier.
      *      (See computeBookingLimits() for the formula and example.)
@@ -183,8 +187,8 @@ class RoomType extends Model
         // Physical rooms of this type that are not in maintenance.
         $physicalCount = $this->rooms()->where('current_status', '!=', 'maintenance')->count();
 
-        // Absolute virtual ceiling (overbooking buffer included).
-        $virtualCapacity = (int) floor($physicalCount * self::OVERBOOKING_MULTIPLIER);
+        // Absolute virtual ceiling — multiplier is now per-type and self-tuning.
+        $virtualCapacity = (int) floor($physicalCount * $this->overbooking_multiplier);
 
         // Nested booking limit for the requested tier.
         $bookingLimits    = $this->computeBookingLimits($virtualCapacity);

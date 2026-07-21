@@ -9,3 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('app:process-night-audit')->dailyAt('02:00');
+
+// Must run AFTER process-night-audit so no-shows are stamped before the feedback loop reads them.
+Schedule::command('app:optimize-overbooking')->dailyAt('02:05');
