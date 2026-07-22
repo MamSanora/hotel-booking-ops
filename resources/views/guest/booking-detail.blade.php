@@ -344,7 +344,12 @@
                                         $gw = $item['gateway'];
                                         $gwState = $item['state'];
                                         $gwDisabled = ($gwState === 'disabled');
-                                        $gwIcon = $gw->slug === 'bakong' ? 'bi-qr-code-scan' : 'bi-credit-card-2-front';
+                                        $gwIcon = match($gw->slug) {
+                                            'bakong'       => 'bi-qr-code-scan',
+                                            'aba_payway'   => 'bi-credit-card-2-front',
+                                            'aba_telegram' => 'bi-telegram',
+                                            default        => 'bi-cash-coin',
+                                        };
                                     @endphp
                                     <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3 cursor-pointer transition-all
                                         {{ $gwDisabled ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]' }}">

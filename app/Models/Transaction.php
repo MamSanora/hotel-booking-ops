@@ -41,9 +41,10 @@ class Transaction extends Model
     public const STATUS_FULL     = 'full';
     public const STATUS_REFUNDED = 'refunded';
 
-    public const METHOD_CASH    = 'cash';
-    public const METHOD_KHQR    = 'khqr';
-    public const METHOD_ABA     = 'aba_payway';
+    public const METHOD_CASH     = 'cash';
+    public const METHOD_KHQR     = 'khqr';
+    public const METHOD_ABA      = 'aba_payway';
+    public const METHOD_TELEGRAM = 'aba_telegram';
 
     public const FOR_BOOKING        = 'booking';
     public const FOR_STAY_EXTENSION = 'stay_extension';
@@ -136,10 +137,11 @@ class Transaction extends Model
     public function displayPaymentMethod(): string
     {
         return match ($this->payment_method) {
-            self::METHOD_CASH => 'Cash',
-            self::METHOD_KHQR => 'Bakong (KHQR)',
-            self::METHOD_ABA  => 'ABA PayWay',
-            default           => '—',
+            self::METHOD_CASH     => 'Cash',
+            self::METHOD_KHQR     => 'Bakong (KHQR)',
+            self::METHOD_ABA      => 'ABA PayWay',
+            self::METHOD_TELEGRAM => 'ABA (Telegram)',
+            default               => '—',
         };
     }
 

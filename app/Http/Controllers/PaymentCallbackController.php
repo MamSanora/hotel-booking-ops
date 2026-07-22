@@ -68,8 +68,19 @@ class PaymentCallbackController extends Controller
 
         $booking = Booking::findOrFail($transaction->booking_id);
 
-        // Verify the transaction cryptographically via the service class.
-        $isVerified = $this->payWayService->verifyTransaction($tranId, $request->all());
+        // Verify the transaction:
+        //   - POST webhook from ABA server: includes X-PayWay-HMAC-SHA512 header + raw body.
+        //   - GET browser redirect from ABA:  no header/body; falls back to status field.
+        $rawBody    = $request->getContent();
+        $headerHash = $request->header('X-PayWay-HMAC-SHA512', '');
+
+        $isVerified = $this->payWayService->verifyTransaction(
+            $tranId,
+            $request->all(),
+            $rawBody,
+            $headerHash
+        );
+
 
         if ($isVerified) {
             $amount = $transaction->amount_paid > 0

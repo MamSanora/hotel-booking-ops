@@ -35,9 +35,10 @@ class PaymentGatewayManager
      * @var array<string, class-string<PaymentGatewayInterface>>
      */
     protected array $drivers = [
-        'bakong'     => BakongApiService::class,
-        'aba_payway' => AbaPayWayService::class,
-        // 'stripe'  => StripeService::class,
+        'bakong'       => BakongApiService::class,
+        'aba_payway'   => AbaPayWayService::class,
+        'aba_telegram' => AbaTelegramService::class,
+        // 'stripe'    => StripeService::class,
     ];
 
     /**

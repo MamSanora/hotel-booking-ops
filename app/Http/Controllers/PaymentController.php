@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Transaction;
 use App\Services\AbaPayWayService;
+use App\Services\AbaTelegramService;
 use App\Services\BakongApiService;
 use App\Services\KhqrService;
 use Illuminate\Http\JsonResponse;
@@ -34,9 +35,10 @@ use Illuminate\View\View;
 class PaymentController extends Controller
 {
     public function __construct(
-        protected KhqrService      $khqrService,
-        protected BakongApiService $bakongApiService,
-        protected AbaPayWayService $abaPayWayService,
+        protected KhqrService         $khqrService,
+        protected BakongApiService    $bakongApiService,
+        protected AbaPayWayService    $abaPayWayService,
+        protected AbaTelegramService  $abaTelegramService,
     ) {}
 
     // ── Payment Gateway Router ─────────────────────────────────────────────
@@ -57,8 +59,9 @@ class PaymentController extends Controller
             ->firstOrFail();
 
         return match ($transaction->payment_method) {
-            Transaction::METHOD_ABA  => $this->showPayWay($booking, $transaction),
-            default                  => $this->showKhqr($booking, $transaction),
+            Transaction::METHOD_ABA      => $this->showPayWay($booking, $transaction),
+            Transaction::METHOD_TELEGRAM => $this->showAbaTelegram($booking, $transaction),
+            default                      => $this->showKhqr($booking, $transaction),
         };
     }
 
@@ -81,22 +84,58 @@ class PaymentController extends Controller
 
     // ── ABA PayWay Flow ────────────────────────────────────────────────────
 
+    /**
+     * Call ABA PayWay API to register the transaction and retrieve the QR code,
+     * then render the ABA-branded payment page.
+     *
+     * ABA PayWay is a server-side API (not hosted checkout):
+     *   1. Our server POSTs to ABA → ABA returns a QR code image + deeplink.
+     *   2. The transaction is immediately registered in ABA's sandbox dashboard.
+     *   3. We display the QR so the guest can scan with ABA Mobile.
+     *   4. On payment, ABA POSTs to /payment/callback and redirects the browser.
+     *
+     * For sandbox testing: after loading this page, go to the ABA PayWay
+     * sandbox dashboard and click "Simulate Payment" next to the pending transaction.
+     */
     protected function showPayWay(Booking $booking, Transaction $transaction): View|RedirectResponse
     {
-        $paymentData = $this->abaPayWayService->createPaymentData($booking, $transaction->amount_paid);
+        $paymentData = $this->abaPayWayService->createPaymentData($booking, $transaction->amount_paid ?: null);
 
         if (! $paymentData['api_success']) {
             return redirect()->route('payment.show', $booking->id)
                 ->withErrors(['payment' => 'ABA PayWay error: ' . $paymentData['api_error']]);
         }
 
-        // Persist the ABA transaction ID so we can match it on callback.
+        // Persist the ABA transaction ID so the callback can match it.
         $transaction->update([
             'transaction_id' => $paymentData['transaction_id'],
         ]);
 
         return view('payment.payway-qr', compact('booking', 'transaction', 'paymentData'));
     }
+
+    // ── ABA Telegram Transfer Flow ─────────────────────────────────────────
+
+    /**
+     * Display the ABA Telegram payment instruction page.
+     *
+     * No API call needed — we just show the hotel's ABA account number and
+     * instruct the guest to include their booking reference in the remark.
+     * Payment confirmation happens asynchronously via the Telegram webhook.
+     */
+    protected function showAbaTelegram(Booking $booking, Transaction $transaction): View
+    {
+        $abaAccountNumber = $this->abaTelegramService->getAbaAccountNumber();
+        $reference        = $booking->referenceNumber();
+
+        return view('payment.telegram-transfer', compact(
+            'booking',
+            'transaction',
+            'abaAccountNumber',
+            'reference',
+        ));
+    }
+
 
     // ── Status Polling Endpoint (Bakong only) ──────────────────────────────
 

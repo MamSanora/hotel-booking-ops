@@ -300,7 +300,12 @@
                                             $gw = $item['gateway'];
                                             $state = $item['state'];
                                             $isDisabled = ($state === 'disabled');
-                                            $icon = $gw->slug === 'bakong' ? 'bi-qr-code-scan' : 'bi-credit-card-2-front';
+                                            $icon = match($gw->slug) {
+                                'bakong'       => 'bi-qr-code-scan',
+                                'aba_payway'   => 'bi-credit-card-2-front',
+                                'aba_telegram' => 'bi-telegram',
+                                default        => 'bi-cash-coin',
+                            };
                                         @endphp
 
                                         <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 cursor-pointer transition-all
@@ -327,6 +332,8 @@
                                                     <p class="text-[0.78rem] text-gray-500 mt-0.5">Scan with ABA Mobile, Wing, ACLEDA, or any Bakong-supported app</p>
                                                 @elseif($gw->slug === 'aba_payway' && ! $isDisabled)
                                                     <p class="text-[0.78rem] text-gray-500 mt-0.5">Visa, Mastercard, JCB or ABA Mobile — via secure ABA PayWay checkout</p>
+                                                @elseif($gw->slug === 'aba_telegram' && ! $isDisabled)
+                                                    <p class="text-[0.78rem] text-gray-500 mt-0.5">Transfer via ABA Mobile/Internet Banking — confirmed via Telegram</p>
                                                 @endif
                                             </div>
                                         </label>

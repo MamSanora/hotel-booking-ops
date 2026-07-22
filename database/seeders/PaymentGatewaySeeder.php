@@ -20,6 +20,11 @@ class PaymentGatewaySeeder extends Seeder
                 'name'         => 'ABA PayWay',
                 'admin_status' => PaymentGateway::STATUS_ACTIVE,
             ],
+            [
+                'slug'         => 'aba_telegram',
+                'name'         => 'ABA Transfer (Telegram)',
+                'admin_status' => PaymentGateway::STATUS_ACTIVE,
+            ],
         ];
 
         foreach ($gateways as $data) {

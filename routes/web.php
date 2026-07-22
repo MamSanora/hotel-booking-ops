@@ -20,6 +20,7 @@ use App\Http\Controllers\Guest\ProfileController as GuestProfileController;
 use App\Http\Controllers\Guest\RoomController;
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Webhook\TelegramWebhookController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Reception\ReceptionDashboardController;
 use App\Http\Controllers\Reception\ReceptionRelocationController;
@@ -122,6 +123,15 @@ Route::post('/rooms/{room}/book', [RoomController::class, 'store'])
 // Laravel matches 'callback' as a booking ID and the auth middleware blocks it.
 Route::match(['get', 'post'], '/payment/callback', [PaymentCallbackController::class, 'handle'])
     ->name('payment.callback');
+
+// ── ABA Telegram Payment Webhook ────────────────────────────────────────────
+// Server-to-server POST from Telegram. Must be:
+//   • accessible WITHOUT auth (bot posts here, not the guest browser)
+//   • exempt from CSRF (external server, no session/token)
+// Security is handled inside the controller via the X-Telegram-Bot-Api-Secret-Token header.
+Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle'])
+    ->name('webhooks.telegram')
+    ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
 Route::middleware('auth')->prefix('payment')->name('payment.')->group(function () {
 

@@ -220,21 +220,129 @@ class AbaPayWayService implements PaymentGatewayInterface
     }
 
     /**
-     * Verify transaction status with ABA PayWay API or validate callback hash.
+     * Build the signed payload for ABA PayWay Hosted Checkout (browser-redirect flow).
      *
-     * @param string $tranId
-     * @return bool True if payment is verified paid, false otherwise
+     * Unlike createPaymentData(), this method makes NO server-side HTTP call.
+     * The caller renders a hidden HTML form in the browser that auto-submits
+     * this data directly to ABA's checkout page, where ABA shows their own
+     * payment UI (including Simulate Success/Failure buttons in sandbox).
+     *
+     * @param  Booking    $booking
+     * @param  float|null $amount  Amount to charge; defaults to booking total.
+     * @return array{
+     *   merchant_id: string,
+     *   transaction_id: string,
+     *   amount: string,
+     *   items: string,
+     *   currency: string,
+     *   req_time: string,
+     *   hash: string,
+     *   return_url: string,
+     *   cancel_url: string,
+     *   continue_success_url: string,
+     * }
      */
-    public function verifyTransaction(string $tranId, array $callbackData = []): bool
+    public function buildHostedCheckoutData(Booking $booking, ?float $amount = null): array
     {
-        // Check if status in callback data explicitly indicates success (0 or 00)
-        if (isset($callbackData['status']) && ($callbackData['status'] === '0' || $callbackData['status'] === '00' || $callbackData['status'] === 0)) {
-            return true;
+        $reqTime = now()->format('YmdHis');
+        // Unique transaction reference stored on the Transaction record so the callback can match it.
+        $tranId  = 'DMH-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT) . '-' . time();
+
+        $paymentAmount   = $amount ?? $booking->total_price;
+        $formattedAmount = number_format($paymentAmount, 2, '.', '');
+
+        // Callback URL — ABA redirects the guest's browser here after payment.
+        // Also receives server-to-server webhook.
+        $returnUrl          = route('payment.callback');
+        $continueSuccessUrl = route('payment.success', $booking->id);
+        $cancelUrl          = route('payment.show', $booking->id);
+
+        $roomLabel = $booking->room ? $booking->room->displayType() : 'Hotel Reservation';
+        $itemsArr  = [
+            [
+                'name'     => "Room {$booking->room?->room_number} – {$roomLabel}",
+                'quantity' => '1',
+                'price'    => $formattedAmount,
+            ],
+        ];
+        $items    = base64_encode(json_encode($itemsArr));
+        $shipping = '0';
+        $type     = 'purchase';
+
+        $hash = $this->generateHash(
+            $reqTime,
+            $tranId,
+            $formattedAmount,
+            $items,
+            $shipping,
+            $type,
+            $continueSuccessUrl,
+            $returnUrl,
+            $cancelUrl
+        );
+
+        return [
+            'merchant_id'         => $this->merchantId,
+            'transaction_id'      => $tranId,
+            'amount'              => $formattedAmount,
+            'items'               => $items,
+            'shipping'            => $shipping,
+            'type'                => $type,
+            'currency'            => $this->currency,
+            'req_time'            => $reqTime,
+            'hash'                => $hash,
+            'return_url'          => $returnUrl,
+            'cancel_url'          => $cancelUrl,
+            'continue_success_url'=> $continueSuccessUrl,
+        ];
+    }
+
+    /**
+     * Verify an ABA PayWay callback using the HMAC-SHA512 header signature.
+     *
+     * ABA sends an `X-PayWay-HMAC-SHA512` header with every POST callback.
+     * We re-hash the raw request body with our API key and compare. If the
+     * signatures match, the request is genuinely from ABA and the status can
+     * be trusted.
+     *
+     * Falls back to a status-only check when the header is absent (e.g. local
+     * Postman tests, or ABA's browser GET redirect after payment).
+     *
+     * @param string $tranId        The ABA tran_id we stored on our Transaction.
+     * @param array  $callbackData  Parsed request parameters from ABA.
+     * @param string $rawBody       The raw POST body string (for HMAC comparison).
+     * @param string $headerHash    The value of X-PayWay-HMAC-SHA512 header (empty string if absent).
+     * @return bool  True if payment is verified as successful; false otherwise.
+     */
+    public function verifyTransaction(
+        string $tranId,
+        array  $callbackData = [],
+        string $rawBody = '',
+        string $headerHash = ''
+    ): bool {
+        // ── 1. HMAC Header Verification (most secure — used for POST webhooks) ──
+        if ($headerHash !== '' && $rawBody !== '') {
+            $expectedHash = base64_encode(
+                hash_hmac('sha512', $rawBody, $this->apiKey, true)
+            );
+
+            if (! hash_equals($expectedHash, $headerHash)) {
+                Log::warning('ABA PayWay: HMAC signature mismatch on callback', [
+                    'tran_id' => $tranId,
+                ]);
+                return false;
+            }
+
+            // Hash is valid — now check the status code in the payload.
+            $status = $callbackData['status'] ?? null;
+            return $status === '0' || $status === '00' || $status === 0;
         }
 
-        // For sandbox/demo testing environments or direct API verification:
-        // If simulation flag or success parameter passed, return true
-        if (isset($callbackData['status']) && $callbackData['status'] === 'success') {
+        // ── 2. Status-only fallback (ABA browser redirect GET / local testing) ──
+        // When ABA redirects the browser back to return_url, it uses GET with
+        // query params (no body, no HMAC header). Trust the status field.
+        $status = $callbackData['status'] ?? null;
+        if ($status === '0' || $status === '00' || $status === 0 || $status === 'success') {
             return true;
         }
 

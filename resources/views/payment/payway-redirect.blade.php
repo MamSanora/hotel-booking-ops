@@ -107,7 +107,7 @@
     ABA PayWay requires a POST request with all parameters signed with HMAC-SHA512.
 --}}
 <form id="payway-form" method="POST"
-      action="{{ config('payway.api_url') }}"
+      action="https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase"
       style="display:none">
 
     <input type="hidden" name="merchant_id"  value="{{ $paymentData['merchant_id'] }}">
