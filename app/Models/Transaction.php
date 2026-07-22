@@ -51,9 +51,6 @@ class Transaction extends Model
     protected $fillable = [
         'booking_id',
         'transaction_id',
-        'merchant_reference',
-        'payment_link',
-        'qr_code_url',
         // Bakong KHQR fields
         'khqr_string',
         'md5_hash',
