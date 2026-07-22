@@ -145,7 +145,7 @@ class ReceptionDashboardController extends Controller
 
         // Verify the booking balance has been fully settled (total paid >= total price)
         $totalPaid = $booking->transactions()
-            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
+            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
             ->sum('amount_paid');
 
         if ($totalPaid + 0.01 < (float) $booking->total_price) {
@@ -178,13 +178,13 @@ class ReceptionDashboardController extends Controller
 
         // Determine if this is a partial or full payment.
         $alreadyPaid = $booking->transactions()
-            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
+            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
             ->sum('amount_paid');
         $remaining = max(0, (float) $booking->total_price - $alreadyPaid);
 
         $paymentStatus = (($alreadyPaid + (float) $validated['amount_paid'] + 0.01) >= (float) $booking->total_price)
             ? Transaction::STATUS_FULL
-            : Transaction::STATUS_HALF;
+            : Transaction::STATUS_PARTIAL;
 
         Transaction::create([
             'booking_id'     => $booking->id,

@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A booking can have multiple transactions — e.g. one for the initial
  * booking payment and one or more for stay extensions (Process 5.0 DFD).
  *
- * The 'half' payment_status supports Process 3.2 ("Confirm Remaining Balance")
+ * The 'partial' payment_status supports Process 3.2 ("Confirm Remaining Balance")
  * in the DFD — a guest pays part upfront and the balance on check-in.
  *
  * @property int         $id
@@ -30,14 +30,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float       $amount_paid
  * @property string|null $payment_for     'booking' | 'stay_extension'
  * @property string|null $payment_method  'cash' | 'khqr'
- * @property string      $payment_status  'pending'|'half'|'full'|'refunded'
+ * @property string      $payment_status  'pending'|'partial'|'full'|'refunded'
  */
 class Transaction extends Model
 {
     use HasFactory;
 
     public const STATUS_PENDING  = 'pending';
-    public const STATUS_HALF     = 'half';
+    public const STATUS_PARTIAL  = 'partial';
     public const STATUS_FULL     = 'full';
     public const STATUS_REFUNDED = 'refunded';
 
@@ -88,7 +88,7 @@ class Transaction extends Model
      */
     public function scopeSuccessful(Builder $query): Builder
     {
-        return $query->whereIn('payment_status', [self::STATUS_FULL, self::STATUS_HALF]);
+        return $query->whereIn('payment_status', [self::STATUS_FULL, self::STATUS_PARTIAL]);
     }
 
     /**
@@ -106,9 +106,9 @@ class Transaction extends Model
         return $this->payment_status === self::STATUS_PENDING;
     }
 
-    public function isHalf(): bool
+    public function isPartial(): bool
     {
-        return $this->payment_status === self::STATUS_HALF;
+        return $this->payment_status === self::STATUS_PARTIAL;
     }
 
     public function isFull(): bool
@@ -156,7 +156,7 @@ class Transaction extends Model
     {
         return match ($this->payment_status) {
             self::STATUS_PENDING  => 'Pending',
-            self::STATUS_HALF     => 'Partial',
+            self::STATUS_PARTIAL  => 'Partial',
             self::STATUS_FULL     => 'Paid',
             self::STATUS_REFUNDED => 'Refunded',
             default               => ucfirst($this->payment_status),
@@ -170,7 +170,7 @@ class Transaction extends Model
     {
         return match ($this->payment_status) {
             self::STATUS_PENDING  => 'bg-yellow-100 text-yellow-800',
-            self::STATUS_HALF     => 'bg-orange-100 text-orange-800',
+            self::STATUS_PARTIAL  => 'bg-orange-100 text-orange-800',
             self::STATUS_FULL     => 'bg-green-100 text-green-800',
             self::STATUS_REFUNDED => 'bg-red-100 text-red-800',
             default               => 'bg-gray-100 text-gray-600',

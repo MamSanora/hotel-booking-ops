@@ -13,6 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        
+        // Disable CSRF for external webhooks
+        $middleware->validateCsrfTokens(except: [
+            'payment/callback',
+            'api/payment/callback', // Just in case it's ever moved to API routes
+        ]);
 
         $middleware->alias([
             // ── Multi-Guard Auth Middleware ──────────────────────────────────

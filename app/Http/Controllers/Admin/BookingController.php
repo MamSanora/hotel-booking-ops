@@ -36,7 +36,7 @@ class BookingController extends Controller
         // Count cancelled bookings that have a full (paid) transaction but no refunded one yet.
         // These represent real money the hotel owes back to a guest.
         $pendingRefundCount = Booking::where('booking_status', Booking::STATUS_CANCELLED)
-            ->whereHas('transactions', fn ($q) => $q->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF]))
+            ->whereHas('transactions', fn ($q) => $q->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL]))
             ->whereDoesntHave('transactions', fn ($q) => $q->where('payment_status', Transaction::STATUS_REFUNDED))
             ->count();
 
@@ -74,7 +74,7 @@ class BookingController extends Controller
         }
 
         $hasPaid = $booking->transactions()
-            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
+            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
             ->exists();
 
         $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
@@ -103,7 +103,7 @@ class BookingController extends Controller
         }
 
         $fullTransactions = $booking->transactions()
-            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_HALF])
+            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
             ->get();
 
         if ($fullTransactions->isEmpty()) {

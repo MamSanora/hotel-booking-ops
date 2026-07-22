@@ -83,7 +83,7 @@ class TransactionFactory extends Factory
      */
     public function halfPaid(): static
     {
-        return $this->state(['payment_status' => Transaction::STATUS_HALF]);
+        return $this->state(['payment_status' => Transaction::STATUS_PARTIAL]);
     }
 
     /**

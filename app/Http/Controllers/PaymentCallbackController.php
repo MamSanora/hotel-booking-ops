@@ -80,7 +80,7 @@ class PaymentCallbackController extends Controller
                 'amount_paid'    => $amount,
                 'payment_status' => ($amount + 0.01 >= (float) $booking->total_price)
                     ? Transaction::STATUS_FULL
-                    : Transaction::STATUS_HALF,
+                    : Transaction::STATUS_PARTIAL,
                 'apv'            => $request->input('apv'), // Bank approval code from ABA
             ]);
 
