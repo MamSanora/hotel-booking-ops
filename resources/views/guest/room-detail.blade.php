@@ -1,7 +1,5 @@
 @extends('layouts.public')
 
-@inject('gatewayManager', 'App\Services\PaymentGatewayManager')
-
 @section('title', $room->displayType())
 
 @section('content')
@@ -281,69 +279,45 @@
                             @enderror
                         </div>
 
-                        {{-- Payment Method Selector (dynamic via PaymentGatewayManager) --}}
-                        @php
-                            $visibleGateways = $gatewayManager->getVisibleGateways();
-                        @endphp
+                        {{-- Payment Method (forced to khqr_aba; hidden from guest) --}}
+                        <input type="hidden" name="payment_method" value="khqr_aba">
 
-                        @if($visibleGateways->isEmpty())
-                            <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-[0.85rem] text-red-700 flex items-start gap-3 mb-6">
-                                <i class="bi bi-exclamation-triangle-fill text-red-500 mt-0.5"></i>
-                                <span>No payment methods are currently available. Please contact the hotel directly.</span>
-                            </div>
-                        @else
-                            <div class="mb-6">
-                                <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Payment Method</label>
-                                <div class="space-y-2.5">
-                                    @foreach($visibleGateways as $index => $item)
-                                        @php
-                                            $gw = $item['gateway'];
-                                            $state = $item['state'];
-                                            $isDisabled = ($state === 'disabled');
-                                            $icon = match($gw->slug) {
-                                'bakong'       => 'bi-qr-code-scan',
-                                'aba_payway'   => 'bi-credit-card-2-front',
-                                'aba_telegram' => 'bi-telegram',
-                                default        => 'bi-cash-coin',
-                            };
-                                        @endphp
-
-                                        <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 cursor-pointer transition-all
-                                            {{ $isDisabled
-                                                ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-                                                : 'border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]'
-                                            }}">
-                                            <input type="radio"
-                                                   name="payment_method"
-                                                   value="{{ $gw->slug }}"
-                                                   id="pm_{{ $gw->slug }}"
-                                                   {{ $index === 0 && ! $isDisabled ? 'checked' : '' }}
-                                                   {{ $isDisabled ? 'disabled' : '' }}
-                                                   class="mt-0.5 accent-hotel-gold shrink-0">
-                                            <div class="flex-1">
-                                                <div class="flex items-center gap-2">
-                                                    <i class="bi {{ $icon }} text-hotel-gold"></i>
-                                                    <span class="font-semibold text-hotel-dark text-[0.9rem]">{{ $gw->name }}</span>
-                                                    @if($isDisabled)
-                                                        <span class="text-[0.75rem] text-red-500 font-normal">(Currently offline)</span>
-                                                    @endif
-                                                </div>
-                                                @if($gw->slug === 'bakong' && ! $isDisabled)
-                                                    <p class="text-[0.78rem] text-gray-500 mt-0.5">Scan with ABA Mobile, Wing, ACLEDA, or any Bakong-supported app</p>
-                                                @elseif($gw->slug === 'aba_payway' && ! $isDisabled)
-                                                    <p class="text-[0.78rem] text-gray-500 mt-0.5">Visa, Mastercard, JCB or ABA Mobile — via secure ABA PayWay checkout</p>
-                                                @elseif($gw->slug === 'aba_telegram' && ! $isDisabled)
-                                                    <p class="text-[0.78rem] text-gray-500 mt-0.5">Transfer via ABA Mobile/Internet Banking — confirmed via Telegram</p>
-                                                @endif
-                                            </div>
-                                        </label>
-                                    @endforeach
+                        {{-- Guest Preferences --}}
+                        <div class="mb-4">
+                            <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Room Preferences <span class="font-normal normal-case lowercase">(optional)</span></label>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {{-- Bed Type --}}
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bed Type</label>
+                                    <select name="bed_type" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
+                                        <option value="">No Preference</option>
+                                        <option value="twin" {{ old('bed_type') === 'twin' ? 'selected' : '' }}>Twin Beds</option>
+                                        <option value="double" {{ old('bed_type') === 'double' ? 'selected' : '' }}>Double Bed</option>
+                                    </select>
                                 </div>
-                                @error('payment_method')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+                                {{-- Floor --}}
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Floor</label>
+                                    <select name="floor_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
+                                        <option value="">No Preference</option>
+                                        <option value="2" {{ old('floor_preference') === '2' ? 'selected' : '' }}>Floor 2</option>
+                                        <option value="3" {{ old('floor_preference') === '3' ? 'selected' : '' }}>Floor 3</option>
+                                        <option value="4" {{ old('floor_preference') === '4' ? 'selected' : '' }}>Floor 4</option>
+                                        <option value="5" {{ old('floor_preference') === '5' ? 'selected' : '' }}>Floor 5</option>
+                                    </select>
+                                </div>
+                                {{-- View --}}
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">View</label>
+                                    <select name="view_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
+                                        <option value="">No Preference</option>
+                                        <option value="balcony" {{ old('view_preference') === 'balcony' ? 'selected' : '' }}>Balcony View</option>
+                                        <option value="window" {{ old('view_preference') === 'window' ? 'selected' : '' }}>Window View</option>
+                                    </select>
+                                </div>
                             </div>
-                        @endif
+                            <p class="text-[0.72rem] text-gray-400 mt-2"><i class="bi bi-info-circle"></i> Preferences are requests and subject to availability at check-in.</p>
+                        </div>
 
                         <button type="submit" class="w-full bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-bold rounded-xl py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(200,169,110,0.45)] flex justify-center items-center gap-2">
                             <i class="bi bi-arrow-right-circle"></i> Confirm & Proceed to Payment
@@ -432,8 +406,14 @@
             const minOut = new Date(this.value);
             minOut.setDate(minOut.getDate() + 1);
             checkOutEl.min = this.value;
+            // Enforce 7-night maximum
+            const maxOut = new Date(this.value);
+            maxOut.setDate(maxOut.getDate() + 7);
+            checkOutEl.max = maxOut.toISOString().split('T')[0];
             if (!checkOutEl.value || new Date(checkOutEl.value) <= new Date(this.value)) {
                 checkOutEl.value = minOut.toISOString().split('T')[0];
+            } else if (new Date(checkOutEl.value) > maxOut) {
+                checkOutEl.value = maxOut.toISOString().split('T')[0];
             }
             calculatePrice();
         });

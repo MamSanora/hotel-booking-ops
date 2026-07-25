@@ -13,11 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Extracted from the `rooms` table to eliminate the 3NF violation where
  * capacity, price, and description were duplicated across every room row.
  *
- * @property int    $id
- * @property string $slug            e.g. 'standard_twin'
- * @property string $display_name    e.g. 'Standard Twin'
- * @property int    $capacity
- * @property float  $price_per_night
+ * @property int         $id
+ * @property string      $slug            e.g. 'standard_room'
+ * @property string      $display_name    e.g. 'Standard Room'
+ * @property int         $capacity        Legacy single-integer capacity (kept for compat).
+ * @property int|null    $size_sqm        Fixed room size in square metres.
+ * @property int         $adult_capacity  Maximum adults this type accommodates.
+ * @property int         $child_capacity  Maximum children (under 12) this type accommodates.
+ * @property float       $price_per_night
  * @property string|null $description
  */
 class RoomType extends Model
@@ -58,6 +61,9 @@ class RoomType extends Model
         'slug',
         'display_name',
         'capacity',
+        'size_sqm',
+        'adult_capacity',
+        'child_capacity',
         'overbooking_multiplier',
         'price_per_night',
         'description',
@@ -66,8 +72,11 @@ class RoomType extends Model
     protected function casts(): array
     {
         return [
-            'price_per_night'       => 'decimal:2',
-            'capacity'              => 'integer',
+            'price_per_night'        => 'decimal:2',
+            'capacity'               => 'integer',
+            'size_sqm'               => 'integer',
+            'adult_capacity'         => 'integer',
+            'child_capacity'         => 'integer',
             'overbooking_multiplier' => 'float',
         ];
     }

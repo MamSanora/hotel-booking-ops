@@ -187,9 +187,9 @@ class DemoDataSeeder extends Seeder
         $total = 0;
 
         $types = array_merge(
-            array_fill(0, 12, 'standard_twin'),
-            array_fill(0, 10, 'standard_double'),
-            array_fill(0, 10, 'deluxe_double')
+            array_fill(0, 12, 'standard_room'),
+            array_fill(0, 10, 'deluxe_room'),
+            array_fill(0, 10, 'family_triple_room')
         );
 
         // Build scenarios: [month, count, status_logic]
@@ -313,11 +313,11 @@ class DemoDataSeeder extends Seeder
     ): void {
         // Varied stay windows all spanning today
         $windows = [
-            ['in' => -2, 'out' => 2,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'standard_twin'],
-            ['in' => -1, 'out' => 3,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'standard_double'],
-            ['in' => -3, 'out' => 1,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'deluxe_double'],
-            ['in' => -1, 'out' => 2,  'guestType' => 'phone',   'method' => 'cash',  'type' => 'standard_twin'],
-            ['in' => -2, 'out' => 4,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'deluxe_double'],
+            ['in' => -2, 'out' => 2,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'standard_room'],
+            ['in' => -1, 'out' => 3,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'deluxe_room'],
+            ['in' => -3, 'out' => 1,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'family_triple_room'],
+            ['in' => -1, 'out' => 2,  'guestType' => 'phone',   'method' => 'cash',  'type' => 'standard_room'],
+            ['in' => -2, 'out' => 4,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'deluxe_room'],
         ];
 
         $staffId = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;
@@ -332,7 +332,7 @@ class DemoDataSeeder extends Seeder
             $roomId = $this->findAvailableRoom($w['type'], $checkIn, $checkOut, $roomBookedDates, $allRooms);
             if (!$roomId) {
                 // Fall back to any type
-                $roomId = $this->findAvailableRoom('standard_twin', $checkIn, $checkOut, $roomBookedDates, $allRooms);
+                $roomId = $this->findAvailableRoom('standard_room', $checkIn, $checkOut, $roomBookedDates, $allRooms);
             }
             if (!$roomId) continue;
 

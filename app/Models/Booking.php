@@ -30,6 +30,9 @@ use Illuminate\Support\Carbon;
  * @property float|null $total_price
  * @property string $booking_status
  * @property string|null $guest_type
+ * @property string|null $bed_type         'twin' | 'double' | null
+ * @property string|null $floor_preference Floor number string ('2'..'5') | null
+ * @property string|null $view_preference  'balcony' | 'window' | null
  */
 class Booking extends Model
 {
@@ -108,6 +111,10 @@ class Booking extends Model
         'guest_type',
         'special_requests',
         'relocated_to_booking_id',
+        // Guest preferences (hints for reception; not a guaranteed assignment)
+        'bed_type',
+        'floor_preference',
+        'view_preference',
     ];
 
     protected function casts(): array

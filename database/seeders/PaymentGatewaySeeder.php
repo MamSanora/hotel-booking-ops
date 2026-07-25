@@ -11,6 +11,11 @@ class PaymentGatewaySeeder extends Seeder
     {
         $gateways = [
             [
+                'slug'         => 'khqr_aba',
+                'name'         => 'KHQR and ABA Pay',
+                'admin_status' => PaymentGateway::STATUS_ACTIVE,
+            ],
+            [
                 'slug'         => 'bakong',
                 'name'         => 'Bakong (KHQR)',
                 'admin_status' => PaymentGateway::STATUS_ACTIVE,
@@ -18,12 +23,12 @@ class PaymentGatewaySeeder extends Seeder
             [
                 'slug'         => 'aba_payway',
                 'name'         => 'ABA PayWay',
-                'admin_status' => PaymentGateway::STATUS_ACTIVE,
+                'admin_status' => PaymentGateway::STATUS_DISABLED,
             ],
             [
                 'slug'         => 'aba_telegram',
                 'name'         => 'ABA Transfer (Telegram)',
-                'admin_status' => PaymentGateway::STATUS_ACTIVE,
+                'admin_status' => PaymentGateway::STATUS_DISABLED,
             ],
         ];
 

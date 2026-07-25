@@ -38,6 +38,7 @@ class PaymentGatewayManager
         'bakong'       => BakongApiService::class,
         'aba_payway'   => AbaPayWayService::class,
         'aba_telegram' => AbaTelegramService::class,
+        'khqr_aba'     => KhqrAbaStaticService::class,
         // 'stripe'    => StripeService::class,
     ];
 

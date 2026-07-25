@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\Admin\ExchangeRateController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Auth\Admin\LoginController as AdminLoginController;
@@ -175,8 +176,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Analytics AJAX endpoint — powers the dynamic chart date-range filter
         Route::get('/dashboard/analytics', [AdminDashboardController::class, 'analytics'])->name('dashboard.analytics');
 
+        // QR Code Calculator
+        Route::get('/qr-calculator', [\App\Http\Controllers\Admin\QrCodeCalculatorController::class, 'index'])->name('qr-calculator');
+
         // Manual backup trigger (rate-limited inside the controller)
         Route::post('/backup/run', [BackupController::class, 'run'])->name('backup.run');
+
+        // Exchange rate manual sync (rate-limited to 30 min per admin)
+        Route::post('/exchange-rate/sync', [ExchangeRateController::class, 'sync'])->name('exchange-rate.sync');
 
         // Room management (CRUD)
         Route::get('/rooms',              [AdminRoomController::class, 'index'])->name('rooms.index');
@@ -246,6 +253,7 @@ Route::prefix('reception')->name('reception.')->group(function () {
         Route::post('/checkin/{booking}',         [ReceptionDashboardController::class, 'checkin'])->name('checkin');
         Route::post('/checkout/{booking}',        [ReceptionDashboardController::class, 'checkout'])->name('checkout');
         Route::post('/payment/manual/{booking}',  [ReceptionDashboardController::class, 'markAsPaid'])->name('payment.manual');
+        Route::get('/receipt/{booking}',          [ReceptionDashboardController::class, 'receipt'])->name('receipt');
 
         // Walk-in bookings
         Route::get('/walk-in/create', [WalkInBookingController::class, 'create'])->name('walkin.create');

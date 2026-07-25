@@ -163,6 +163,15 @@ class ReceptionDashboardController extends Controller
     }
 
     /**
+     * Display a printable thermal-style receipt for a booking.
+     */
+    public function receipt(Booking $booking): View
+    {
+        $booking->load(['guest', 'room.roomType', 'transactions', 'roomServices.requestedItems']);
+        return view('reception.receipt', compact('booking'));
+    }
+
+    /**
      * Record a manual payment at the front desk (cash or KHQR).
      *
      * Creates a Transaction record and updates the booking's total if needed.
@@ -171,7 +180,7 @@ class ReceptionDashboardController extends Controller
     public function markAsPaid(Request $request, Booking $booking): RedirectResponse
     {
         $validated = $request->validate([
-            'payment_method' => ['required', 'in:cash,khqr'],
+            'payment_method' => ['required', 'in:cash,khqr,khqr_aba'],
             'amount_paid'    => ['required', 'numeric', 'min:0.01'],
             'payment_for'    => ['required', 'in:booking,stay_extension'],
         ]);

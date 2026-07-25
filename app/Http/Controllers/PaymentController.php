@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Services\AbaPayWayService;
 use App\Services\AbaTelegramService;
 use App\Services\BakongApiService;
+use App\Services\KhqrAbaStaticService;
 use App\Services\KhqrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,10 +36,11 @@ use Illuminate\View\View;
 class PaymentController extends Controller
 {
     public function __construct(
-        protected KhqrService         $khqrService,
-        protected BakongApiService    $bakongApiService,
-        protected AbaPayWayService    $abaPayWayService,
-        protected AbaTelegramService  $abaTelegramService,
+        protected KhqrService           $khqrService,
+        protected BakongApiService      $bakongApiService,
+        protected AbaPayWayService      $abaPayWayService,
+        protected AbaTelegramService    $abaTelegramService,
+        protected KhqrAbaStaticService  $khqrAbaStaticService,
     ) {}
 
     // ── Payment Gateway Router ─────────────────────────────────────────────
@@ -61,6 +63,7 @@ class PaymentController extends Controller
         return match ($transaction->payment_method) {
             Transaction::METHOD_ABA      => $this->showPayWay($booking, $transaction),
             Transaction::METHOD_TELEGRAM => $this->showAbaTelegram($booking, $transaction),
+            Transaction::METHOD_KHQR_ABA => $this->showKhqrAbaStatic($booking, $transaction),
             default                      => $this->showKhqr($booking, $transaction),
         };
     }
@@ -133,6 +136,33 @@ class PaymentController extends Controller
             'transaction',
             'abaAccountNumber',
             'reference',
+        ));
+    }
+
+    // ── KHQR & ABA Pay Static Flow ─────────────────────────────────────────
+
+    /**
+     * Display the static QR code payment page.
+     *
+     * No dynamic API call — we serve a pre-saved QR image from disk.
+     * The QR image filename is derived from the transaction amount:
+     *   public/qr_codes/hotel_owner_QR_codes/qr_{amount}.png
+     *
+     * Payment confirmation is manual: the receptionist verifies the transfer
+     * notification in the hotel owner's ABA/Bakong app, then marks the
+     * booking as paid via the Reception dashboard.
+     */
+    protected function showKhqrAbaStatic(Booking $booking, Transaction $transaction): View
+    {
+        $amount      = (float) $transaction->amount_paid;
+        $qrImagePath = $this->khqrAbaStaticService->getQrImagePath($amount);
+        $qrExists    = $this->khqrAbaStaticService->qrImageExists($amount);
+
+        return view('payment.payway-static-qr', compact(
+            'booking',
+            'transaction',
+            'qrImagePath',
+            'qrExists',
         ));
     }
 

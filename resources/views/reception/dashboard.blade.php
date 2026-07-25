@@ -283,7 +283,21 @@
     {{-- ==========================================
          TABBED OPERATIONS PANEL
          ========================================== --}}
-    <div x-data="{ activeTab: 'arrivals' }" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div x-data="{ 
+        activeTab: 'arrivals',
+        showSettleModal: false, 
+        settleBookingId: null, 
+        settleAmount: 0, 
+        settleQrUrl: '', 
+        settleActionUrl: '', 
+        openSettleModal(bookingId, amount, qrUrl, actionUrl) { 
+            this.settleBookingId = bookingId; 
+            this.settleAmount = parseFloat(amount).toFixed(2); 
+            this.settleQrUrl = qrUrl; 
+            this.settleActionUrl = actionUrl; 
+            this.showSettleModal = true; 
+        } 
+    }" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
 
         {{-- Tab Bar --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
@@ -411,16 +425,14 @@
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap text-right space-x-2">
                                         @if(!$paid)
-                                            <form action="{{ route('reception.payment.manual', $booking->id) }}" method="POST" class="inline-block">
-                                                @csrf
-                                                <input type="hidden" name="payment_method" value="cash">
-                                                <input type="hidden" name="amount_paid" value="{{ max(0, $booking->total_price - $booking->totalPaid()) }}">
-                                                <input type="hidden" name="payment_for" value="booking">
-                                                <button type="submit" onclick="return confirm('Mark remaining balance as paid via Cash?')"
-                                                        class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
-                                                    <i class="bi bi-cash"></i> Pay
-                                                </button>
-                                            </form>
+                                            @php
+                                                $remaining = max(0, $booking->total_price - $booking->totalPaid());
+                                                $qrPath = app(\App\Services\KhqrAbaStaticService::class)->getQrCodePath($remaining);
+                                            @endphp
+                                            <button type="button" @click="openSettleModal({{ $booking->id }}, {{ $remaining }}, '{{ $qrPath }}', '{{ route('reception.payment.manual', $booking->id) }}')"
+                                                    class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
+                                                <i class="bi bi-wallet2"></i> Settle
+                                            </button>
                                         @endif
                                         @if($booking->check_in_date->startOfDay()->lte(now()->startOfDay()))
                                             <form action="{{ route('reception.checkin', $booking->id) }}" method="POST" class="inline-block">
@@ -487,12 +499,21 @@
                                                 <i class="bi bi-check-circle-fill text-emerald-500"></i> Settled
                                             </span>
                                         @else
-                                            <strong class="text-red-500 font-bold text-sm">
-                                                Due: ${{ number_format(max(0, $booking->total_price - $booking->totalPaid()), 2) }}
-                                            </strong>
+                                            @php
+                                                $remaining = max(0, $booking->total_price - $booking->totalPaid());
+                                                $qrPath = app(\App\Services\KhqrAbaStaticService::class)->getQrCodePath($remaining);
+                                            @endphp
+                                            <button type="button" @click="openSettleModal({{ $booking->id }}, {{ $remaining }}, '{{ $qrPath }}', '{{ route('reception.payment.manual', $booking->id) }}')"
+                                                    class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
+                                                <i class="bi bi-wallet2"></i> Settle
+                                            </button>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 whitespace-nowrap text-right">
+                                    <td class="px-4 py-4 whitespace-nowrap text-right space-x-2">
+                                        <a href="{{ route('reception.receipt', $booking->id) }}" target="_blank"
+                                           class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-gray-200">
+                                            <i class="bi bi-printer"></i> Receipt
+                                        </a>
                                         <form action="{{ route('reception.checkout', $booking->id) }}" method="POST" class="inline-block">
                                             @csrf
                                             <button type="submit" onclick="return confirm('Check out this guest?')"
@@ -575,6 +596,12 @@
                                                     <i class="bi bi-arrow-repeat"></i> Relocate
                                                 </a>
                                             @endif
+
+                                            {{-- Receipt --}}
+                                            <a href="{{ route('reception.receipt', $booking->id) }}" target="_blank"
+                                               class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-gray-200">
+                                                <i class="bi bi-printer"></i> Receipt
+                                            </a>
 
                                             {{-- Check-Out --}}
                                             <form action="{{ route('reception.checkout', $booking->id) }}" method="POST" class="inline-block">
@@ -689,6 +716,7 @@
                                     <th class="px-4 py-3 font-semibold">Room</th>
                                     <th class="px-4 py-3 font-semibold">Dates</th>
                                     <th class="px-4 py-3 font-semibold">Status</th>
+                                    <th class="px-4 py-3 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -714,6 +742,11 @@
                                             <span class="bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full">Checked Out</span>
                                         @endif
                                     </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                                        <a href="{{ route('reception.receipt', $booking->id) }}" target="_blank" class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-gray-200">
+                                            <i class="bi bi-printer"></i> Receipt
+                                        </a>
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -728,8 +761,60 @@
             </div>
 
         </div>{{-- end tab content --}}
-    </div>{{-- end tabbed panel --}}
 
+        {{-- SETTLE MODAL --}}
+        <div x-show="showSettleModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm" x-cloak
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-left" @click.away="showSettleModal = false">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+                    <h3 class="text-xl font-bold font-playfair text-hotel-dark flex items-center gap-2">
+                        <i class="bi bi-wallet2 text-hotel-gold"></i> Settle Balance
+                    </h3>
+                    <button type="button" @click="showSettleModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="bi bi-x-lg text-xl"></i>
+                    </button>
+                </div>
+                
+                <p class="text-gray-500 mb-4 text-center text-sm">Scan the QR code below or collect cash for the remaining balance.</p>
+                <div class="text-center mb-5">
+                    <span class="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Amount Due</span>
+                    <span class="text-3xl font-bold text-red-600">$<span x-text="settleAmount"></span></span>
+                </div>
+                
+                <!-- QR Code -->
+                <div class="flex justify-center mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <img :src="settleQrUrl" alt="QR Code" class="w-48 h-48 rounded-lg shadow-sm border border-gray-200 object-contain bg-white p-2">
+                </div>
+
+                <form :action="settleActionUrl" method="POST">
+                    @csrf
+                    <input type="hidden" name="amount_paid" :value="settleAmount">
+                    <input type="hidden" name="payment_for" value="booking">
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-semibold mb-2 uppercase tracking-wide text-gray-500">Payment Method Received</label>
+                        <select name="payment_method" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white font-medium text-gray-700">
+                            <option value="khqr_aba">KHQR / ABA Static</option>
+                            <option value="cash">Cash</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showSettleModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700 font-semibold text-sm">Cancel</button>
+                        <button type="submit" class="px-5 py-2.5 bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] transition-all text-white rounded-lg font-semibold text-sm shadow-md flex items-center gap-2">
+                            <i class="bi bi-check2-circle"></i> Confirm Paid
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>{{-- end tabbed panel --}}
 </div>
 
 @endsection

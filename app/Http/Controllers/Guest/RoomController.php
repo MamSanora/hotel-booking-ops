@@ -176,6 +176,9 @@ class RoomController extends Controller
                 $existingBooking->update([
                     'total_price'      => $total,
                     'special_requests' => $validated['special_requests'] ?? $existingBooking->special_requests,
+                    'bed_type'         => $validated['bed_type'] ?? $existingBooking->bed_type,
+                    'floor_preference' => $validated['floor_preference'] ?? $existingBooking->floor_preference,
+                    'view_preference'  => $validated['view_preference'] ?? $existingBooking->view_preference,
                 ]);
 
                 // Check for existing pending transaction
@@ -213,6 +216,9 @@ class RoomController extends Controller
                 'booking_status'   => Booking::STATUS_PENDING,
                 'guest_type'       => Booking::GUEST_TYPE_USER,
                 'special_requests' => $validated['special_requests'] ?? null,
+                'bed_type'         => $validated['bed_type'] ?? null,
+                'floor_preference' => $validated['floor_preference'] ?? null,
+                'view_preference'  => $validated['view_preference'] ?? null,
             ]);
 
             // Create a pending transaction with the deposit amount.

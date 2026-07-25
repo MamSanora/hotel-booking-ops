@@ -63,15 +63,34 @@
                         <input type="date" name="checkout"
                                class="w-full border border-white/30 bg-white/15 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none [color-scheme:dark]">
                     </div>
+                    {{-- Guest Counter --}}
                     <div>
                         <label class="block font-semibold text-[0.72rem] uppercase text-white/80 tracking-wider mb-1.5"
-                               data-en="Room Type" data-km="ប្រភេទបន្ទប់">Room Type</label>
-                        <select name="type" class="w-full border border-white/30 bg-hotel-dark/80 text-white rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/30 transition-all outline-none">
-                            <option value="" data-en="All Room Types ($35 - $80)" data-km="ប្រភេទបន្ទប់ទាំងអស់">All Room Types ($35 - $80)</option>
-                            <option value="standard_twin" data-en="Standard Twin ($35/night)" data-km="ស្ទែនដឹតវីន ($35/យប់)">Standard Twin ($35/night)</option>
-                            <option value="standard_double" data-en="Standard Double ($50/night)" data-km="ស្ទែនដឹតដូប ($50/យប់)">Standard Double ($50/night)</option>
-                            <option value="deluxe_double" data-en="Deluxe Double ($80/night)" data-km="ឌីឡុចដូប ($80/យប់)">Deluxe Double ($80/night)</option>
-                        </select>
+                               data-en="Guests" data-km="ភ្ញៀវ">Guests</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-white/15 border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[0.65rem] text-white/70 font-semibold uppercase tracking-wider" data-en="Adults" data-km="មនុស្សពេញវ័យ">Adults</div>
+                                    <div class="text-white text-sm font-bold" id="adults-display">1</div>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="adjustCount('adults', -1)" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 text-white font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                                    <button type="button" onclick="adjustCount('adults', 1)" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 text-white font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                                </div>
+                                <input type="hidden" name="adults" id="adults-value" value="1">
+                            </div>
+                            <div class="bg-white/15 border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[0.65rem] text-white/70 font-semibold uppercase tracking-wider" data-en="Children" data-km="កុមារ">Children</div>
+                                    <div class="text-white text-sm font-bold" id="children-display">0</div>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="adjustCount('children', -1)" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 text-white font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                                    <button type="button" onclick="adjustCount('children', 1)" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 text-white font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                                </div>
+                                <input type="hidden" name="children" id="children-value" value="0">
+                            </div>
+                        </div>
                     </div>
                     <button type="submit" class="w-full bg-gradient-to-r from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-hotel-dark font-bold rounded-xl px-4 py-3.5 mt-1 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-[0_6px_20px_rgba(200,169,110,0.5)] hover:-translate-y-0.5">
                         <i class="bi bi-search"></i>
@@ -297,10 +316,10 @@
                     <i class="bi bi-pin-map-fill"></i> Neighborhood Guide
                 </span>
                 <h2 class="font-playfair text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
-                    Prime Location in Toul Kork, Phnom Penh
+                    Prime Location in Sen Sok, Phnom Penh
                 </h2>
                 <p class="text-white/75 text-sm md:text-base leading-relaxed mb-8 max-w-xl font-light">
-                    Situated in the peaceful residential and commercial district of Toul Kork, Dara Meas Hotel offers the perfect balance: quiet nights and effortless connectivity to Phnom Penh's bustling landmarks and business centers.
+                    Situated in the vibrant residential and commercial hub of Sen Sok — right along Street 2004 — Dara Meas Hotel offers the perfect balance: quiet nights and effortless connectivity to Phnom Penh's business centers, markets, and landmarks.
                 </p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -530,6 +549,23 @@
                 checkoutEl.value = d.toISOString().split('T')[0];
             }
         });
+    }
+
+    // ── Guest Counter Stepper ────────────────────────────────────────────────
+    const counters = {
+        adults:   { min: 1, max: 4 },
+        children: { min: 0, max: 4 },
+    };
+
+    function adjustCount(type, delta) {
+        const cfg    = counters[type];
+        const input  = document.getElementById(type + '-value');
+        const display = document.getElementById(type + '-display');
+        if (!input || !display) return;
+        let val = parseInt(input.value, 10) + delta;
+        val = Math.max(cfg.min, Math.min(cfg.max, val));
+        input.value   = val;
+        display.textContent = val;
     }
 </script>
 @endpush

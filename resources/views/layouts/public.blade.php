@@ -98,7 +98,7 @@
                         <span data-en="Contact" data-km="ទំនាក់ទំនង">Contact</span>
                     </a>
                     
-                    {{-- Localization Pill — Language & Currency Toggle --}}
+                    {{-- Localization Pill — Language Toggle Only (Currency hidden for production) --}}
                     <div id="locale-pill" class="hidden xl:flex items-center gap-0 text-[0.72rem] bg-white/10 border border-white/20 rounded-full overflow-hidden ml-2 shadow-inner">
                         {{-- Language toggle --}}
                         <button
@@ -109,16 +109,7 @@
                             <i class="bi bi-globe2 text-hotel-gold"></i>
                             <span id="pill-lang-active" class="font-semibold">EN</span>
                         </button>
-                        {{-- Divider --}}
-                        <span class="text-white/25 text-xs">|</span>
-                        {{-- Currency toggle --}}
-                        <button
-                            onclick="dmhToggleCurrency()"
-                            title="Switch currency"
-                            class="flex items-center gap-1 px-3 py-1.5 text-white/85 hover:bg-white/15 hover:text-white transition-all duration-200 font-medium cursor-pointer"
-                        >
-                            <span id="pill-currency-active">USD ($)</span>
-                        </button>
+                        {{-- Currency toggle hidden for production --}}
                     </div>
                 </div>
 
@@ -282,8 +273,8 @@
                         <i class="bi bi-building mr-2"></i> Dara Meas Hotel
                     </h5>
                     <p class="text-sm leading-relaxed mb-6">
-                        A comfortable 2-star hotel in Toul Kork Phnom Penh, Cambodia.<br>
-                        Established 2019. 47 rooms across 4 floors.
+                        A comfortable 2-star hotel in Sen Sok, Phnom Penh, Cambodia.<br>
+                        Established 2019. 41 rooms across 4 floors.
                     </p>
                     <div class="flex space-x-4">
                         <a href="#" class="text-white/65 hover:text-hotel-gold transition-colors text-xl"><i class="bi bi-facebook"></i></a>
@@ -307,9 +298,9 @@
                 <div class="lg:col-span-2 md:col-span-1">
                     <h5 class="text-hotel-gold font-playfair font-semibold text-lg mb-4">Room Types</h5>
                     <ul class="space-y-3 text-sm">
-                        <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Standard Twin</a></li>
-                        <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Standard Double</a></li>
-                        <li><a href="{{ route('rooms.index') }}" class="hover:text-hotel-gold transition-colors">Deluxe Double</a></li>
+                        <li><a href="{{ route('rooms.index', ['type' => 'standard_room']) }}" class="hover:text-hotel-gold transition-colors">Standard Room</a></li>
+                        <li><a href="{{ route('rooms.index', ['type' => 'deluxe_room']) }}" class="hover:text-hotel-gold transition-colors">Deluxe Room</a></li>
+                        <li><a href="{{ route('rooms.index', ['type' => 'family_triple_room']) }}" class="hover:text-hotel-gold transition-colors">Family Triple Room</a></li>
                     </ul>
                 </div>
 
@@ -319,7 +310,7 @@
                     <ul class="space-y-3 text-sm">
                         <li class="flex items-start">
                             <i class="bi bi-geo-alt text-hotel-gold mr-3 mt-0.5"></i> 
-                            <span>Toul Kork, Phnom Penh, Cambodia</span>
+                            <span>Street 2004, Sen Sok, Phnom Penh, Cambodia</span>
                         </li>
                         <li class="flex items-start">
                             <i class="bi bi-telephone text-hotel-gold mr-3 mt-0.5"></i> 

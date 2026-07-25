@@ -45,6 +45,7 @@ class Transaction extends Model
     public const METHOD_KHQR     = 'khqr';
     public const METHOD_ABA      = 'aba_payway';
     public const METHOD_TELEGRAM = 'aba_telegram';
+    public const METHOD_KHQR_ABA = 'khqr_aba';
 
     public const FOR_BOOKING        = 'booking';
     public const FOR_STAY_EXTENSION = 'stay_extension';
@@ -139,6 +140,7 @@ class Transaction extends Model
         return match ($this->payment_method) {
             self::METHOD_CASH     => 'Cash',
             self::METHOD_KHQR     => 'Bakong (KHQR)',
+            self::METHOD_KHQR_ABA => 'KHQR and ABA Pay',
             self::METHOD_ABA      => 'ABA PayWay',
             self::METHOD_TELEGRAM => 'ABA (Telegram)',
             default               => '—',

@@ -52,9 +52,9 @@
                 <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Room Type</label>
                 <select name="type" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
                     <option value="">All Types</option>
-                    <option value="standard_twin"   {{ request('type') === 'standard_twin'   ? 'selected' : '' }}>Standard Twin</option>
-                    <option value="standard_double" {{ request('type') === 'standard_double' ? 'selected' : '' }}>Standard Double</option>
-                    <option value="deluxe_double"   {{ request('type') === 'deluxe_double'   ? 'selected' : '' }}>Deluxe Double</option>
+                    <option value="standard_room"      {{ request('type') === 'standard_room'      ? 'selected' : '' }}>Standard Room</option>
+                    <option value="deluxe_room"        {{ request('type') === 'deluxe_room'        ? 'selected' : '' }}>Deluxe Room</option>
+                    <option value="family_triple_room" {{ request('type') === 'family_triple_room' ? 'selected' : '' }}>Family Triple Room</option>
                 </select>
             </div>
 
@@ -149,17 +149,18 @@
          ========================================== --}}
     @php
         $roomImages = [
-            'standard_twin'   => asset('images/dara_room_twin.png'),
-            'standard_double' => asset('images/dara_room_double.png'),
-            'deluxe_double'   => asset('images/dara_room_deluxe.png'),
+            'standard_room'      => asset('images/rooms/dara_room_standard_twin_bedroom.png'),
+            'deluxe_room'        => asset('images/rooms/dara_room_deluxe_bedroom.png'),
+            'family_triple_room' => asset('images/rooms/dara_room_family_triple_bedroom.png'),
         ];
+        $fallbackImg = asset('images/rooms/dara_room_standard_twin_bedroom.png');
     @endphp
 
     @if($roomTypes->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($roomTypes as $roomType)
                 @php
-                    $img = $roomImages[$roomType->slug] ?? asset('images/dara_room_double.png');
+                    $img = $roomImages[$roomType->slug] ?? $fallbackImg;
                     $isAvailable = $availability[$roomType->id] ?? true;
                     // Pick a representative physical room for the detail-page link.
                     $representativeRoom = $roomType->rooms()->where('current_status', '!=', 'maintenance')->first();
@@ -197,7 +198,10 @@
                             </div>
                         </div>
 
-                        <h5 class="font-bold text-xl text-hotel-dark mb-2">{{ $roomType->display_name }}</h5>
+                        <h5 class="font-bold text-xl text-hotel-dark mb-1">{{ $roomType->display_name }}</h5>
+                        @if($roomType->size_sqm)
+                        <p class="text-[0.78rem] text-gray-400 mb-2"><i class="bi bi-aspect-ratio mr-1"></i>{{ $roomType->size_sqm }} m²</p>
+                        @endif
                         <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
                             {{ Str::limit($roomType->description ?? 'A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.', 90) }}
                         </p>
@@ -215,19 +219,16 @@
                             </span>
                         </div>
 
-                        {{-- Action Buttons --}}
-                        <div class="flex gap-3">
+                        {{-- Action Button — single Book button (no separate Details) --}}
+                        <div>
                             @if($representativeRoom)
-                                <a href="{{ route('rooms.show', $representativeRoom) }}{{ $checkinDate ? '?checkin='.$checkinDate.'&checkout='.$checkoutDate : '' }}" class="flex-1 text-center bg-transparent hover:bg-hotel-dark text-hotel-dark hover:text-white border-[1.5px] border-hotel-dark font-semibold text-[0.9rem] py-2 rounded-lg transition-colors duration-200">
-                                    Details
-                                </a>
                                 @if($isAvailable)
                                     <a href="{{ route('rooms.show', $representativeRoom) }}{{ $checkinDate ? '?checkin='.$checkinDate.'&checkout='.$checkoutDate : '' }}"
-                                       class="flex-1 text-center bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-semibold py-2 rounded-lg transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_4px_15px_rgba(200,169,110,0.4)]">
-                                        <i class="bi bi-calendar-plus mr-1"></i>Book
+                                       class="w-full block text-center bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-semibold py-2.5 rounded-lg transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_4px_15px_rgba(200,169,110,0.4)]">
+                                        <i class="bi bi-calendar-plus mr-1"></i>Book Now
                                     </a>
                                 @else
-                                    <span class="flex-1 text-center bg-gray-50 text-gray-400 border border-gray-200 font-semibold text-[0.9rem] py-2 rounded-lg cursor-not-allowed">
+                                    <span class="w-full block text-center bg-gray-50 text-gray-400 border border-gray-200 font-semibold text-[0.9rem] py-2.5 rounded-lg cursor-not-allowed">
                                         Fully Booked
                                     </span>
                                 @endif

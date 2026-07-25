@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Room;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -37,15 +38,21 @@ class StoreWalkInBookingRequest extends FormRequest
 
     public function rules(): array
     {
+        // Dynamically compute the max checkout date (7 days from check_in_date).
+        $checkin    = $this->input('check_in_date');
+        $maxCheckout = $checkin
+            ? Carbon::parse($checkin)->addDays(7)->toDateString()
+            : null;
+
         return [
             // ── Guest Profile ────────────────────────────────────────────────
-            'full_name' => ['required', 'string', 'max:50'],
-            'gender' => ['nullable', Rule::in(['male', 'female', 'other', 'prefer_not_to_say'])],
-            'nationality' => ['nullable', 'string', 'max:50'],
+            'full_name'    => ['required', 'string', 'max:50'],
+            'gender'       => ['nullable', Rule::in(['male', 'female', 'other', 'prefer_not_to_say'])],
+            'nationality'  => ['nullable', 'string', 'max:50'],
             'phone_number' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'adults' => ['nullable', 'integer', 'min:1', 'max:10'],
-            'children' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'email'        => ['nullable', 'email', 'max:255'],
+            'adults'       => ['nullable', 'integer', 'min:1', 'max:10'],
+            'children'     => ['nullable', 'integer', 'min:0', 'max:10'],
 
             // ── Booking Details ──────────────────────────────────────────────
             'room_id' => [
@@ -53,14 +60,24 @@ class StoreWalkInBookingRequest extends FormRequest
                 'integer',
                 Rule::exists('rooms', 'id')->where('current_status', Room::STATUS_AVAILABLE),
             ],
-            'check_in_date' => ['required', 'date', 'after_or_equal:today'],
-            'check_out_date' => ['required', 'date', 'after:check_in_date'],
+            'check_in_date'  => ['required', 'date', 'after_or_equal:today'],
+            'check_out_date' => array_filter([
+                'required',
+                'date',
+                'after:check_in_date',
+                $maxCheckout ? 'before_or_equal:' . $maxCheckout : null,
+            ]),
 
             // How the guest arrived or was contacted.
             'guest_type' => ['required', Rule::in(['walk-in', 'phone', 'other'])],
 
+            // ── Guest Preferences (optional) ─────────────────────────────────
+            'bed_type'         => ['nullable', 'string', Rule::in(['twin', 'double'])],
+            'floor_preference' => ['nullable', 'string', Rule::in(['2', '3', '4', '5'])],
+            'view_preference'  => ['nullable', 'string', Rule::in(['balcony', 'window'])],
+
             // ── Payment ──────────────────────────────────────────────────────
-            'payment_method' => ['required', Rule::in(['cash', 'khqr'])],
+            'payment_method' => ['required', Rule::in(['cash', 'khqr', 'khqr_aba'])],
             'amount_paid'    => ['required', 'numeric', 'min:0'],
             'payment_status' => ['required', Rule::in(['pending', 'half', 'full'])],
             // The percentage of the total price paid upfront.
@@ -73,9 +90,10 @@ class StoreWalkInBookingRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'room_id.exists' => 'The selected room is not available.',
-            'check_out_date.after' => 'Check-out must be at least one night after check-in.',
-            'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
+            'room_id.exists'                 => 'The selected room is not available.',
+            'check_out_date.after'           => 'Check-out must be at least one night after check-in.',
+            'check_in_date.after_or_equal'   => 'Check-in date cannot be in the past.',
+            'check_out_date.before_or_equal' => 'Bookings are limited to a maximum of 7 nights.',
         ];
     }
 }
