@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('layouts.admin')
 
 @section('title', 'Admin Dashboard')
 
@@ -84,66 +84,74 @@
     {{-- ==========================================
          HOTEL STATISTICS
          ========================================== --}}
-    <h2 class="font-playfair text-2xl font-bold text-hotel-dark border-b-2 border-gray-200 pb-3 mb-6 flex items-center">
+    <h2 class="font-playfair text-2xl font-bold text-hotel-dark dark:text-gray-100 border-b-2 border-gray-200 dark:border-gray-800 pb-3 mb-6 flex items-center transition-colors">
         <i class="bi bi-graph-up text-blue-500 mr-3"></i>Hotel Statistics
     </h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div id="admin-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 
         {{-- Revenue --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
+        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-currency-dollar"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">${{ number_format($monthlyRevenue, 2) }}</div>
-            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Monthly Revenue</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">${{ number_format($monthlyRevenue, 2) }}</div>
+            <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Monthly Revenue</div>
         </div>
 
-        {{-- Occupancy with % bar --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-building"></i></div>
+        {{-- Occupancy with % bar (clickable → room board modal) --}}
+        <button type="button" onclick="document.getElementById('room-board-modal').classList.remove('hidden')"
+                class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800 text-left w-full group cursor-pointer">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-[1.4rem] mb-4 group-hover:bg-blue-100 transition-colors"><i class="bi bi-building"></i></div>
             <div class="flex items-end gap-2 mb-0.5">
-                <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none">{{ $occupiedRooms }} / {{ $totalRooms }}</div>
+                <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none">{{ $occupiedRooms }} / {{ $totalRooms }}</div>
                 <span class="text-blue-500 font-bold text-sm mb-0.5">{{ $occupancyRate }}%</span>
             </div>
-            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider mb-3">Rooms Occupied</div>
+            <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-3">Rooms Occupied</div>
             <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                 <div class="h-2 rounded-full" style="width: {{ $occupancyRate }}%; background: linear-gradient(to right, #3b82f6, #6366f1);"></div>
             </div>
             <div class="flex justify-between text-[0.65rem] text-gray-400 mt-1"><span>0%</span><span>Occupancy</span><span>100%</span></div>
-        </div>
+            <div class="text-[0.7rem] text-blue-400 font-medium mt-2 flex items-center gap-1 group-hover:text-blue-600 transition-colors">
+                <i class="bi bi-grid-3x3-gap"></i> View room board
+            </div>
+        </button>
 
         {{-- Active Bookings --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
+        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-calendar-check"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $activeBookings }}</div>
-            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Active Bookings</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $activeBookings }}</div>
+            <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Active Bookings</div>
         </div>
 
         {{-- Registered Guests --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
+        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-[#fff8ee] text-hotel-gold flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-people"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $totalGuests }}</div>
-            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Registered Guests</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $totalGuests }}</div>
+            <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Registered Guests</div>
         </div>
 
         {{-- Today Arrivals --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
+        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-500 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-box-arrow-in-right"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $todayArrivals }}</div>
-            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Today's Arrivals</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $todayArrivals }}</div>
+            <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Today's Arrivals</div>
         </div>
 
         {{-- Today Departures --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
+        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-box-arrow-right"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $todayDepartures }}</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $todayDepartures }}</div>
             <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Today's Departures</div>
         </div>
 
-        {{-- Rooms Available --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2]">
-            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-check-circle"></i></div>
+        {{-- Rooms Available (clickable → same room board modal) --}}
+        <button type="button" onclick="document.getElementById('room-board-modal').classList.remove('hidden')"
+                class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] text-left w-full group cursor-pointer">
+            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-[1.4rem] mb-4 group-hover:bg-green-100 transition-colors"><i class="bi bi-check-circle"></i></div>
             <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $availableRooms }}</div>
             <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Rooms Available</div>
-        </div>
+            <div class="text-[0.7rem] text-green-500 font-medium mt-2 flex items-center gap-1 group-hover:text-green-700 transition-colors">
+                <i class="bi bi-grid-3x3-gap"></i> View room board
+            </div>
+        </button>
 
         {{-- System Backup --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] flex flex-col">
@@ -177,6 +185,128 @@
         </div>
     </div>
 
+    @push('modals')
+    {{-- ==========================================
+         ROOM STATUS BOARD MODAL
+         ========================================== --}}
+    <div id="room-board-modal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+         onclick="if(event.target===this)this.classList.add('hidden')">
+
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+        {{-- Modal Box --}}
+        <div id="admin-room-board-content" class="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col" style="max-height: 90vh;">
+
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between px-7 py-5 border-b border-gray-100 shrink-0">
+                <div>
+                    <h2 class="font-playfair text-2xl font-bold text-hotel-dark flex items-center gap-3">
+                        <i class="bi bi-grid-3x3-gap-fill text-blue-500"></i>
+                        Room Status Board
+                    </h2>
+                    <p class="text-gray-400 text-sm mt-0.5">Live snapshot of all {{ $totalRooms }} rooms — {{ now()->format('l, F j, Y g:i A') }}</p>
+                </div>
+                <button onclick="document.getElementById('room-board-modal').classList.add('hidden')"
+                        class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-colors text-lg">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {{-- Summary Bar --}}
+            <div class="flex flex-wrap items-center gap-4 px-7 py-4 bg-gray-50 border-b border-gray-100 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded-md bg-emerald-400 inline-block"></span>
+                    <span class="text-sm font-semibold text-gray-700">Available</span>
+                    <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $availableRooms }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded-md bg-red-400 inline-block"></span>
+                    <span class="text-sm font-semibold text-gray-700">Occupied</span>
+                    <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $occupiedRooms }}</span>
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <span class="text-xs text-gray-400">Occupancy rate:</span>
+                    <span class="text-sm font-bold text-blue-600">{{ $occupancyRate }}%</span>
+                    <div class="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500" style="width: {{ $occupancyRate }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Room Grid --}}
+            <div class="overflow-y-auto flex-1 px-7 py-6">
+                @php
+                    // Group rooms by floor (first digit(s) of room number)
+                    $grouped = $allRooms->groupBy(function($room) {
+                        $num = preg_replace('/[^0-9]/', '', $room->room_number ?? '0');
+                        return strlen($num) >= 3 ? 'Floor ' . substr($num, 0, strlen($num)-2) : 'Floor 1';
+                    })->sortKeys();
+                @endphp
+
+                @foreach($grouped as $floor => $rooms)
+                <div class="mb-7">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-xs font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                            {{ $floor }}
+                        </span>
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                        <span class="text-xs text-gray-400">{{ $rooms->count() }} rooms</span>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        @foreach($rooms as $room)
+                        @php
+                            $isOccupied = $room->isOccupied();
+                            $guest = $room->activeBooking?->guest;
+                        @endphp
+                        <div title="{{ $isOccupied ? ($guest?->full_name ?? 'Occupied') : 'Available' }}"
+                             class="relative group flex flex-col items-center justify-center rounded-2xl border-2 font-bold transition-all duration-200 cursor-default select-none
+                                    {{ $isOccupied
+                                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 hover:shadow-md hover:shadow-red-100'
+                                        : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100'
+                                    }}"
+                             style="width: 80px; height: 80px;">
+
+                            {{-- Status dot --}}
+                            <div class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full {{ $isOccupied ? 'bg-red-400' : 'bg-emerald-400' }}"></div>
+
+                            {{-- Room Number --}}
+                            <div class="text-lg font-extrabold leading-none">{{ $room->room_number }}</div>
+
+                            {{-- Type label --}}
+                            <div class="text-[0.6rem] font-semibold uppercase tracking-wide mt-1 opacity-70 text-center px-1 leading-tight">
+                                {{ Str::limit($room->roomType?->display_name ?? '', 10, '') }}
+                            </div>
+
+                            {{-- Occupied: guest name tooltip on hover --}}
+                            @if($isOccupied)
+                            <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-hotel-dark text-white text-[0.65rem] font-semibold px-2 py-1 rounded-lg whitespace-nowrap
+                                        opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-lg">
+                                {{ Str::limit($guest?->full_name ?? 'Occupied', 20) }}
+                                <div class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-hotel-dark"></div>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="px-7 py-4 border-t border-gray-100 bg-gray-50 rounded-b-3xl shrink-0 flex items-center justify-between">
+                <p class="text-xs text-gray-400"><i class="bi bi-info-circle mr-1"></i>Hover over a room to see the guest name. Click outside to close.</p>
+                <button onclick="document.getElementById('room-board-modal').classList.add('hidden')"
+                        class="bg-hotel-dark hover:bg-hotel-accent text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    @endpush
+
     {{-- ==========================================
          TODAY'S GUEST MOVEMENT
          ========================================== --}}
@@ -184,7 +314,7 @@
         <i class="bi bi-people text-teal-500 mr-3"></i>Today's Guest Movement
         <span class="ml-3 text-sm font-normal text-gray-400">{{ now()->format('l, F j, Y') }}</span>
     </h2>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+    <div id="admin-movement-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
         {{-- Arrivals List --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-[#f0ebe2] overflow-hidden">
             <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-teal-50/50">
@@ -398,6 +528,7 @@
 
 </div>
 
+@push('modals')
 {{-- ==========================================
      KHMER LUNAR CALENDAR MODAL (Interactive)
      ========================================== --}}
@@ -509,6 +640,7 @@
         </div>
     </div>
 </div>
+@endpush
 
 @endsection
 
@@ -1108,4 +1240,48 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(() => { document.getElementById('weather-desc').textContent = 'Unavailable'; });
 });
 </script>
+
+    {{-- =====================================================
+         REAL-TIME AUTO POLLING
+         ===================================================== --}}
+    <script>
+        // Poll every 20 seconds to keep stats, room board, and movement lists fresh
+        setInterval(() => {
+            fetch(window.location.href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Update Stats Grid
+                const newStats = doc.getElementById('admin-stats-grid');
+                const oldStats = document.getElementById('admin-stats-grid');
+                if (newStats && oldStats) oldStats.innerHTML = newStats.innerHTML;
+
+                // Update Guest Movement
+                const newMovement = doc.getElementById('admin-movement-grid');
+                const oldMovement = document.getElementById('admin-movement-grid');
+                if (newMovement && oldMovement) oldMovement.innerHTML = newMovement.innerHTML;
+
+                // Update Room Board Modal content
+                const newBoard = doc.getElementById('admin-room-board-content');
+                const oldBoard = document.getElementById('admin-room-board-content');
+                if (newBoard && oldBoard) oldBoard.innerHTML = newBoard.innerHTML;
+                
+                // Pulse effect
+                const titleIcon = document.querySelector('h2 .bi-graph-up');
+                if (titleIcon) {
+                    titleIcon.classList.add('animate-pulse', 'text-green-500');
+                    titleIcon.classList.remove('text-blue-500');
+                    setTimeout(() => {
+                        titleIcon.classList.remove('animate-pulse', 'text-green-500');
+                        titleIcon.classList.add('text-blue-500');
+                    }, 1000);
+                }
+            })
+            .catch(err => console.error('Auto-refresh failed:', err));
+        }, 20000);
+    </script>
 @endpush

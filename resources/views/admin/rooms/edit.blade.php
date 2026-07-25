@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('layouts.admin')
 
 @section('title', 'Edit Room — ' . $room->room_number)
 

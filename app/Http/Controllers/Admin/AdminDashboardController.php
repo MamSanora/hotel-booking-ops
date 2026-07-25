@@ -38,6 +38,11 @@ class AdminDashboardController extends Controller
         $occupiedRooms  = Room::occupied()->count();
         $occupancyRate  = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0;
 
+        // All rooms for the room status board modal
+        $allRooms = Room::with(['roomType', 'activeBooking.guest'])
+            ->orderBy('room_number')
+            ->get();
+
         // ── Booking Statistics ────────────────────────────────────────────
         $activeBookings = Booking::active()->count();
 
@@ -106,6 +111,7 @@ class AdminDashboardController extends Controller
             'totalGuests',
             'backupStatus',
             'lastBackupTime',
+            'allRooms',
         ));
     }
 

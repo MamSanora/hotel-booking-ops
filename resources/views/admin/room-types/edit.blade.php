@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('layouts.admin')
 
 @section('title', "Edit Room Type: {$roomType->display_name} - Admin")
 

@@ -1,17 +1,13 @@
-@extends('layouts.public')
+@extends('layouts.reception')
 
 @section('title', 'New Walk-In Booking')
+@section('page_title', 'New Walk-In Booking')
 
 @section('content')
 
-<div class="bg-gradient-to-br from-hotel-dark to-hotel-accent py-12 mb-10 text-white">
-    <div class="container mx-auto px-4 md:px-6">
-        <h1 class="font-playfair text-3xl md:text-[2.2rem] font-bold mb-2">New Walk-In Booking</h1>
-        <p class="text-white/70 text-[0.95rem]">Create an instant reservation for guests at the front desk.</p>
-    </div>
-</div>
 
-<div class="container mx-auto px-4 md:px-6 pb-12 max-w-5xl">
+
+<div class="p-5 md:p-8 max-w-5xl mx-auto">
     
     <div class="mb-6 flex justify-between items-center">
         <a href="{{ route('reception.dashboard') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">

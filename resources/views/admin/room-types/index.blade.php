@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('layouts.admin')
 
 @section('title', 'Manage Room Types - Admin Dashboard')
 

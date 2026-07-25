@@ -24,9 +24,9 @@ class MessageController extends Controller
      */
     public function index(): View
     {
-        $messages = Contact::orderByDesc('created_at')->paginate(20);
+        $contacts = Contact::orderByDesc('created_at')->paginate(20);
 
-        return view('admin.messages.index', compact('messages'));
+        return view('admin.messages.index', compact('contacts'));
     }
 
     /**

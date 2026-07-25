@@ -20,8 +20,25 @@
     <!-- Additional Custom Styles injected by individual views -->
     @yield('styles')
     @stack('styles')
+
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        }
+    </script>
 </head>
-<body class="font-sans antialiased text-gray-800 bg-white flex flex-col min-h-screen">
+<body class="font-sans antialiased text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900 transition-colors duration-200 flex flex-col min-h-screen">
 
     @php
         $currentUser = null;
@@ -107,6 +124,12 @@
 
                 <!-- Desktop Auth Section -->
                 <div class="hidden lg:flex items-center space-x-3">
+                    {{-- Dark Mode Toggle --}}
+                    <button onclick="toggleDarkMode()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/85 flex items-center justify-center transition-colors">
+                        <i class="bi bi-moon-stars-fill block dark:hidden text-sm"></i>
+                        <i class="bi bi-sun-fill hidden dark:block text-hotel-gold text-sm"></i>
+                    </button>
+
                     @if($currentUser)
                         <!-- User Dropdown Menu using Alpine.js -->
                         <div x-data="{ dropdownOpen: false }" class="relative">
@@ -175,6 +198,13 @@
                 <a href="{{ route('rooms.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('rooms*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">Rooms</a>
                 <a href="{{ route('about') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('about*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">About</a>
                 <a href="{{ route('contact') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('contact*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">Contact</a>
+
+                <button onclick="toggleDarkMode()" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-white/85 flex items-center justify-between hover:bg-white/5 transition-colors">
+                    <span class="block dark:hidden">Dark Mode</span>
+                    <span class="hidden dark:block">Light Mode</span>
+                    <i class="bi bi-moon-stars-fill block dark:hidden"></i>
+                    <i class="bi bi-sun-fill hidden dark:block text-hotel-gold"></i>
+                </button>
 
                 <hr class="border-white/10 my-3">
 

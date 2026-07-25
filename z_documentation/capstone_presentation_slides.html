@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dara Meas Hotel Booking System — Capstone Defense 2026</title>
+    <meta name="description" content="Bachelor Capstone Project Defense: Dara Meas Hotel Booking Operation System — Norton University, Team 14, Batch 27, 2026.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=Playfair+Display:wght@600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* ═══════════════════════════════════════════════════════
+           DESIGN TOKENS
+        ═══════════════════════════════════════════════════════ */
+        :root {
+            --bg:         #060d1e;
+            --surface:    #0f1f3d;
+            --surface-2:  #162b52;
+            --border:     #1e3a6e;
+            --gold:       #c9a84c;
+            --gold-l:     #f0c060;
+            --gold-ll:    #fff0c0;
+            --cyan:       #38bdf8;
+            --green:      #34d399;
+            --red:        #f87171;
+            --amber:      #fbbf24;
+            --white:      #f0f6ff;
+            --muted:      #7ba3cc;
+            --code-bg:    #020817;
+            --shadow:     rgba(0,0,0,0.6);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--white);
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ─── Starfield Background ─────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 100% 80% at 10% 20%, rgba(56, 189, 248, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 80% 60% at 90% 80%, rgba(201, 168, 76, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* ─── Progress Bar ─────────────────────────────────── */
+        #progress {
+            position: fixed; top: 0; left: 0; z-index: 999;
+            height: 3px; width: var(--prog, 6.25%);
+            background: linear-gradient(90deg, var(--gold), var(--cyan));
+            transition: width 0.4s cubic-bezier(.4,0,.2,1);
+            box-shadow: 0 0 12px var(--gold);
+        }
+
+        /* ─── Deck Container ───────────────────────────────── */
+        #deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ─── Slide Base ───────────────────────────────────── */
+        .slide {
+            position: absolute;
+            width: min(94vw, 1380px);
+            height: min(86vh, 820px);
+            background: linear-gradient(145deg, var(--surface) 0%, rgba(10,25,60,0.95) 100%);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: 0 40px 80px -20px var(--shadow), 0 0 0 1px rgba(201,168,76,0.08);
+            display: flex;
+            flex-direction: column;
+            padding: 36px 44px 28px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(22px) scale(0.97);
+            transition: opacity .45s ease, transform .45s ease, visibility .45s;
+            overflow: hidden;
+        }
+        .slide.active {
+            opacity: 1; visibility: visible;
+            transform: translateY(0) scale(1);
+            z-index: 10;
+        }
+
+        /* Gold top accent */
+        .slide::before {
+            content: '';
+            position: absolute; top: 0; left: 5%; right: 5%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* ─── Slide Header ─────────────────────────────────── */
+        .slide-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            flex-shrink: 0;
+        }
+        .slide-header::after {
+            content: '';
+            position: absolute; bottom: -1px; left: 0;
+            width: 100px; height: 2px;
+            background: linear-gradient(90deg, var(--gold), var(--cyan));
+            border-radius: 1px;
+        }
+        .kicker {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 5px;
+        }
+        .slide-title {
+            font-size: clamp(1.3rem, 2vw, 1.85rem);
+            font-weight: 800;
+            color: var(--white);
+            line-height: 1.15;
+        }
+        .slide-num {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--muted);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 5px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: 20px;
+        }
+
+        /* ─── Body ─────────────────────────────────────────── */
+        .slide-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── Grid Helpers ─────────────────────────────────── */
+        .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; flex: 1; overflow: hidden; }
+        .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; flex: 1; overflow: hidden; }
+        .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; flex: 1; overflow: hidden; }
+        .g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; flex: 1; overflow: hidden; }
+
+        /* ─── Card ─────────────────────────────────────────── */
+        .card {
+            background: rgba(6, 13, 30, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+            transition: border-color 0.25s, box-shadow 0.25s;
+            position: relative;
+        }
+        .card:hover { border-color: rgba(201,168,76,0.5); box-shadow: 0 8px 30px -8px rgba(201,168,76,0.2); }
+        .card.g { border-top: 2px solid var(--gold); }
+        .card.c { border-top: 2px solid var(--cyan); }
+        .card.gr{ border-top: 2px solid var(--green); }
+        .card.a { border-top: 2px solid var(--amber); }
+        .card.r { border-top: 2px solid var(--red); }
+
+        .card-icon {
+            font-size: 1.5rem;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        .card-icon.g  { background: rgba(201,168,76,0.12); color: var(--gold); }
+        .card-icon.c  { background: rgba(56,189,248,0.12); color: var(--cyan); }
+        .card-icon.gr { background: rgba(52,211,153,0.12); color: var(--green); }
+        .card-icon.a  { background: rgba(251,191,36,0.12); color: var(--amber); }
+
+        .card-head {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+        .card.g  .card-title { color: var(--gold); }
+        .card.c  .card-title { color: var(--cyan); }
+        .card.gr .card-title { color: var(--green); }
+        .card.a  .card-title { color: var(--amber); }
+        .card.r  .card-title { color: var(--red); }
+
+        .card-body {
+            font-size: 0.83rem;
+            line-height: 1.55;
+            color: rgba(240,246,255,0.82);
+            flex: 1;
+            overflow: hidden;
+        }
+        .card-body ul { list-style: none; }
+        .card-body li {
+            padding-left: 16px;
+            position: relative;
+            margin-bottom: 5px;
+        }
+        .card-body li::before {
+            content: '›';
+            position: absolute; left: 0;
+            color: var(--gold);
+            font-weight: 900;
+        }
+        .card-body li b { color: var(--white); }
+
+        /* ─── Screenshot / Image Frame ─────────────────────── */
+        .img-frame {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px -5px var(--shadow);
+            background: var(--code-bg);
+            flex-shrink: 0;
+        }
+        .img-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            display: block;
+        }
+        .img-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--gold);
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        /* ─── Code Block ───────────────────────────────────── */
+        .code {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            color: var(--cyan);
+            line-height: 1.6;
+            white-space: pre;
+            overflow: auto;
+            flex: 1;
+        }
+
+        /* ─── Stat Badge ───────────────────────────────────── */
+        .stat { text-align: center; }
+        .stat-num {
+            font-size: clamp(2rem, 3vw, 3rem);
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--gold), var(--gold-l));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-label { font-size: 0.85rem; font-weight: 700; color: var(--white); margin-top: 4px; }
+        .stat-desc  { font-size: 0.78rem; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+        /* ─── Controls ─────────────────────────────────────── */
+        #controls {
+            position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+            z-index: 999;
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(15, 31, 61, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 8px 20px;
+            box-shadow: 0 10px 40px -10px var(--shadow), 0 0 0 1px rgba(201,168,76,0.1);
+        }
+        .ctl-btn {
+            background: transparent;
+            border: none;
+            color: var(--white);
+            font-size: 1rem;
+            cursor: pointer;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        .ctl-btn:hover { background: rgba(201,168,76,0.18); color: var(--gold); }
+        #slide-ctr {
+            font-size: 0.82rem; font-weight: 700;
+            color: var(--muted);
+            min-width: 100px; text-align: center;
+        }
+        .ctl-sep { width: 1px; height: 18px; background: var(--border); }
+
+        /* ─── Thumbnail strip ──────────────────────────────── */
+        #thumb-strip {
+            position: fixed; bottom: 72px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            z-index: 998;
+            display: flex; gap: 8px;
+            background: rgba(6,13,30,0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 10px 16px;
+            transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+            max-width: 92vw;
+            overflow-x: auto;
+        }
+        #thumb-strip.visible { transform: translateX(-50%) translateY(0); }
+        .thumb {
+            width: 60px; height: 38px;
+            border-radius: 6px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            font-size: 0.6rem;
+            color: var(--muted);
+            display: flex; align-items: center; justify-content: center;
+            transition: border-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+        .thumb:hover { border-color: var(--gold); transform: scale(1.08); }
+        .thumb.current { border-color: var(--gold); color: var(--gold); }
+
+        /* ─── Hint ─────────────────────────────────────────── */
+        #hint {
+            position: fixed; bottom: 64px; right: 28px;
+            font-size: 0.72rem; color: var(--muted);
+            opacity: 0; animation: fadeHint 3s 2s forwards;
+        }
+        @keyframes fadeHint {
+            0% { opacity: 0; } 30% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; }
+        }
+
+        /* ─── Print / PDF ──────────────────────────────────── */
+        @media print {
+            body { overflow: visible !important; height: auto; }
+            #controls, #thumb-strip, #progress, #hint { display: none !important; }
+            #deck { display: block !important; height: auto; }
+            .slide {
+                position: relative !important; opacity: 1 !important; visibility: visible !important;
+                transform: none !important; width: 100% !important; height: 100vh;
+                max-width: none; max-height: none;
+                page-break-after: always; break-after: page;
+                border-radius: 0; border: none;
+            }
+        }
+
+        /* ─── SLIDE 1: TITLE ───────────────────────────────── */
+        .title-slide {
+            background: linear-gradient(135deg, #060d1e 0%, #0d1f40 50%, #0a1530 100%);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            padding: 40px 60px;
+            gap: 0;
+        }
+        .ts-uni {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: rgba(201,168,76,0.1);
+            border: 1px solid rgba(201,168,76,0.3);
+            border-radius: 30px;
+            padding: 7px 22px;
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--gold); letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 26px;
+        }
+        .ts-khmer {
+            font-size: clamp(1.6rem, 2.8vw, 2.6rem);
+            font-weight: 800;
+            color: var(--white);
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+        .ts-eng {
+            font-size: clamp(1.2rem, 2.2vw, 2rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold-l), var(--gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .ts-badge {
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--cyan); letter-spacing: 2px;
+            margin-bottom: 32px;
+        }
+        .ts-divider {
+            width: 200px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 0 auto 28px;
+        }
+        .ts-meta {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+            width: 100%; max-width: 820px;
+        }
+        .ts-box {
+            background: rgba(6,13,30,0.7);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 22px;
+            text-align: left;
+        }
+        .ts-box-label {
+            font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 2px;
+            color: var(--gold); margin-bottom: 10px;
+        }
+        .ts-box p { font-size: 0.85rem; line-height: 1.55; color: var(--white); margin-bottom: 4px; }
+        .ts-box p.sub { color: var(--muted); font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="hint">Use ← → Arrow keys or click buttons to navigate</div>
+
+<!-- THUMBNAIL STRIP -->
+<div id="thumb-strip">
+    <div class="thumb current" data-slide="0">1</div>
+    <div class="thumb" data-slide="1">2</div>
+    <div class="thumb" data-slide="2">3</div>
+    <div class="thumb" data-slide="3">4</div>
+    <div class="thumb" data-slide="4">5</div>
+    <div class="thumb" data-slide="5">6</div>
+    <div class="thumb" data-slide="6">7</div>
+    <div class="thumb" data-slide="7">8</div>
+    <div class="thumb" data-slide="8">9</div>
+    <div class="thumb" data-slide="9">10</div>
+    <div class="thumb" data-slide="10">11</div>
+    <div class="thumb" data-slide="11">12</div>
+    <div class="thumb" data-slide="12">13</div>
+    <div class="thumb" data-slide="13">14</div>
+    <div class="thumb" data-slide="14">15</div>
+    <div class="thumb" data-slide="15">16</div>
+</div>
+
+<div id="deck">
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 1 — TITLE
+    ══════════════════════════════════════════ -->
+    <div class="slide title-slide active">
+        <div class="ts-uni"><i class="bi bi-mortarboard-fill"></i> Norton University • Faculty of Computer Science</div>
+        <div class="ts-khmer">ប្រព័ន្ធដំណើរការកក់សណ្ឋាគារ តារាមាស</div>
+        <div class="ts-eng">Dara Meas Hotel Booking Operation System</div>
+        <div class="ts-badge">BACHELOR'S DEGREE CAPSTONE PROJECT DEFENSE &nbsp;|&nbsp; BATCH 27 &nbsp;|&nbsp; 2026</div>
+        <div class="ts-divider"></div>
+        <div class="ts-meta">
+            <div class="ts-box">
+                <div class="ts-box-label"><i class="bi bi-people-fill"></i> Project Team — Team 14</div>
+                <p>1. Morm Sanra &nbsp;<span class="sub">(ម៉ម សានរ៉ា)</span></p>
+                <p>2. Ny Sokchan Soksdey &nbsp;<span class="sub">(នី សុខច័ន្ទសួស្ដី)</span></p>
+                <p>3. Nak Mada &nbsp;<span class="sub">(ណាក់ ម៉ាដា)</span></p>
+                <p>4. Seng Kimsant &nbsp;<span class="sub">(សេង គីមសាន្ត)</span></p>
+            </div>
+            <div class="ts-box">
+                <div class="ts-box-label"><i class="bi bi-person-badge-fill"></i> Project Advisor</div>
+                <p style="font-size:1.05rem;font-weight:700;">Prof. Lim Chonghuy (MScIT)</p>
+                <p class="sub">សាស្ត្រាចារ្យ លឹម ជុងហ៊ុយ</p>
+                <p style="margin-top:10px;color:var(--cyan);font-weight:600;">Department of Computer Science — 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 2 — BACKGROUND
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Project Context</div>
+                <div class="slide-title">Background & Case Study: Dara Meas Hotel</div>
+            </div>
+            <div class="slide-num">02 / 16</div>
+        </div>
+        <div class="slide-body g3">
+            <div class="card g">
+                <div class="card-head">
+                    <div class="card-icon g"><i class="bi bi-building"></i></div>
+                    <div class="card-title">Hotel Profile</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><b>Location:</b> No. 40E, St. 2004, Khan Sen Sok, Phnom Penh, Cambodia.</li>
+                        <li><b>Founded:</b> 2019 as a family-operated mid-scale hotel.</li>
+                        <li><b>Capacity:</b> 47 guest rooms across 5 categories.</li>
+                        <li><b>Room Types:</b> Standard Twin, Standard Double, Deluxe Double, Family Room, Executive Suite.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card c">
+                <div class="card-head">
+                    <div class="card-icon c"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="card-title">Digital Transformation</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><b>Legacy Model:</b> All operations relied on paper logbooks & disconnected Excel files.</li>
+                        <li><b>Business Pressure:</b> Post-pandemic Phnom Penh tourism surge intensified competition.</li>
+                        <li><b>Core Need:</b> Automated system to eliminate manual errors, unify operations, and enable online bookings.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card gr">
+                <div class="card-head">
+                    <div class="card-icon gr"><i class="bi bi-award-fill"></i></div>
+                    <div class="card-title">Capstone Mission</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><b>Modernize:</b> Web-based hotel management system replacing paper ledgers.</li>
+                        <li><b>Integrate:</b> Guest portal + Front desk + Admin analytics in one platform.</li>
+                        <li><b>Innovate:</b> Stochastic overbooking optimization for revenue maximization.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 3 — SYSTEM HOMEPAGE SCREENSHOT
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Live System Preview</div>
+                <div class="slide-title">Guest-Facing Public Portal — Homepage</div>
+            </div>
+            <div class="slide-num">03 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="img-frame" style="height:100%;">
+                    <img src="screenshots/01_homepage.png" alt="Dara Meas Hotel Homepage" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.85rem;\'>Screenshot captured from http://127.0.0.1:8000/</div>'">
+                </div>
+                <div class="img-label"><i class="bi bi-globe"></i> Guest Homepage — http://127.0.0.1:8000/</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="card g" style="flex:1;">
+                    <div class="card-head">
+                        <div class="card-icon g"><i class="bi bi-house-door-fill"></i></div>
+                        <div class="card-title">Public Guest Portal Features</div>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Hotel branding, responsive navigation, and hero section.</li>
+                            <li>Room availability filter bar: Check-in date, Check-out date, Room Type.</li>
+                            <li>Interactive room catalog with pricing, capacity, and amenity tags.</li>
+                            <li>Direct booking CTA and instant KHQR payment modal.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card c" style="flex:1;">
+                    <div class="card-head">
+                        <div class="card-icon c"><i class="bi bi-person-check-fill"></i></div>
+                        <div class="card-title">Guest Registration & Login</div>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Secure guest account registration with phone verification.</li>
+                            <li>Forgot password with OTP recovery flow.</li>
+                            <li>Post-login: personal dashboard, booking history, invoices.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 4 — PROBLEM STATEMENT
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Baseline Analysis</div>
+                <div class="slide-title">Problem Statement & Legacy Pain Points</div>
+            </div>
+            <div class="slide-num">04 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div class="card g">
+                <div class="card-head">
+                    <div class="card-icon g"><i class="bi bi-journal-x"></i></div>
+                    <div class="card-title">1. Manual Ledger Bookkeeping</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Bookings recorded by hand in paper logbooks or standalone Excel files.</li>
+                        <li>No standardized format — inconsistent records between receptionists.</li>
+                        <li>Zero search functionality for past guest records or billing history.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card r">
+                <div class="card-head">
+                    <div class="card-icon a"><i class="bi bi-exclamation-diamond"></i></div>
+                    <div class="card-title">2. Double-Booking & Inventory Loss</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>No real-time room availability sync between concurrent receptionists.</li>
+                        <li>Rooms double-booked on peak weekends causing guest complaints.</li>
+                        <li>Rooms left vacant due to slow record updates — lost revenue.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card c">
+                <div class="card-head">
+                    <div class="card-icon c"><i class="bi bi-arrow-left-right"></i></div>
+                    <div class="card-title">3. Fragmented Housekeeping Sync</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Room states (Available / Occupied / Dirty) communicated via unstructured Telegram texts.</li>
+                        <li>Front desk staff had no real-time visibility — guests waited unnecessarily.</li>
+                        <li>Cleaning teams operated blind to upcoming check-in urgency.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card a">
+                <div class="card-head">
+                    <div class="card-icon a"><i class="bi bi-cash-coin"></i></div>
+                    <div class="card-title">4. Cash-Only Reconciliation Delays</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Manual cash records caused daily reconciliation headaches and discrepancies.</li>
+                        <li>No digital payment option — KHQR cashless transactions unavailable.</li>
+                        <li>Management received delayed, inaccurate revenue reports for decision-making.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 5 — OBJECTIVES & SCOPE
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Project Specification</div>
+                <div class="slide-title">Objectives & Scope Definition</div>
+            </div>
+            <div class="slide-num">05 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div class="card gr">
+                <div class="card-head">
+                    <div class="card-icon gr"><i class="bi bi-bullseye"></i></div>
+                    <div class="card-title">Core Project Objectives</div>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><b>Centralized Digital System:</b> Full-stack web platform for bookings, rooms, guests, payments.</li>
+                        <li><b>Real-Time Status Engine:</b> Synchronized availability and room cleaning state tracking.</li>
+                        <li><b>Cashless KHQR Payments:</b> Bakong API & ABA Payway integration for instant payment.</li>
+                        <li><b>Revenue Optimization:</b> Algorithmic nightly overbooking multiplier tuning command.</li>
+                        <li><b>Multi-Role RBAC:</b> Secure, role-appropriate access for Admin, Staff, and Guests.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card c" style="overflow:auto;">
+                <div class="card-head">
+                    <div class="card-icon c"><i class="bi bi-bounding-box-circles"></i></div>
+                    <div class="card-title">Scope Boundary Matrix</div>
+                </div>
+                <div class="card-body">
+                    <p style="color:var(--green);font-weight:700;margin-bottom:6px;font-size:0.82rem;">✅ IN-SCOPE:</p>
+                    <ul>
+                        <li>Guest online booking & date availability search</li>
+                        <li>Walk-in proxy booking & stay extension (Reception)</li>
+                        <li>KHQR / ABA Payway payment verification & receipts</li>
+                        <li>Stochastic Overbooking Optimization scheduler</li>
+                        <li>Admin analytics, room pricing, staff management</li>
+                    </ul>
+                    <p style="color:var(--red);font-weight:700;margin-top:10px;margin-bottom:6px;font-size:0.82rem;">❌ OUT-OF-SCOPE:</p>
+                    <ul>
+                        <li>OTA channel sync (Booking.com / Agoda API)</li>
+                        <li>Full enterprise ERP / accounting software</li>
+                        <li>IoT keycard smart door lock hardware</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 6 — METHODOLOGY
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Engineering Process</div>
+                <div class="slide-title">SDLC: Agile Development Methodology</div>
+            </div>
+            <div class="slide-num">06 / 16</div>
+        </div>
+        <div class="slide-body g5">
+            <div class="card g" style="flex-direction:column;">
+                <div class="card-icon g" style="margin-bottom:6px;"><i class="bi bi-search"></i></div>
+                <div class="card-title" style="font-size:0.85rem;color:var(--gold);">1. Exploration</div>
+                <div class="card-body" style="font-size:0.78rem;">
+                    <ul>
+                        <li>Hotel owner & staff interviews</li>
+                        <li>Current workflow mapping</li>
+                        <li>Technology stack selection</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card c" style="flex-direction:column;">
+                <div class="card-icon c" style="margin-bottom:6px;"><i class="bi bi-kanban"></i></div>
+                <div class="card-title" style="font-size:0.85rem;color:var(--cyan);">2. Planning</div>
+                <div class="card-body" style="font-size:0.78rem;">
+                    <ul>
+                        <li>User Stories & backlog</li>
+                        <li>DFD & Context diagrams</li>
+                        <li>DB schema design</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card gr" style="flex-direction:column;">
+                <div class="card-icon gr" style="margin-bottom:6px;"><i class="bi bi-play-circle-fill"></i></div>
+                <div class="card-title" style="font-size:0.85rem;color:var(--green);">3. Iterations</div>
+                <div class="card-body" style="font-size:0.78rem;">
+                    <ul>
+                        <li>2–3 week sprints</li>
+                        <li>Laravel + React dev</li>
+                        <li>Unit & integration tests</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card a" style="flex-direction:column;">
+                <div class="card-icon a" style="margin-bottom:6px;"><i class="bi bi-rocket-takeoff"></i></div>
+                <div class="card-title" style="font-size:0.85rem;color:var(--amber);">4. Production</div>
+                <div class="card-body" style="font-size:0.78rem;">
+                    <ul>
+                        <li>XAMPP / Apache setup</li>
+                        <li>MySQL migrations</li>
+                        <li>User acceptance testing</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card g" style="flex-direction:column;">
+                <div class="card-icon g" style="margin-bottom:6px;"><i class="bi bi-shield-check"></i></div>
+                <div class="card-title" style="font-size:0.85rem;color:var(--gold);">5. Maintenance</div>
+                <div class="card-body" style="font-size:0.78rem;">
+                    <ul>
+                        <li>Automated DB backups</li>
+                        <li>Security audits</li>
+                        <li>User feedback cycles</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 7 — RBAC
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Access & Security</div>
+                <div class="slide-title">Role-Based Access Control (RBAC) Architecture</div>
+            </div>
+            <div class="slide-num">07 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div class="card g">
+                <div class="card-head"><div class="card-icon g"><i class="bi bi-shield-lock-fill"></i></div><div class="card-title">Administrator</div></div>
+                <div class="card-body"><ul>
+                    <li>Full system control and global configuration.</li>
+                    <li>Staff provisioning and role assignment.</li>
+                    <li>Room type creation, pricing, and overbooking parameters.</li>
+                    <li>Database backup, audit log inspection, payment gateway settings.</li>
+                </ul></div>
+            </div>
+            <div class="card c">
+                <div class="card-head"><div class="card-icon c"><i class="bi bi-graph-up-arrow"></i></div><div class="card-title">Manager</div></div>
+                <div class="card-body"><ul>
+                    <li>Business analytics and operational performance dashboard.</li>
+                    <li>Revenue reports, occupancy rate metrics, cancellation analysis.</li>
+                    <li>Room rate adjustments and seasonal pricing controls.</li>
+                </ul></div>
+            </div>
+            <div class="card gr">
+                <div class="card-head"><div class="card-icon gr"><i class="bi bi-person-badge-fill"></i></div><div class="card-title">Receptionist</div></div>
+                <div class="card-body"><ul>
+                    <li>Front-desk operations: walk-in guest registration & proxy booking.</li>
+                    <li>Check-in, Check-out, balance collection workflow.</li>
+                    <li>Stay extension and room service request logging.</li>
+                    <li>KHQR payment verification and receipt printing.</li>
+                </ul></div>
+            </div>
+            <div class="card a">
+                <div class="card-head"><div class="card-icon a"><i class="bi bi-person-fill"></i></div><div class="card-title">Guest (Public User)</div></div>
+                <div class="card-body"><ul>
+                    <li>Online room browsing with date & type filter.</li>
+                    <li>Self-service booking submission and QR payment.</li>
+                    <li>Personal dashboard: booking history, invoice download.</li>
+                    <li>Room service request and stay extension portal.</li>
+                </ul></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 8 — ADMIN DASHBOARD SCREENSHOT
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Live System Preview</div>
+                <div class="slide-title">Admin Analytics Dashboard</div>
+            </div>
+            <div class="slide-num">08 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div class="img-frame" style="flex:1;">
+                    <img src="screenshots/07_admin_dashboard.png" alt="Admin Dashboard" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.85rem;text-align:center;padding:20px;\'>Admin Dashboard<br>Occupancy, Revenue & Booking Overview</div>'">
+                </div>
+                <div class="img-label"><i class="bi bi-speedometer2"></i> Admin Dashboard — /admin/dashboard</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="img-frame" style="height:48%;">
+                    <img src="screenshots/08_admin_analytics.png" alt="Admin Analytics" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.82rem;\'>Analytics Charts View</div>'">
+                </div>
+                <div class="img-label" style="margin-top:2px;"><i class="bi bi-bar-chart-fill"></i> Analytics — /admin/dashboard/analytics</div>
+                <div class="card g" style="flex:1;">
+                    <div class="card-body" style="font-size:0.82rem;">
+                        <ul>
+                            <li><b>Real-time KPIs:</b> Today's revenue, active bookings, occupancy %.</li>
+                            <li><b>Charts:</b> Monthly revenue graph & booking trend lines.</li>
+                            <li><b>Quick Actions:</b> Approve pending bookings, create staff accounts.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 9 — DFD & SYSTEM FLOW
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">System Analysis</div>
+                <div class="slide-title">Data Flow Diagram & System Processes</div>
+            </div>
+            <div class="slide-num">09 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div class="card g" style="overflow:auto;">
+                <div class="card-head"><div class="card-icon g"><i class="bi bi-diagram-3-fill"></i></div><div class="card-title">Context Diagram & DFD Level 0</div></div>
+                <div class="card-body">
+                    <p style="color:var(--gold);font-weight:700;font-size:0.8rem;margin-bottom:6px;">External Entities:</p>
+                    <ul>
+                        <li><b>Guest:</b> Booking requests, payment, service feedback.</li>
+                        <li><b>Receptionist:</b> Proxy walk-in entries, check-in/out triggers.</li>
+                        <li><b>Admin/Manager:</b> Rate overrides, system configuration.</li>
+                        <li><b>Payment Gateway:</b> KHQR & ABA Payway callbacks.</li>
+                    </ul>
+                    <p style="color:var(--cyan);font-weight:700;font-size:0.8rem;margin-top:8px;margin-bottom:6px;">Core Process Threads (Level 0):</p>
+                    <ul>
+                        <li>1.0 Web Access & Room Search</li>
+                        <li>2.0 Online Booking & Payment Processing</li>
+                        <li>3.0 Check-In / Check-Out Operations</li>
+                        <li>4.0 Staff & Access Administration</li>
+                        <li>5.0 Stay Extension Management</li>
+                        <li>6.0 Room Services Logging</li>
+                        <li>7.0 System Administration & Backups</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card c">
+                <div class="card-head"><div class="card-icon c"><i class="bi bi-database-fill-check"></i></div><div class="card-title">Data Stores & Room State Machine</div></div>
+                <div class="card-body">
+                    <p style="color:var(--gold);font-weight:700;font-size:0.8rem;margin-bottom:6px;">Primary Data Stores:</p>
+                    <ul>
+                        <li><b>D1 Guests</b> — Profiles, contacts, credentials</li>
+                        <li><b>D2 Rooms</b> — Numbers, types, real-time status</li>
+                        <li><b>D3 Bookings</b> — Dates, statuses, room assignments</li>
+                        <li><b>D4 Transactions</b> — Payments, KHQR references</li>
+                        <li><b>D5 Staff / D6 Admins</b> — RBAC roles, credentials</li>
+                    </ul>
+                    <p style="color:var(--green);font-weight:700;font-size:0.8rem;margin-top:10px;margin-bottom:6px;">Room Lifecycle State Machine:</p>
+                    <div class="code" style="font-size:0.72rem;padding:10px;">AVAILABLE
+  ──[Check-In]──▶ OCCUPIED
+    ──[Check-Out]──▶ DIRTY
+      ──[Housekeeping]──▶ AVAILABLE</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 10 — DATABASE SCHEMA
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Data Engineering</div>
+                <div class="slide-title">Database Schema & Relational Architecture</div>
+            </div>
+            <div class="slide-num">10 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div class="card g" style="overflow:auto;">
+                <div class="card-head"><div class="card-icon g"><i class="bi bi-table"></i></div><div class="card-title">Relational Schema (MySQL, 3NF)</div></div>
+                <div class="card-body">
+                    <div class="code" style="font-size:0.72rem;">room_types    id, display_name, price_per_night,
+              overbooking_multiplier, capacity
+
+rooms         id, room_number, room_type_id [FK],
+              current_status
+
+guests        id, full_name, email, phone,
+              gender, nationality
+
+bookings      id, guest_id [FK], room_id [FK],
+              check_in_date, check_out_date,
+              booking_status, booked_by
+
+transactions  id, booking_id [FK], amount_paid,
+              payment_method, payment_status
+
+staff         id, full_name, username,
+              role, password_hash
+
+room_services id, booking_id [FK],
+              request_type, status, notes</div>
+                </div>
+            </div>
+            <div class="card c">
+                <div class="card-head"><div class="card-icon c"><i class="bi bi-shield-check"></i></div><div class="card-title">Design Principles</div></div>
+                <div class="card-body">
+                    <ul>
+                        <li><b>3rd Normal Form (3NF):</b> No transitive dependencies; eliminates data redundancy and update anomalies.</li>
+                        <li><b>Referential Integrity:</b> Strict FK constraints with explicit cascade and restriction policies.</li>
+                        <li><b>Audit Timestamps:</b> Auto-managed <code style="color:var(--cyan)">created_at</code> & <code style="color:var(--cyan)">updated_at</code> on all tables via Eloquent.</li>
+                        <li><b>Soft Deletes:</b> Safe record archival without permanent data loss for key entities.</li>
+                        <li><b>Enum Columns:</b> Controlled status values enforced at DB level for bookings, payments, and rooms.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 11 — RECEPTION DASHBOARD SCREENSHOT
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Live System Preview</div>
+                <div class="slide-title">Reception Front-Desk Operations Portal</div>
+            </div>
+            <div class="slide-num">11 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="img-frame" style="flex:1;">
+                    <img src="screenshots/14_reception_dashboard.png" alt="Reception Dashboard" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.85rem;text-align:center;padding:20px;\'>Reception Operations Dashboard<br>Walk-in registration, Check-in/out, Room Status Grid</div>'">
+                </div>
+                <div class="img-label"><i class="bi bi-reception-4"></i> Reception Portal — /reception/dashboard</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="img-frame" style="height:50%;">
+                    <img src="screenshots/09_admin_bookings.png" alt="Admin Bookings" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.82rem;\'>Bookings Management List</div>'">
+                </div>
+                <div class="img-label"><i class="bi bi-calendar-check-fill"></i> Booking Management — /admin/bookings</div>
+                <div class="card gr" style="flex:1;">
+                    <div class="card-body" style="font-size:0.82rem;">
+                        <ul>
+                            <li><b>Real-time Grid:</b> Live room status board (Available / Occupied / Dirty).</li>
+                            <li><b>Quick Walk-in:</b> Register walk-in guests with one-click proxy booking.</li>
+                            <li><b>Stay Extension:</b> Extend stay, recalculate balance, collect additional payment.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 12 — CORE FEATURES & PAYMENT
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">System Capabilities</div>
+                <div class="slide-title">Core Features & KHQR Cashless Payment Integration</div>
+            </div>
+            <div class="slide-num">12 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="img-frame" style="height:50%;">
+                    <img src="screenshots/10_admin_rooms.png" alt="Room Management" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.82rem;\'>Room Management Panel</div>'">
+                </div>
+                <div class="img-label"><i class="bi bi-door-open-fill"></i> Room Management — /admin/rooms</div>
+                <div class="img-frame" style="height:50%;">
+                    <img src="screenshots/11_admin_room_types.png" alt="Room Types" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.82rem;\'>Room Types & Pricing</div>'">
+                </div>
+                <div class="img-label"><i class="bi bi-tags-fill"></i> Room Types & Pricing — /admin/room-types</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="card g">
+                    <div class="card-head"><div class="card-icon g"><i class="bi bi-qr-code-scan"></i></div><div class="card-title">Bakong KHQR & ABA Payway</div></div>
+                    <div class="card-body">
+                        <ul>
+                            <li><b>Dynamic QR Generation:</b> KHQR codes generated per booking via Bakong & ABA Payway APIs.</li>
+                            <li><b>Real-time Verification:</b> Instant payment status callback confirmation.</li>
+                            <li><b>PDF Receipts:</b> Automatically generated upon payment success.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card c">
+                    <div class="card-head"><div class="card-icon c"><i class="bi bi-calendar3"></i></div><div class="card-title">Smart Booking Engine</div></div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Real-time date-range conflict detection prevents double bookings.</li>
+                            <li>Overbooking multiplier applied dynamically to room capacity during high-demand periods.</li>
+                            <li>Guest partial payment support with balance tracking on checkout.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 13 — OVERBOOKING ALGORITHM
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Algorithmic Innovation</div>
+                <div class="slide-title">Stochastic Overbooking Optimization Engine</div>
+            </div>
+            <div class="slide-num">13 / 16</div>
+        </div>
+        <div class="slide-body g2">
+            <div class="card g" style="overflow:auto;">
+                <div class="card-head"><div class="card-icon g"><i class="bi bi-cpu-fill"></i></div><div class="card-title">Heuristic Model Design</div></div>
+                <div class="card-body">
+                    <ul>
+                        <li><b>Command:</b> <code style="color:var(--cyan)">app:optimize-overbooking</code></li>
+                        <li><b>Scheduled:</b> Nightly at <code style="color:var(--amber)">02:05 AM</code> (post-night audit)</li>
+                        <li><b>Theory:</b> Talluri & van Ryzin, Ch.4 — Stochastic Approximation</li>
+                    </ul>
+                    <p style="color:var(--gold);font-weight:700;font-size:0.8rem;margin-top:10px;margin-bottom:6px;">Self-Tuning Feedback Loop:</p>
+                    <ul>
+                        <li><span style="color:var(--red);font-weight:700;">PENALTY (−0.05):</span> Relocations > 0 yesterday → overbooking too aggressive → reduce multiplier.</li>
+                        <li><span style="color:var(--green);font-weight:700;">REWARD (+0.01):</span> No-shows > 0 + zero relocations → played too safe → increase multiplier.</li>
+                        <li><span style="color:var(--muted);font-weight:700;">NEUTRAL (0.00):</span> No signal → multiplier unchanged.</li>
+                    </ul>
+                    <p style="color:var(--cyan);font-size:0.8rem;margin-top:8px;"><b>Safety Bounds:</b> <code>1.00 ≤ multiplier ≤ 1.50</code></p>
+                </div>
+            </div>
+            <div class="card c">
+                <div class="card-head"><div class="card-icon c"><i class="bi bi-code-slash"></i></div><div class="card-title">Laravel Implementation</div></div>
+                <div class="card-body">
+                    <div class="code">$yesterdayBookings = Booking::whereHas(
+    'room',
+    fn($q) => $q->where(
+        'room_type_id', $roomType->id)
+)->whereDate('check_in_date', $yesterday)
+ ->get();
+
+$relocations = $yesterdayBookings
+    ->where('status', STATUS_RELOCATED)
+    ->count();
+$noShows = $yesterdayBookings
+    ->where('status', STATUS_NO_SHOW)
+    ->count();
+
+if ($relocations > 0) {
+    $adjusted -= 0.05; // Penalty
+} elseif ($noShows > 0) {
+    $adjusted += 0.01; // Reward
+}
+
+$roomType->overbooking_multiplier =
+    min(1.50, max(1.00, $adjusted));</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 14 — TECHNOLOGY STACK
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Technical Infrastructure</div>
+                <div class="slide-title">Full Technology Stack & Development Tools</div>
+            </div>
+            <div class="slide-num">14 / 16</div>
+        </div>
+        <div class="slide-body g4">
+            <div class="card g">
+                <div class="card-head"><div class="card-icon g"><i class="bi bi-server"></i></div><div class="card-title">Backend</div></div>
+                <div class="card-body"><ul>
+                    <li><b>PHP 8.x / 11</b></li>
+                    <li><b>Laravel 11</b> (MVC)</li>
+                    <li>Eloquent ORM</li>
+                    <li>Artisan CLI</li>
+                    <li>Livewire</li>
+                    <li>Composer</li>
+                </ul></div>
+            </div>
+            <div class="card c">
+                <div class="card-head"><div class="card-icon c"><i class="bi bi-window-stack"></i></div><div class="card-title">Frontend</div></div>
+                <div class="card-body"><ul>
+                    <li><b>React.js</b></li>
+                    <li>Blade Templates</li>
+                    <li>Tailwind CSS</li>
+                    <li>Bootstrap Icons</li>
+                    <li>Vite Build</li>
+                    <li>Responsive design</li>
+                </ul></div>
+            </div>
+            <div class="card gr">
+                <div class="card-head"><div class="card-icon gr"><i class="bi bi-database"></i></div><div class="card-title">Database & Server</div></div>
+                <div class="card-body"><ul>
+                    <li><b>MySQL RDBMS</b></li>
+                    <li>Apache (XAMPP)</li>
+                    <li>Windows 10/11</li>
+                    <li>Laravel Migrations</li>
+                    <li>DB Seeders</li>
+                </ul></div>
+            </div>
+            <div class="card a">
+                <div class="card-head"><div class="card-icon a"><i class="bi bi-tools"></i></div><div class="card-title">DevOps & APIs</div></div>
+                <div class="card-body"><ul>
+                    <li><b>Git / GitHub</b></li>
+                    <li>VS Code IDE</li>
+                    <li>Postman API</li>
+                    <li>Bakong KHQR API</li>
+                    <li>ABA Payway API</li>
+                </ul></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 15 — RESULTS & IMPACT
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+        <div class="slide-header">
+            <div>
+                <div class="kicker">Evaluation & Outcomes</div>
+                <div class="slide-title">Operational Results & Business Impact</div>
+            </div>
+            <div class="slide-num">15 / 16</div>
+        </div>
+        <div class="slide-body" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:16px;flex:1;">
+            <div class="card g stat">
+                <div class="stat-num">+60%</div>
+                <div class="stat-label">Staff Operational Efficiency</div>
+                <div class="stat-desc">Automated booking entries and instant room state tracking sharply cut front-desk paperwork and manual coordination tasks.</div>
+            </div>
+            <div class="card c stat">
+                <div class="stat-num" style="background:linear-gradient(135deg,var(--cyan),#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">−90%</div>
+                <div class="stat-label">Booking & Data Entry Errors</div>
+                <div class="stat-desc">Eliminated paper ledger typos, misplaced records, and manual double-booking failures through real-time digital validation.</div>
+            </div>
+            <div class="card gr stat">
+                <div class="stat-num" style="background:linear-gradient(135deg,var(--green),#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">−50%</div>
+                <div class="stat-label">Guest Check-In Wait Time</div>
+                <div class="stat-desc">KHQR instant payment verification and streamlined reception workflow reduced lobby wait time by half on average.</div>
+            </div>
+            <div class="card a stat">
+                <div class="stat-num" style="background:linear-gradient(135deg,var(--amber),#fde68a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">100%</div>
+                <div class="stat-label">Digital Financial Auditability</div>
+                <div class="stat-desc">Complete audit trail for every transaction, payment method, booking change, and nightly revenue reconciliation.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 16 — CONCLUSION & Q&A
+    ══════════════════════════════════════════ -->
+    <div class="slide title-slide" style="gap:0;">
+        <div style="margin-bottom:20px;">
+            <div class="ts-uni"><i class="bi bi-rocket-takeoff-fill"></i> Future Roadmap</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;max-width:900px;margin-bottom:32px;">
+            <div class="ts-box" style="text-align:center;">
+                <div style="font-size:1.8rem;margin-bottom:8px;">🌐</div>
+                <div style="font-weight:700;color:var(--gold);margin-bottom:6px;">OTA Channel Manager</div>
+                <div style="font-size:0.8rem;color:var(--muted);">Booking.com & Agoda API two-way inventory sync.</div>
+            </div>
+            <div class="ts-box" style="text-align:center;">
+                <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
+                <div style="font-weight:700;color:var(--cyan);margin-bottom:6px;">IoT Smart Door Locks</div>
+                <div style="font-size:0.8rem;color:var(--muted);">QR-code keyless entry for guests on check-in.</div>
+            </div>
+            <div class="ts-box" style="text-align:center;">
+                <div style="font-size:1.8rem;margin-bottom:8px;">🍽️</div>
+                <div style="font-weight:700;color:var(--green);margin-bottom:6px;">Restaurant POS</div>
+                <div style="font-size:0.8rem;color:var(--muted);">Dining & room service charges billed to guest folio.</div>
+            </div>
+        </div>
+
+        <div class="ts-divider"></div>
+
+        <div style="font-size:clamp(1.8rem, 3.5vw, 3rem);font-weight:900;color:var(--gold-l);margin:16px 0 10px;letter-spacing:2px;">THANK YOU!</div>
+        <div style="font-size:1rem;color:var(--white);max-width:650px;line-height:1.7;margin-bottom:18px;">
+            The <strong>Dara Meas Hotel Booking Operation System</strong> successfully fulfills all Bachelor's Capstone requirements for Norton University, Faculty of Computer Science.
+        </div>
+        <div style="font-size:0.88rem;color:var(--muted);margin-bottom:24px;">
+            We extend our deepest gratitude to our Advisor, <strong style="color:var(--white);">Prof. Lim Chonghuy (MScIT)</strong>, and the Honorable Examination Committee.
+        </div>
+        <div style="background:rgba(56,189,248,0.12);border:1px solid var(--cyan);padding:12px 32px;border-radius:30px;color:var(--cyan);font-weight:700;font-size:0.92rem;">
+            <i class="bi bi-chat-left-dots-fill"></i> &nbsp; Open to Your Questions & Committee Feedback
+        </div>
+    </div>
+
+</div><!-- /#deck -->
+
+<!-- CONTROLS BAR -->
+<div id="controls">
+    <button class="ctl-btn" id="btnFirst" title="First Slide (Home)"><i class="bi bi-skip-backward-fill"></i></button>
+    <button class="ctl-btn" id="btnPrev" title="Previous (←)"><i class="bi bi-chevron-left"></i></button>
+    <div id="slide-ctr">Slide 1 of 16</div>
+    <button class="ctl-btn" id="btnNext" title="Next (→)"><i class="bi bi-chevron-right"></i></button>
+    <button class="ctl-btn" id="btnLast" title="Last Slide (End)"><i class="bi bi-skip-forward-fill"></i></button>
+    <div class="ctl-sep"></div>
+    <button class="ctl-btn" id="btnThumbs" title="Toggle thumbnails (T)"><i class="bi bi-grid-3x3-gap"></i></button>
+    <button class="ctl-btn" id="btnFS" title="Fullscreen (F)"><i class="bi bi-fullscreen"></i></button>
+    <button class="ctl-btn" id="btnPrint" title="Export PDF"><i class="bi bi-printer-fill"></i></button>
+</div>
+
+<script>
+    (() => {
+        const slides = [...document.querySelectorAll('.slide')];
+        const total = slides.length;
+        let cur = 0;
+
+        const prog = document.getElementById('progress');
+        const ctr  = document.getElementById('slide-ctr');
+        const thumbs = [...document.querySelectorAll('.thumb')];
+        const strip = document.getElementById('thumb-strip');
+        let thumbsVisible = false;
+
+        function go(n) {
+            n = Math.max(0, Math.min(total - 1, n));
+            slides[cur].classList.remove('active');
+            thumbs[cur]?.classList.remove('current');
+            cur = n;
+            slides[cur].classList.add('active');
+            thumbs[cur]?.classList.add('current');
+            ctr.textContent = `Slide ${cur + 1} of ${total}`;
+            prog.style.setProperty('--prog', `${((cur + 1) / total * 100).toFixed(2)}%`);
+        }
+
+        document.getElementById('btnFirst').onclick = () => go(0);
+        document.getElementById('btnPrev').onclick  = () => go(cur - 1);
+        document.getElementById('btnNext').onclick  = () => go(cur + 1);
+        document.getElementById('btnLast').onclick  = () => go(total - 1);
+
+        document.getElementById('btnThumbs').onclick = () => {
+            thumbsVisible = !thumbsVisible;
+            strip.classList.toggle('visible', thumbsVisible);
+        };
+
+        document.getElementById('btnFS').onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        };
+
+        document.getElementById('btnPrint').onclick = () => window.print();
+
+        thumbs.forEach(t => {
+            t.addEventListener('click', () => {
+                go(parseInt(t.dataset.slide));
+                if (thumbsVisible) { thumbsVisible = false; strip.classList.remove('visible'); }
+            });
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+            else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+            else if (e.key === 'Home') { e.preventDefault(); go(0); }
+            else if (e.key === 'End')  { e.preventDefault(); go(total - 1); }
+            else if (e.key === 't' || e.key === 'T') {
+                thumbsVisible = !thumbsVisible;
+                strip.classList.toggle('visible', thumbsVisible);
+            }
+            else if (e.key === 'f' || e.key === 'F') {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+                else document.exitFullscreen().catch(() => {});
+            }
+        });
+
+        // Swipe support
+        let sx = 0;
+        document.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+        document.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - sx;
+            if (Math.abs(dx) > 50) go(dx < 0 ? cur + 1 : cur - 1);
+        }, { passive: true });
+
+        go(0);
+    })();
+</script>
+</body>
+</html>
