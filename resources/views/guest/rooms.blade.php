@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Our Rooms')
-@section('meta_description', 'Browse all available rooms at Dara Meas Hotel — Standard Twin, Standard Double, and Deluxe Double.')
+@section('meta_description', 'Browse all available rooms at Dara Meas Hotel — Standard Room, Deluxe Room, and Family Triple Room.')
 
 @section('content')
 
@@ -106,8 +106,8 @@
                     <i class="bi bi-qr-code"></i>
                 </div>
                 <div>
-                    <h5 class="font-bold text-white text-xs">ABA PayWay & KHQR</h5>
-                    <p class="text-white/60 text-[0.72rem] mt-0.5">Instant Bakong scan & pay accepted.</p>
+                    <h5 class="font-bold text-white text-xs">KHQR &amp; ABA Pay</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Instant Bakong scan &amp; pay accepted.</p>
                 </div>
             </div>
 
@@ -137,7 +137,7 @@
                 </div>
                 <div>
                     <h5 class="font-bold text-white text-xs">Best Rate Guarantee</h5>
-                    <p class="text-white/60 text-[0.72rem] mt-0.5">Direct rates starting at $35/night.</p>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Direct rates starting at $30/night.</p>
                 </div>
             </div>
 
@@ -148,43 +148,129 @@
          ROOM GRID
          ========================================== --}}
     @php
-        $roomImages = [
-            'standard_room'      => asset('images/rooms/dara_room_standard_twin_bedroom.png'),
-            'deluxe_room'        => asset('images/rooms/dara_room_deluxe_bedroom.png'),
-            'family_triple_room' => asset('images/rooms/dara_room_family_triple_bedroom.png'),
+        // Image sliders per room type — using actual files from public/room/
+        // Rules:
+        //   - Balcony 1.webp       → shared by Standard, Deluxe, Family Triple
+        //   - Standard Bathroom *  → Standard Room only
+        //   - Deluxe Bathroom *    → Deluxe Room AND Family Triple Room
+        //   - Standard Double/Twin → Standard Room bedroom images
+        //   - Deluxe Double/Twin   → Deluxe Room bedroom images
+        //   - Family Triple Room * → Family Triple Room bedroom images
+        $roomSliderImages = [
+            'standard_room' => [
+                asset('room/Standard Double 1.jpg'),
+                asset('room/Standard Double 2.webp'),
+                asset('room/Standard Double 3.jpg'),
+                asset('room/Standard Twin 1.webp'),
+                asset('room/Standard Twin 2.webp'),
+                asset('room/Standard Twin 3.webp'),
+                asset('room/Standard Twin 4.png'),
+                asset('room/Standard Bathroom 1.jpg'),
+                asset('room/Standard Bathroom 2.jpg'),
+                asset('room/Standard Bathroom 3.jpg'),
+                asset('room/Standard bathroom 4.jpg'),
+                asset('room/Balcony 1.webp'),
+            ],
+            'deluxe_room' => [
+                asset('room/Deluxe Double 1.webp'),
+                asset('room/Deluxe Double 2.webp'),
+                asset('room/Deluxe Double 3.webp'),
+                asset('room/Deluxe Double 4.webp'),
+                asset('room/Deluxe Double 5.webp'),
+                asset('room/Deluxe Double 6.webp'),
+                asset('room/Deluxe Double 7.webp'),
+                asset('room/Deluxe Double 8.webp'),
+                asset('room/Deluxe Double 9.webp'),
+                asset('room/Deluxe Double 10.webp'),
+                asset('room/Deluxe Twin 1.webp'),
+                asset('room/Deluxe Twin 2.webp'),
+                asset('room/Deluxe Twin 3.webp'),
+                asset('room/Deluxe Twin 4.webp'),
+                asset('room/Deluxe Bathroom 1.webp'),
+                asset('room/Deluxe Bathroom 2.webp'),
+                asset('room/Balcony 1.webp'),
+            ],
+            'family_triple_room' => [
+                asset('room/Family Triple Room 1.webp'),
+                asset('room/Family Triple Room 2.webp'),
+                asset('room/Family Triple Room 3.webp'),
+                asset('room/Family Triple Room 4.webp'),
+                asset('room/Family Triple Room 5.webp'),
+                asset('room/Family Triple Room 6.webp'),
+                asset('room/Deluxe Bathroom 1.webp'),
+                asset('room/Deluxe Bathroom 2.webp'),
+                asset('room/Balcony 1.webp'),
+            ],
+            'test_room' => [], // No images for Test Room
         ];
-        $fallbackImg = asset('images/rooms/dara_room_standard_twin_bedroom.png');
+        $fallbackImg = asset('room/Standard Double 1.jpg');
     @endphp
 
     @if($roomTypes->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            @foreach($roomTypes as $roomType)
                 @php
-                    $img = $roomImages[$roomType->slug] ?? $fallbackImg;
+                    $imgs = $roomSliderImages[$roomType->slug] ?? [];
+                    $firstImg = $imgs[0] ?? $fallbackImg;
                     $isAvailable = $availability[$roomType->id] ?? true;
                     // Pick a representative physical room for the detail-page link.
                     $representativeRoom = $roomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+                    $roomsLeft = $availableCounts[$roomType->id] ?? $roomType->getAvailableCount($checkinDate, $checkoutDate);
+                    $sliderId = 'slider-' . $roomType->slug;
                 @endphp
                 <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
 
-                    @php
-                        $roomsLeft = $availableCounts[$roomType->id] ?? $roomType->getAvailableCount($checkinDate, $checkoutDate);
-                    @endphp
-                    {{-- Image with hover zoom --}}
-                    <div class="relative overflow-hidden h-[220px]">
-                        <img src="{{ $img }}" alt="{{ $roomType->display_name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-
-                        {{-- Availability Badge --}}
-                        @if($isAvailable && $roomsLeft > 0)
-                            <span class="absolute top-4 right-4 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full tracking-wide shadow-md flex items-center gap-1.5 border border-emerald-400/30">
-                                <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
-                            </span>
-                        @else
-                            <span class="absolute top-4 right-4 z-10 bg-red-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3.5 py-1.5 rounded-full tracking-wider shadow-sm flex items-center gap-1.5">
-                                <i class="bi bi-x-circle-fill"></i>Fully Booked
-                            </span>
-                        @endif
-                    </div>
+                    {{-- Image Slider --}}
+                    @if(count($imgs) > 0)
+                        <div class="relative overflow-hidden h-[220px]" x-data="{ current: 0, imgs: {{ json_encode($imgs) }} }">
+                            <template x-for="(img, i) in imgs" :key="i">
+                                <img :src="img" :alt="'{{ $roomType->display_name }} image ' + (i+1)"
+                                     class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+                                     :class="i === current ? 'opacity-100 group-hover:scale-105 transition-transform duration-500' : 'opacity-0'">
+                            </template>
+                            {{-- Prev/Next Arrows --}}
+                            @if(count($imgs) > 1)
+                            <button type="button" @click.prevent="current = (current - 1 + imgs.length) % imgs.length"
+                                    class="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full text-xs transition opacity-0 group-hover:opacity-100">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <button type="button" @click.prevent="current = (current + 1) % imgs.length"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full text-xs transition opacity-0 group-hover:opacity-100">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                            {{-- Dot Indicators --}}
+                            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition">
+                                <template x-for="(img, i) in imgs" :key="i">
+                                    <button type="button" @click.prevent="current = i"
+                                            :class="i === current ? 'bg-white w-4' : 'bg-white/50 w-2'"
+                                            class="h-2 rounded-full transition-all duration-300"></button>
+                                </template>
+                            </div>
+                            @endif
+                            {{-- Availability Badge --}}
+                            @if($isAvailable && $roomsLeft > 0)
+                                <span class="absolute top-4 right-4 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full tracking-wide shadow-md flex items-center gap-1.5 border border-emerald-400/30">
+                                    <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
+                                </span>
+                            @else
+                                <span class="absolute top-4 right-4 z-10 bg-red-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3.5 py-1.5 rounded-full tracking-wider shadow-sm flex items-center gap-1.5">
+                                    <i class="bi bi-x-circle-fill"></i>Fully Booked
+                                </span>
+                            @endif
+                        </div>
+                    @else
+                        {{-- Test Room: no images, show placeholder --}}
+                        <div class="relative overflow-hidden h-[220px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div class="text-center text-gray-400">
+                                <i class="bi bi-door-closed text-5xl block mb-2"></i>
+                                <span class="text-xs font-medium">Test Room</span>
+                            </div>
+                            @if($isAvailable && $roomsLeft > 0)
+                                <span class="absolute top-4 right-4 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full tracking-wide shadow-md flex items-center gap-1.5 border border-emerald-400/30">
+                                    <i class="bi bi-check-circle-fill"></i>Available
+                                </span>
+                            @endif
+                        </div>
+                    @endif
 
                     <div class="p-6 flex flex-col flex-grow">
                         {{-- Type Name & Price --}}

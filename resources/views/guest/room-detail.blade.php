@@ -36,16 +36,87 @@
 
             {{-- Main Room Image --}}
             @php
-                $roomImages = [
-                    'standard_twin'   => asset('images/dara_room_twin.png'),
-                    'standard_double' => asset('images/dara_room_double.png'),
-                    'deluxe_double'   => asset('images/dara_room_deluxe.png'),
+                $slug = $room->roomType?->slug;
+                $roomDetailImages = [
+                    'standard_room' => [
+                        asset('room/Standard Double 1.jpg'),
+                        asset('room/Standard Double 2.webp'),
+                        asset('room/Standard Double 3.jpg'),
+                        asset('room/Standard Twin 1.webp'),
+                        asset('room/Standard Twin 2.webp'),
+                        asset('room/Standard Twin 3.webp'),
+                        asset('room/Standard Twin 4.png'),
+                        asset('room/Standard Bathroom 1.jpg'),
+                        asset('room/Standard Bathroom 2.jpg'),
+                        asset('room/Standard Bathroom 3.jpg'),
+                        asset('room/Standard bathroom 4.jpg'),
+                        asset('room/Balcony 1.webp'),
+                    ],
+                    'deluxe_room' => [
+                        asset('room/Deluxe Double 1.webp'),
+                        asset('room/Deluxe Double 2.webp'),
+                        asset('room/Deluxe Double 3.webp'),
+                        asset('room/Deluxe Double 4.webp'),
+                        asset('room/Deluxe Double 5.webp'),
+                        asset('room/Deluxe Double 6.webp'),
+                        asset('room/Deluxe Double 7.webp'),
+                        asset('room/Deluxe Double 8.webp'),
+                        asset('room/Deluxe Double 9.webp'),
+                        asset('room/Deluxe Double 10.webp'),
+                        asset('room/Deluxe Twin 1.webp'),
+                        asset('room/Deluxe Twin 2.webp'),
+                        asset('room/Deluxe Twin 3.webp'),
+                        asset('room/Deluxe Twin 4.webp'),
+                        asset('room/Deluxe Bathroom 1.webp'),
+                        asset('room/Deluxe Bathroom 2.webp'),
+                        asset('room/Balcony 1.webp'),
+                    ],
+                    'family_triple_room' => [
+                        asset('room/Family Triple Room 1.webp'),
+                        asset('room/Family Triple Room 2.webp'),
+                        asset('room/Family Triple Room 3.webp'),
+                        asset('room/Family Triple Room 4.webp'),
+                        asset('room/Family Triple Room 5.webp'),
+                        asset('room/Family Triple Room 6.webp'),
+                        asset('room/Deluxe Bathroom 1.webp'),
+                        asset('room/Deluxe Bathroom 2.webp'),
+                        asset('room/Balcony 1.webp'),
+                    ],
+                    'test_room' => [],
                 ];
-                $img = $roomImages[$room->roomType?->slug] ?? asset('images/dara_room_double.png');
+                $imgs = $roomDetailImages[$slug] ?? [];
                 $roomsLeft = $room->roomType?->getAvailableCount(request('checkin'), request('checkout')) ?? 0;
             @endphp
-            <div class="relative overflow-hidden rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8">
-                <img src="{{ $img }}" alt="{{ $room->displayType() }}" class="w-full h-[300px] sm:h-[400px] object-cover hover:scale-102 transition-transform duration-500">
+
+            {{-- Image Slider --}}
+            @if(count($imgs) > 0)
+            <div class="relative overflow-hidden rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8"
+                 x-data="{ current: 0, imgs: {{ json_encode($imgs) }} }">
+                <template x-for="(img, i) in imgs" :key="i">
+                    <img :src="img" :alt="'{{ $room->displayType() }} ' + (i+1)"
+                         class="absolute inset-0 w-full h-[300px] sm:h-[400px] object-cover transition-opacity duration-500"
+                         :class="i === current ? 'opacity-100' : 'opacity-0'">
+                </template>
+                {{-- Spacer to maintain height --}}
+                <div class="h-[300px] sm:h-[400px]"></div>
+                {{-- Prev/Next --}}
+                <button type="button" @click="current = (current - 1 + imgs.length) % imgs.length"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full transition">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" @click="current = (current + 1) % imgs.length"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full transition">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+                {{-- Dot Indicators --}}
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                    <template x-for="(img, i) in imgs" :key="i">
+                        <button type="button" @click="current = i"
+                                :class="i === current ? 'bg-white w-5' : 'bg-white/50 w-2.5'"
+                                class="h-2.5 rounded-full transition-all duration-300"></button>
+                    </template>
+                </div>
+                {{-- Availability Badge --}}
                 @if($roomsLeft > 0)
                     <div class="absolute top-4 right-4 z-10">
                         <span class="bg-emerald-600/95 backdrop-blur-md text-white border border-emerald-400/30 text-sm font-bold px-4 py-2 rounded-full shadow-md flex items-center gap-2">
@@ -54,6 +125,15 @@
                     </div>
                 @endif
             </div>
+            @else
+            {{-- Test Room: no images --}}
+            <div class="relative overflow-hidden rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-8 bg-gradient-to-br from-gray-100 to-gray-200 h-[300px] sm:h-[400px] flex items-center justify-center">
+                <div class="text-center text-gray-400">
+                    <i class="bi bi-door-closed text-7xl block mb-3"></i>
+                    <span class="text-sm font-medium">Test Room — No Images</span>
+                </div>
+            </div>
+            @endif
 
             {{-- Room Basics --}}
             <div class="flex flex-wrap gap-2.5 mb-8">

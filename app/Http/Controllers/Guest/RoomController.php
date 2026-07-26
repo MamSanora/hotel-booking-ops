@@ -40,12 +40,14 @@ class RoomController extends Controller
     public function home(): View
     {
         // Show one representative room per room type for the homepage cards.
+        // Exclude test_room — it is internal and not for public display.
         $featuredRooms = Room::available()
             ->with('roomType')
+            ->whereHas('roomType', fn ($q) => $q->where('slug', '!=', 'test_room'))
             ->get()
             ->unique('room_type_id');
 
-        $roomTypes = RoomType::all()->keyBy('slug');
+        $roomTypes = RoomType::where('slug', '!=', 'test_room')->get()->keyBy('slug');
 
         return view('guest.home', compact('roomTypes', 'featuredRooms'));
     }
@@ -60,7 +62,8 @@ class RoomController extends Controller
         $checkoutDate = $request->input('checkout');
         $typeFilter   = $request->input('type');
 
-        $roomTypes = RoomType::with('rooms')->get();
+        // Load room types — exclude test_room from public listing (internal only).
+        $roomTypes = RoomType::with('rooms')->where('slug', '!=', 'test_room')->get();
 
         // For each room type, compute virtual availability status and remaining counts.
         // We pass this to the view so it can show "Available" / "Fully Booked" badges and "X rooms left".
