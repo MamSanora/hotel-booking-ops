@@ -45,7 +45,9 @@ class RoomController extends Controller
             ->with('roomType')
             ->whereHas('roomType', fn ($q) => $q->where('slug', '!=', 'test_room'))
             ->get()
-            ->unique('room_type_id');
+            ->unique('room_type_id')
+            ->sortBy(fn($room) => $room->roomType?->price_per_night)
+            ->values();
 
         $roomTypes = RoomType::where('slug', '!=', 'test_room')->get()->keyBy('slug');
 

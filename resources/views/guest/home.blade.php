@@ -179,7 +179,6 @@
 </div>
 
 {{-- Quick Search Bar moved into the hero section above --}}
-
 {{-- ==========================================
      FEATURED ROOMS
      ========================================== --}}
@@ -187,6 +186,7 @@
     <div class="text-center mb-12">
         <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block"
               data-en="Our Accommodations" data-km="បន្ទប់របស់យើង">Our Accommodations</span>
+
         <h2 class="font-playfair text-3xl md:text-4xl font-bold text-hotel-dark mt-2"
             data-en="Our Room Types" data-km="ប្រភេទបន្ទប់">Our Room Types</h2>
         <p class="text-gray-500 text-[0.95rem] mt-3 max-w-xl mx-auto"
@@ -196,9 +196,10 @@
 
     @php
         $roomImages = [
-            'standard_twin'   => asset('images/dara_room_twin.png'),
-            'standard_double' => asset('images/dara_room_double.png'),
-            'deluxe_double'   => asset('images/dara_room_deluxe.png'),
+            'standard_room'      => asset('room/Standard Double 1.jpg'),
+            'deluxe_room'        => asset('room/Deluxe Double 1.webp'),
+            'family_triple_room' => asset('room/Family Triple Room 1.webp'),
+            'standard_double'    => asset('room/Standard Double 1.jpg'),
         ];
     @endphp
 
