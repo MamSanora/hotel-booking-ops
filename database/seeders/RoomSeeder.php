@@ -29,17 +29,19 @@ use Illuminate\Database\Seeder;
  * │   2   │ Standard Room × 12                               │  12   │
  * │   3   │ Standard Room × 6  +  Deluxe Room × 6           │  12   │
  * │   4   │ Deluxe Room × 7    +  Family Triple Room × 3    │  10   │
- * │   5   │ Family Triple Room × 5  +  Test Room × 2        │   7   │
+ * │   5   │ Family Triple Room × 7                           │   7   │
+ * ├───────┼──────────────────────────────────────────────────┼───────┤
+ * │  N/A  │ Test Room (Virtual) × 1                          │   1   │
  * └───────┴──────────────────────────────────────────────────┴───────┘
- * Total: 41 rooms
+ * Total: 41 real physical rooms + 1 virtual test room = 42 rooms
  *
  * Rationale:
  *   - Floor 2 is entirely Standard — the entry level, bulk of rooms.
  *   - Floor 3 is a transition floor: half standard, half deluxe.
  *   - Floor 4 is mostly Deluxe (upper-floor premium positioning) with
  *     3 Family Triple rooms for families who prefer a lower floor.
- *   - Floor 5 (top floor) has Family Triple rooms (best views, spacious)
- *     and 2 Test Rooms isolated at the top for easy identification.
+ *   - Floor 5 (top floor) has Family Triple rooms (best views, spacious).
+ *   - 1 Virtual Test Room added to simulate operations without taking up physical inventory.
  *
  * Room Numbering Convention:
  *   First digit = floor, next two = sequential room on that floor.
@@ -109,92 +111,110 @@ class RoomSeeder extends Seeder
         // Build a slug → id map for FK assignment.
         $typeIds = RoomType::pluck('id', 'slug');
 
-        // ── Step 2: Seed all 41 rooms ─────────────────────────────────────────
+        // ── Step 2: Seed all 42 rooms with physical attributes ────────────────
         foreach ($this->buildRoomList() as $room) {
             Room::updateOrCreate(
                 ['room_number' => $room['room_number']],
                 [
-                    'room_type_id'   => $typeIds[$room['room_type']],
-                    'current_status' => 'available',
+                    'room_type_id'     => $typeIds[$room['room_type']],
+                    'current_status'   => 'available',
+                    'bed_configuration'=> $room['bed_configuration'] ?? null,
+                    'view_type'        => $room['view_type'] ?? 'none',
                 ]
             );
         }
 
-        $this->command->info('  RoomSeeder: 4 room types and 41 rooms seeded across Floors 2–5.');
+        $this->command->info('  RoomSeeder: 4 room types and 42 rooms (41 physical + 1 virtual) seeded.');
     }
 
     /**
-     * Returns the full list of 41 rooms with their room numbers and type slugs.
+     * Returns the full list of 42 rooms with their room numbers, type slugs,
+     * bed configuration, and view type.
      * Grouped by floor for readability.
      *
-     * @return array<int, array{room_number: string, room_type: string}>
+     * Bed distribution logic:
+     *   - Standard: odd rooms = twin, even rooms = double
+     *   - Deluxe: odd rooms = twin, even rooms = double
+     *   - Family Triple: all rooms = triple (1 double + 1 single bed)
+     *   - Test Room: null (virtual)
+     *
+     * View distribution:
+     *   - Floor 2: alternating window/none (street-facing low floor)
+     *   - Floor 3: window for standard, balcony for deluxe
+     *   - Floor 4: balcony for deluxe, balcony for family
+     *   - Floor 5: all balcony (top floor, best views)
+     *
+     * @return array<int, array{room_number: string, room_type: string, bed_configuration: string|null, view_type: string}>
      */
     private function buildRoomList(): array
     {
         // ── Floor 2 — 12 Standard Rooms ───────────────────────────────────
-        // Entry-level floor, all standard rooms. Rooms 201–212.
+        // Entry-level floor. Odd = twin, Even = double. Mix of window/none.
         $floor2 = [
-            ['room_number' => '201', 'room_type' => 'standard_room'],
-            ['room_number' => '202', 'room_type' => 'standard_room'],
-            ['room_number' => '203', 'room_type' => 'standard_room'],
-            ['room_number' => '204', 'room_type' => 'standard_room'],
-            ['room_number' => '205', 'room_type' => 'standard_room'],
-            ['room_number' => '206', 'room_type' => 'standard_room'],
-            ['room_number' => '207', 'room_type' => 'standard_room'],
-            ['room_number' => '208', 'room_type' => 'standard_room'],
-            ['room_number' => '209', 'room_type' => 'standard_room'],
-            ['room_number' => '210', 'room_type' => 'standard_room'],
-            ['room_number' => '211', 'room_type' => 'standard_room'],
-            ['room_number' => '212', 'room_type' => 'standard_room'],
+            ['room_number' => '201', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'window'],
+            ['room_number' => '202', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'window'],
+            ['room_number' => '203', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'none'],
+            ['room_number' => '204', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'none'],
+            ['room_number' => '205', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'window'],
+            ['room_number' => '206', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'window'],
+            ['room_number' => '207', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'none'],
+            ['room_number' => '208', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'none'],
+            ['room_number' => '209', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'window'],
+            ['room_number' => '210', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'window'],
+            ['room_number' => '211', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'none'],
+            ['room_number' => '212', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'none'],
         ];
 
         // ── Floor 3 — 12 rooms (6 Standard + 6 Deluxe) ───────────────────
-        // Transition floor: lower rooms are standard, upper-end rooms are deluxe.
-        // Rooms 301–306 = Standard, 307–312 = Deluxe.
+        // Standard rooms get window view; Deluxe rooms get balcony.
         $floor3 = [
-            ['room_number' => '301', 'room_type' => 'standard_room'],
-            ['room_number' => '302', 'room_type' => 'standard_room'],
-            ['room_number' => '303', 'room_type' => 'standard_room'],
-            ['room_number' => '304', 'room_type' => 'standard_room'],
-            ['room_number' => '305', 'room_type' => 'standard_room'],
-            ['room_number' => '306', 'room_type' => 'standard_room'],
-            ['room_number' => '307', 'room_type' => 'deluxe_room'],
-            ['room_number' => '308', 'room_type' => 'deluxe_room'],
-            ['room_number' => '309', 'room_type' => 'deluxe_room'],
-            ['room_number' => '310', 'room_type' => 'deluxe_room'],
-            ['room_number' => '311', 'room_type' => 'deluxe_room'],
-            ['room_number' => '312', 'room_type' => 'deluxe_room'],
+            ['room_number' => '301', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'window'],
+            ['room_number' => '302', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'window'],
+            ['room_number' => '303', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'window'],
+            ['room_number' => '304', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'window'],
+            ['room_number' => '305', 'room_type' => 'standard_room', 'bed_configuration' => 'twin',   'view_type' => 'window'],
+            ['room_number' => '306', 'room_type' => 'standard_room', 'bed_configuration' => 'double', 'view_type' => 'window'],
+            ['room_number' => '307', 'room_type' => 'deluxe_room',   'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '308', 'room_type' => 'deluxe_room',   'bed_configuration' => 'double', 'view_type' => 'balcony'],
+            ['room_number' => '309', 'room_type' => 'deluxe_room',   'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '310', 'room_type' => 'deluxe_room',   'bed_configuration' => 'double', 'view_type' => 'balcony'],
+            ['room_number' => '311', 'room_type' => 'deluxe_room',   'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '312', 'room_type' => 'deluxe_room',   'bed_configuration' => 'double', 'view_type' => 'balcony'],
         ];
 
         // ── Floor 4 — 10 rooms (7 Deluxe + 3 Family Triple) ──────────────
-        // Premium floor. Deluxe rooms face front; Family rooms are corner suites.
-        // Rooms 401–407 = Deluxe, 408–410 = Family Triple.
+        // All rooms get balcony views on the upper floors.
         $floor4 = [
-            ['room_number' => '401', 'room_type' => 'deluxe_room'],
-            ['room_number' => '402', 'room_type' => 'deluxe_room'],
-            ['room_number' => '403', 'room_type' => 'deluxe_room'],
-            ['room_number' => '404', 'room_type' => 'deluxe_room'],
-            ['room_number' => '405', 'room_type' => 'deluxe_room'],
-            ['room_number' => '406', 'room_type' => 'deluxe_room'],
-            ['room_number' => '407', 'room_type' => 'deluxe_room'],
-            ['room_number' => '408', 'room_type' => 'family_triple_room'],
-            ['room_number' => '409', 'room_type' => 'family_triple_room'],
-            ['room_number' => '410', 'room_type' => 'family_triple_room'],
+            ['room_number' => '401', 'room_type' => 'deluxe_room',        'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '402', 'room_type' => 'deluxe_room',        'bed_configuration' => 'double', 'view_type' => 'balcony'],
+            ['room_number' => '403', 'room_type' => 'deluxe_room',        'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '404', 'room_type' => 'deluxe_room',        'bed_configuration' => 'double', 'view_type' => 'balcony'],
+            ['room_number' => '405', 'room_type' => 'deluxe_room',        'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '406', 'room_type' => 'deluxe_room',        'bed_configuration' => 'double', 'view_type' => 'balcony'],
+            ['room_number' => '407', 'room_type' => 'deluxe_room',        'bed_configuration' => 'twin',   'view_type' => 'balcony'],
+            ['room_number' => '408', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '409', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '410', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
         ];
 
-        // ── Floor 5 — 7 rooms (5 Family Triple + 2 Test) ─────────────────
-        // Top floor with panoramic views. Family rooms dominate.
-        // 2 Test Rooms at the end, easy for staff to identify.
+        // ── Floor 5 — 7 rooms (7 Family Triple) ──────────────────────────────
+        // Top floor — best panoramic views. All balcony.
         $floor5 = [
-            ['room_number' => '501', 'room_type' => 'family_triple_room'],
-            ['room_number' => '502', 'room_type' => 'family_triple_room'],
-            ['room_number' => '503', 'room_type' => 'family_triple_room'],
-            ['room_number' => '504', 'room_type' => 'family_triple_room'],
-            ['room_number' => '505', 'room_type' => 'family_triple_room'],
-            ['room_number' => '506', 'room_type' => 'test_room'],
-            ['room_number' => '507', 'room_type' => 'test_room'],
+            ['room_number' => '501', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '502', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '503', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '504', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '505', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '506', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
+            ['room_number' => '507', 'room_type' => 'family_triple_room', 'bed_configuration' => 'triple', 'view_type' => 'balcony'],
         ];
 
-        return array_merge($floor2, $floor3, $floor4, $floor5);
+        // ── Virtual Test Room ────────────────────────────────────────────────
+        // A single non-physical room for testing operations.
+        $virtual = [
+            ['room_number' => 'TEST', 'room_type' => 'test_room', 'bed_configuration' => null, 'view_type' => 'none'],
+        ];
+
+        return array_merge($floor2, $floor3, $floor4, $floor5, $virtual);
     }
 }

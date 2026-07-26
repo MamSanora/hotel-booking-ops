@@ -60,6 +60,8 @@ class AdminRoomController extends Controller
                 Rule::unique('rooms', 'room_number'),
             ],
             'room_type_id' => ['required', 'integer', Rule::exists('room_types', 'id')],
+            'bed_configuration' => ['nullable', Rule::in(['twin', 'double', 'triple'])],
+            'view_type'      => ['nullable', Rule::in(['city', 'pool', 'garden', 'ocean', 'none'])],
         ], [
             'room_number.unique'    => 'A room with this number already exists.',
             'room_type_id.required' => 'Please select a room type.',
@@ -69,6 +71,8 @@ class AdminRoomController extends Controller
         $room = Room::create([
             'room_number'    => $validated['room_number'],
             'room_type_id'   => $validated['room_type_id'],
+            'bed_configuration' => $validated['bed_configuration'] ?? null,
+            'view_type'      => $validated['view_type'] ?? null,
             'current_status' => 'available',
         ]);
 
@@ -82,6 +86,88 @@ class AdminRoomController extends Controller
         return redirect()
             ->route('admin.rooms.index')
             ->with('success', "Room {$room->room_number} created successfully.");
+    }
+
+    /**
+     * Show the bulk create form.
+     */
+    public function bulkCreate(): View
+    {
+        $roomTypes = RoomType::orderBy('display_name')->get();
+        return view('admin.rooms.bulk-create', compact('roomTypes'));
+    }
+
+    /**
+     * Store multiple sequentially numbered rooms.
+     */
+    public function bulkStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'room_type_id'    => ['required', 'integer', Rule::exists('room_types', 'id')],
+            'start_number'    => ['required', 'integer', 'min:1'],
+            'count'           => ['required', 'integer', 'min:1', 'max:100'],
+            'prefix'          => ['nullable', 'string', 'max:2'],
+        ]);
+
+        $prefix = $validated['prefix'] ?? '';
+        $start = (int) $validated['start_number'];
+        $count = (int) $validated['count'];
+        $roomTypeId = $validated['room_type_id'];
+
+        $createdCount = 0;
+        $adminId = Auth::guard('admin')->id();
+
+        for ($i = 0; $i < $count; $i++) {
+            $roomNumber = $prefix . ($start + $i);
+            
+            // Skip if room number already exists
+            if (Room::where('room_number', (string) $roomNumber)->exists()) {
+                continue;
+            }
+
+            $room = Room::create([
+                'room_number'    => (string) $roomNumber,
+                'room_type_id'   => $roomTypeId,
+                'current_status' => Room::STATUS_AVAILABLE,
+            ]);
+
+            RoomManagement::create([
+                'room_id'             => $room->id,
+                'managed_by_admin_id' => $adminId,
+                'action'              => 'add_room',
+            ]);
+
+            $createdCount++;
+        }
+
+        return redirect()
+            ->route('admin.rooms.index')
+            ->with('success', "Successfully generated {$createdCount} rooms.");
+    }
+
+    /**
+     * Quick status update from the dashboard modal.
+     */
+    public function quickStatus(Request $request, Room $room): RedirectResponse
+    {
+        $validated = $request->validate([
+            'current_status' => ['required', Rule::in([Room::STATUS_AVAILABLE, Room::STATUS_CLEANING, Room::STATUS_MAINTENANCE])],
+        ]);
+
+        if ($room->current_status !== $validated['current_status']) {
+            $room->update([
+                'current_status' => $validated['current_status'],
+                'status_updated_at' => now(),
+            ]);
+
+            RoomManagement::create([
+                'room_id'             => $room->id,
+                'managed_by_admin_id' => Auth::guard('admin')->id(),
+                'action'              => 'status_change',
+            ]);
+        }
+
+        return back()->with('success', "Room {$room->room_number} status updated.");
     }
 
     /**
@@ -109,6 +195,8 @@ class AdminRoomController extends Controller
                 Rule::unique('rooms', 'room_number')->ignore($roomId),
             ],
             'room_type_id' => ['required', 'integer', Rule::exists('room_types', 'id')],
+            'bed_configuration' => ['nullable', Rule::in(['twin', 'double', 'triple'])],
+            'view_type'      => ['nullable', Rule::in(['city', 'pool', 'garden', 'ocean', 'none'])],
         ], [
             'room_number.unique'    => 'A room with this number already exists.',
             'room_type_id.required' => 'Please select a room type.',
@@ -120,6 +208,8 @@ class AdminRoomController extends Controller
         $room->update([
             'room_number'  => $validated['room_number'],
             'room_type_id' => $validated['room_type_id'],
+            'bed_configuration' => $validated['bed_configuration'] ?? null,
+            'view_type'      => $validated['view_type'] ?? null,
         ]);
 
         // Audit log: if the room type changed, the effective price may have changed.

@@ -21,7 +21,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int         $id
  * @property string|null $room_number
  * @property int         $room_type_id
- * @property string      $current_status  'available' | 'occupied'
+ * @property string      $current_status   'available' | 'occupied'
+ * @property string|null $bed_configuration 'twin' | 'double' | 'triple'
+ * @property string      $view_type         'balcony' | 'window' | 'none'
  *
  * @property-read RoomType $roomType
  */
@@ -29,14 +31,26 @@ class Room extends Model
 {
     use HasFactory;
 
-    public const STATUS_AVAILABLE = 'available';
-    public const STATUS_OCCUPIED  = 'occupied';
+    public const STATUS_AVAILABLE   = 'available';
+    public const STATUS_OCCUPIED    = 'occupied';
+    public const STATUS_CLEANING    = 'cleaning';
+    public const STATUS_MAINTENANCE = 'maintenance';
 
     protected $fillable = [
         'room_number',
         'room_type_id',
         'current_status',
+        'status_updated_at',
+        'bed_configuration',
+        'view_type',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'status_updated_at' => 'datetime',
+        ];
+    }
 
     // ── Relationships ──────────────────────────────────────────────────────
 
@@ -90,6 +104,22 @@ class Room extends Model
     public function scopeOccupied(Builder $query): Builder
     {
         return $query->where('current_status', self::STATUS_OCCUPIED);
+    }
+
+    /**
+     * Filter to only rooms being cleaned.
+     */
+    public function scopeCleaning(Builder $query): Builder
+    {
+        return $query->where('current_status', self::STATUS_CLEANING);
+    }
+
+    /**
+     * Filter to only rooms under maintenance.
+     */
+    public function scopeMaintenance(Builder $query): Builder
+    {
+        return $query->where('current_status', self::STATUS_MAINTENANCE);
     }
 
     /**
@@ -195,6 +225,32 @@ class Room extends Model
             self::STATUS_AVAILABLE => 'Available',
             self::STATUS_OCCUPIED  => 'Occupied',
             default                => ucfirst($this->current_status),
+        };
+    }
+
+    /**
+     * Returns a human-readable label for the room's bed configuration.
+     */
+    public function displayBedConfiguration(): string
+    {
+        return match ($this->bed_configuration) {
+            'twin'   => 'Twin Beds',
+            'double' => 'Double Bed',
+            'triple' => 'Triple (Double + Single)',
+            default  => 'Not specified',
+        };
+    }
+
+    /**
+     * Returns a human-readable label for the room's view type.
+     */
+    public function displayViewType(): string
+    {
+        return match ($this->view_type) {
+            'balcony' => 'Balcony View',
+            'window'  => 'Window View',
+            'none'    => 'No View',
+            default   => 'Not specified',
         };
     }
 }

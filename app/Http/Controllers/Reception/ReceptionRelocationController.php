@@ -158,11 +158,17 @@ class ReceptionRelocationController extends Controller
                 'relocated_to_booking_id' => $newBooking->id,
             ]);
 
-            // 3. Free the original room
-            $booking->room?->update(['current_status' => 'available']);
+            // 3. Free the original room (needs cleaning)
+            $booking->room?->update([
+                'current_status' => \App\Models\Room::STATUS_CLEANING,
+                'status_updated_at' => now(),
+            ]);
 
             // 4. Occupy the new room
-            $newRoom->update(['current_status' => 'occupied']);
+            $newRoom->update([
+                'current_status' => \App\Models\Room::STATUS_OCCUPIED,
+                'status_updated_at' => now(),
+            ]);
         });
 
         return redirect()->route('reception.dashboard')

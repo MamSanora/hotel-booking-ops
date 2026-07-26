@@ -37,50 +37,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // ── Step 1: Seed room_types with standard defaults plus existing rooms data ──
-        $defaults = [
-            ['slug' => 'standard_twin',   'display_name' => 'Standard Twin',   'capacity' => 2, 'price_per_night' => 35.00],
-            ['slug' => 'standard_double', 'display_name' => 'Standard Double', 'capacity' => 2, 'price_per_night' => 50.00],
-            ['slug' => 'deluxe_double',   'display_name' => 'Deluxe Double',   'capacity' => 2, 'price_per_night' => 80.00],
-            ['slug' => 'family_room',     'display_name' => 'Family Room',     'capacity' => 4, 'price_per_night' => 120.00],
-            ['slug' => 'suite',           'display_name' => 'Suite',           'capacity' => 4, 'price_per_night' => 180.00],
-        ];
-
-        foreach ($defaults as $def) {
-            DB::table('room_types')->insertOrIgnore(array_merge($def, [
-                'description' => null,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]));
-        }
-
-        $existingTypes = DB::table('rooms')
-            ->select('room_type', 'price_per_night', 'capacity', 'description')
-            ->whereNotNull('room_type')
-            ->groupBy('room_type', 'price_per_night', 'capacity', 'description')
-            ->get();
-
-        $displayNames = [
-            'standard_twin'   => 'Standard Twin',
-            'standard_double' => 'Standard Double',
-            'deluxe_double'   => 'Deluxe Double',
-            'family_room'     => 'Family Room',
-            'suite'           => 'Suite',
-        ];
-
-        foreach ($existingTypes as $type) {
-            DB::table('room_types')->insertOrIgnore([
-                'slug'            => $type->room_type,
-                'display_name'    => $displayNames[$type->room_type] ?? ucfirst(str_replace('_', ' ', $type->room_type)),
-                'capacity'        => $type->capacity ?? 2,
-                'price_per_night' => $type->price_per_night ?? 0,
-                'description'     => $type->description,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-            ]);
-        }
-
-        // ── Step 2: Add nullable FK to rooms ─────────────────────────────────
+        // ── Step 1: Add nullable FK to rooms ─────────────────────────────────
         Schema::table('rooms', function (Blueprint $table) {
             $table->foreignId('room_type_id')
                 ->nullable()
@@ -89,13 +46,13 @@ return new class extends Migration
                 ->nullOnDelete();  // Temporary — changed to RESTRICT after data is populated.
         });
 
-        // ── Step 3: Populate the FK for every existing room ──────────────────
+        // ── Step 2: Populate the FK for every existing room ──────────────────
         $roomTypes = DB::table('room_types')->pluck('id', 'slug');
         foreach ($roomTypes as $slug => $id) {
             DB::table('rooms')->where('room_type', $slug)->update(['room_type_id' => $id]);
         }
 
-        // ── Step 4: Swap constraint to RESTRICT, then make NOT NULL ──────────
+        // ── Step 3: Swap constraint to RESTRICT, then make NOT NULL ──────────
         // MySQL cannot make a nullOnDelete FK column NOT NULL, so we drop and
         // re-add the constraint with RESTRICT before changing nullability.
         if (DB::getDriverName() === 'mysql') {
@@ -104,7 +61,7 @@ return new class extends Migration
             DB::statement('ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_id_foreign FOREIGN KEY (room_type_id) REFERENCES room_types(id) ON DELETE RESTRICT');
         }
 
-        // ── Step 5: Drop the redundant columns ───────────────────────────────
+        // ── Step 4: Drop the redundant columns ───────────────────────────────
         Schema::table('rooms', function (Blueprint $table) {
             $table->dropColumn(['room_type', 'price_per_night', 'capacity', 'description']);
         });

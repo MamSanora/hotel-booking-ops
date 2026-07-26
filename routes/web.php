@@ -37,10 +37,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [RoomController::class, 'home'])->name('home');
 Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
 Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
+Route::post('/rooms/{room}/check-preferences', [RoomController::class, 'checkPreferences'])->name('rooms.check-preferences');
 
 // Static pages
 Route::get('/about',   [PageController::class, 'about'])->name('about');
-Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
+Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery.index');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/blog',    [PageController::class, 'blog'])->name('blog');
 Route::post('/contact', [PageController::class, 'submitContact'])->name('contact.submit');
@@ -185,13 +186,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Exchange rate manual sync (rate-limited to 30 min per admin)
         Route::post('/exchange-rate/sync', [ExchangeRateController::class, 'sync'])->name('exchange-rate.sync');
 
-        // Room management (CRUD)
-        Route::get('/rooms',              [AdminRoomController::class, 'index'])->name('rooms.index');
-        Route::get('/rooms/create',       [AdminRoomController::class, 'create'])->name('rooms.create');
-        Route::post('/rooms',             [AdminRoomController::class, 'store'])->name('rooms.store');
-        Route::get('/rooms/{room}/edit',  [AdminRoomController::class, 'edit'])->name('rooms.edit');
-        Route::put('/rooms/{room}',       [AdminRoomController::class, 'update'])->name('rooms.update');
-        Route::delete('/rooms/{room}',    [AdminRoomController::class, 'destroy'])->name('rooms.destroy');
+        // Room Management (CRUD)
+        Route::patch('/rooms/{room}/quick-status',    [AdminRoomController::class, 'quickStatus'])->name('rooms.quick-status');
+        Route::get('/rooms/bulk-create',              [AdminRoomController::class, 'bulkCreate'])->name('rooms.bulk-create');
+        Route::post('/rooms/bulk-create',             [AdminRoomController::class, 'bulkStore'])->name('rooms.bulk-store');
+        Route::resource('rooms',                      AdminRoomController::class)->except(['show']);
 
         // Room type management (CRUD)
         Route::get('/room-types',                     [AdminRoomTypeController::class, 'index'])->name('room-types.index');
@@ -203,9 +202,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Booking management
         Route::get('/bookings',                       [AdminBookingController::class, 'index'])->name('bookings.index');
+        Route::get('/bookings/export',                [AdminBookingController::class, 'export'])->name('bookings.export');
         Route::patch('/bookings/{booking}/approve',   [AdminBookingController::class, 'approve'])->name('bookings.approve');
         Route::patch('/bookings/{booking}/cancel',    [AdminBookingController::class, 'cancel'])->name('bookings.cancel');
         Route::patch('/bookings/{booking}/refund',    [AdminBookingController::class, 'markAsRefunded'])->name('bookings.refund');
+        Route::get('/bookings/{booking}/receipt',     [AdminBookingController::class, 'receipt'])->name('bookings.receipt');
         Route::delete('/bookings/{booking}',          [AdminBookingController::class, 'destroy'])->name('bookings.destroy');
 
         // Staff management (CRUD)

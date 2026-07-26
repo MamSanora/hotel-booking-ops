@@ -64,7 +64,7 @@ class TelegramWebhookController extends Controller
         $message = $body['message'] ?? $body['channel_post'] ?? null;
 
         if (! $message) {
-            // Not a message update (e.g. callback_query, inline_query) � ignore.
+            // Not a message update (e.g. callback_query, inline_query) ? ignore.
             return response()->json(['ok' => true]);
         }
 
@@ -85,6 +85,39 @@ class TelegramWebhookController extends Controller
 
         if (empty($text)) {
             return response()->json(['ok' => true]); // Non-text message, nothing to do
+        }
+
+                // -- Check for Housekeeping Commands --
+        if (preg_match('/^\/clean\s+([A-Za-z0-9]+)/i', trim($text), $matches)) {
+            $roomNumber = strtoupper($matches[1]);
+            try {
+                $room = \App\Models\Room::where('room_number', $roomNumber)->first();
+                if ($room) {
+                    if ($room->current_status === \App\Models\Room::STATUS_CLEANING) {
+                        $room->update([
+                            'current_status' => \App\Models\Room::STATUS_AVAILABLE,
+                            'status_updated_at' => now(),
+                        ]);
+                        
+                        \App\Models\RoomManagement::create([
+                            'room_id'             => $room->id,
+                            'managed_by_admin_id' => null,
+                            'action'              => 'status_change_via_telegram',
+                        ]);
+
+                        $this->telegramService->sendMessage("✅ Room {$roomNumber} is now marked as Available.", $incomingChatId);
+                    } else {
+                        $this->telegramService->sendMessage("⚠️ Room {$roomNumber} is currently '{$room->current_status}', not 'cleaning'.", $incomingChatId);
+                    }
+                } else {
+                    $this->telegramService->sendMessage("❌ Room {$roomNumber} not found.", $incomingChatId);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('TelegramWebhook: exception during housekeeping command', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            return response()->json(['ok' => true]);
         }
 
         // -- 5. Delegate to the service for parsing and confirmation ---------

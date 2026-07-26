@@ -60,6 +60,14 @@ class AdminRoomTypeController extends Controller
             'price_per_night.required' => 'Please set a price per night.',
         ]);
 
+        $images = [];
+        if ($request->hasFile('images')) {
+            $request->validate(['images.*' => 'image|max:2048']);
+            foreach ($request->file('images') as $image) {
+                $images[] = $image->store('room_types', 'public');
+            }
+        }
+
         // Auto-generate slug from display_name.
         $slug = Str::slug($validated['display_name']);
 
@@ -76,6 +84,7 @@ class AdminRoomTypeController extends Controller
             'capacity'        => $validated['capacity'],
             'price_per_night' => $validated['price_per_night'],
             'description'     => $validated['description'] ?? null,
+            'images'          => empty($images) ? null : $images,
         ]);
 
         return redirect()
@@ -112,6 +121,27 @@ class AdminRoomTypeController extends Controller
             'price_per_night.required' => 'Please set a price per night.',
         ]);
 
+        $images = $roomType->images ?? [];
+
+        // Handle image deletions
+        if ($request->has('remove_images')) {
+            foreach ($request->input('remove_images') as $path) {
+                if (($key = array_search($path, $images)) !== false) {
+                    unset($images[$key]);
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+                }
+            }
+            $images = array_values($images); // reindex
+        }
+
+        // Handle new image uploads
+        if ($request->hasFile('images')) {
+            $request->validate(['images.*' => 'image|max:2048']);
+            foreach ($request->file('images') as $image) {
+                $images[] = $image->store('room_types', 'public');
+            }
+        }
+
         // Regenerate slug only if the display_name changed.
         $slug = $roomType->slug;
         if ($validated['display_name'] !== $roomType->display_name) {
@@ -129,6 +159,7 @@ class AdminRoomTypeController extends Controller
             'capacity'        => $validated['capacity'],
             'price_per_night' => $validated['price_per_night'],
             'description'     => $validated['description'] ?? null,
+            'images'          => empty($images) ? null : $images,
         ]);
 
         return redirect()

@@ -116,14 +116,6 @@
                                 class="h-2.5 rounded-full transition-all duration-300"></button>
                     </template>
                 </div>
-                {{-- Availability Badge --}}
-                @if($roomsLeft > 0)
-                    <div class="absolute top-4 right-4 z-10">
-                        <span class="bg-emerald-600/95 backdrop-blur-md text-white border border-emerald-400/30 text-sm font-bold px-4 py-2 rounded-full shadow-md flex items-center gap-2">
-                            <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
-                        </span>
-                    </div>
-                @endif
             </div>
             @else
             {{-- Test Room: no images --}}
@@ -267,26 +259,6 @@
                             </div>
                         </div>
 
-                        {{-- Guest Count --}}
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">Adults</label>
-                                <select name="adults" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                                    @for($i = 1; $i <= $room->roomType?->capacity; $i++)
-                                        <option value="{{ $i }}" {{ old('adults', 1) == $i ? 'selected' : '' }}>{{ $i }} Adult{{ $i > 1 ? 's' : '' }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">Children</label>
-                                <select name="children" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                                    @for($i = 0; $i <= 3; $i++)
-                                        <option value="{{ $i }}" {{ old('children', 0) == $i ? 'selected' : '' }}>{{ $i }} {{ $i == 1 ? 'Child' : 'Children' }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-                        </div>
-
                         {{-- Special Requests --}}
                         <div>
                             <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">
@@ -295,6 +267,56 @@
                             <textarea name="special_requests" rows="2"
                                       placeholder="e.g. Extra pillows, early check-in..."
                                       class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none resize-none">{{ old('special_requests') }}</textarea>
+                        </div>
+
+                        {{-- Guest Preferences --}}
+                        <div class="mb-4">
+                            <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Room Preferences <span class="font-normal normal-case lowercase">(optional)</span></label>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {{-- Bed Type --}}
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bed Type</label>
+                                    <select name="bed_type" id="bed_type" class="w-full border-[1.5px] border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.75rem top 50%; background-size: 0.65rem auto;">
+                                        <option value="">No Preference</option>
+                                        <option value="twin" {{ old('bed_type') === 'twin' ? 'selected' : '' }}>Twin Beds</option>
+                                        <option value="double" {{ old('bed_type') === 'double' ? 'selected' : '' }}>Double Bed</option>
+                                    </select>
+                                </div>
+                                {{-- Floor --}}
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Floor</label>
+                                    <select name="floor_preference" id="floor_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.75rem top 50%; background-size: 0.65rem auto;">
+                                        <option value="">No Preference</option>
+                                        <option value="2" {{ old('floor_preference') === '2' ? 'selected' : '' }}>Floor 2</option>
+                                        <option value="3" {{ old('floor_preference') === '3' ? 'selected' : '' }}>Floor 3</option>
+                                        <option value="4" {{ old('floor_preference') === '4' ? 'selected' : '' }}>Floor 4</option>
+                                        <option value="5" {{ old('floor_preference') === '5' ? 'selected' : '' }}>Floor 5</option>
+                                    </select>
+                                </div>
+                                {{-- View --}}
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">View</label>
+                                    <select name="view_preference" id="view_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.75rem top 50%; background-size: 0.65rem auto;">
+                                        <option value="">No Preference</option>
+                                        <option value="balcony" {{ old('view_preference') === 'balcony' ? 'selected' : '' }}>Balcony View</option>
+                                        <option value="window" {{ old('view_preference') === 'window' ? 'selected' : '' }}>Window View</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-[0.72rem] text-gray-400 mt-2"><i class="bi bi-info-circle"></i> Preferences are requests and subject to availability at check-in.</p>
+                        </div>
+                        
+                        {{-- Preference Availability Warning Container --}}
+                        <div id="preferenceWarning" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                            <div class="flex items-start gap-3">
+                                <i class="bi bi-exclamation-triangle-fill text-amber-500 mt-0.5"></i>
+                                <div>
+                                    <h5 class="text-amber-800 font-bold text-[0.9rem] mb-1">Preferences Unavailable</h5>
+                                    <p class="text-amber-700 text-[0.82rem] leading-relaxed">
+                                        We don't have a physical room matching all these exact preferences available for these dates. You can still proceed with your booking, but we may not be able to guarantee this request.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Price Summary --}}
@@ -362,41 +384,13 @@
                         {{-- Payment Method (forced to khqr_aba; hidden from guest) --}}
                         <input type="hidden" name="payment_method" value="khqr_aba">
 
-                        {{-- Guest Preferences --}}
-                        <div class="mb-4">
-                            <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Room Preferences <span class="font-normal normal-case lowercase">(optional)</span></label>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {{-- Bed Type --}}
-                                <div>
-                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bed Type</label>
-                                    <select name="bed_type" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                                        <option value="">No Preference</option>
-                                        <option value="twin" {{ old('bed_type') === 'twin' ? 'selected' : '' }}>Twin Beds</option>
-                                        <option value="double" {{ old('bed_type') === 'double' ? 'selected' : '' }}>Double Bed</option>
-                                    </select>
-                                </div>
-                                {{-- Floor --}}
-                                <div>
-                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Floor</label>
-                                    <select name="floor_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                                        <option value="">No Preference</option>
-                                        <option value="2" {{ old('floor_preference') === '2' ? 'selected' : '' }}>Floor 2</option>
-                                        <option value="3" {{ old('floor_preference') === '3' ? 'selected' : '' }}>Floor 3</option>
-                                        <option value="4" {{ old('floor_preference') === '4' ? 'selected' : '' }}>Floor 4</option>
-                                        <option value="5" {{ old('floor_preference') === '5' ? 'selected' : '' }}>Floor 5</option>
-                                    </select>
-                                </div>
-                                {{-- View --}}
-                                <div>
-                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">View</label>
-                                    <select name="view_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                                        <option value="">No Preference</option>
-                                        <option value="balcony" {{ old('view_preference') === 'balcony' ? 'selected' : '' }}>Balcony View</option>
-                                        <option value="window" {{ old('view_preference') === 'window' ? 'selected' : '' }}>Window View</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="text-[0.72rem] text-gray-400 mt-2"><i class="bi bi-info-circle"></i> Preferences are requests and subject to availability at check-in.</p>
+
+                        {{-- Terms and Conditions --}}
+                        <div class="mb-5 flex items-start gap-2.5">
+                            <input type="checkbox" id="terms" name="terms" required class="mt-0.5 w-4 h-4 text-hotel-gold border-gray-300 rounded focus:ring-hotel-gold cursor-pointer">
+                            <label for="terms" class="text-[0.85rem] text-gray-700 cursor-pointer">
+                                I have read and understood the <a href="#" class="font-bold text-blue-700 hover:text-blue-800 underline underline-offset-2">Booking policy and Terms & conditions</a>
+                            </label>
                         </div>
 
                         <button type="submit" class="w-full bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-bold rounded-xl py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(200,169,110,0.45)] flex justify-center items-center gap-2">
@@ -504,7 +498,70 @@
             radio.addEventListener('change', calculatePrice);
         });
 
+        // ── PREFERENCE AVAILABILITY CHECK ─────────────────────────────────────
+        const bedSelect = document.getElementById('bed_type');
+        const floorSelect = document.getElementById('floor_preference');
+        const viewSelect = document.getElementById('view_preference');
+        const warningBox = document.getElementById('preferenceWarning');
+        const roomId = '{{ $room->id }}';
+
+        async function checkPreferences() {
+            if (!checkInEl.value || !checkOutEl.value) return;
+            
+            const hasPref = bedSelect.value || floorSelect.value || viewSelect.value;
+            if (!hasPref) {
+                warningBox.classList.add('hidden');
+                return;
+            }
+
+            const tierChecked = document.querySelector('input[name="payment_tier"]:checked');
+            const tierValue = tierChecked ? tierChecked.value : 100;
+
+            try {
+                const response = await fetch(`/rooms/${roomId}/check-preferences`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        check_in_date: checkInEl.value,
+                        check_out_date: checkOutEl.value,
+                        payment_tier: tierValue,
+                        bed_type: bedSelect.value,
+                        floor_preference: floorSelect.value,
+                        view_preference: viewSelect.value
+                    })
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const data = await response.json();
+                
+                if (data.available === false && data.reason === 'preferences_unavailable') {
+                    warningBox.classList.remove('hidden');
+                } else {
+                    warningBox.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking preferences:', error);
+                // On error, we just hide the warning to not block the user
+                warningBox.classList.add('hidden');
+            }
+        }
+
+        // Attach listeners to dates, tiers, and preferences
+        checkInEl.addEventListener('change', checkPreferences);
+        checkOutEl.addEventListener('change', checkPreferences);
+        bedSelect.addEventListener('change', checkPreferences);
+        floorSelect.addEventListener('change', checkPreferences);
+        viewSelect.addEventListener('change', checkPreferences);
+        document.querySelectorAll('input.tier-radio').forEach(function (radio) {
+            radio.addEventListener('change', checkPreferences);
+        });
+
         calculatePrice();
+        checkPreferences();
     }
 </script>
 @endpush

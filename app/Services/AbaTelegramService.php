@@ -166,6 +166,27 @@ class AbaTelegramService implements PaymentGatewayInterface
         return true;
     }
 
+    /**
+     * Send a text message back to a specific Telegram chat.
+     */
+    public function sendMessage(string $text, string $chatId = null): void
+    {
+        if (! $this->isConfigured()) return;
+        
+        $chatId = $chatId ?? $this->groupChatId;
+        
+        try {
+            Http::timeout(5)->post(self::TELEGRAM_API . "/bot{$this->botToken}/sendMessage", [
+                'chat_id' => $chatId,
+                'text'    => $text,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('AbaTelegramService: failed to send message', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     // -- Accessors ----------------------------------------------------------
 
     public function getAbaAccountNumber(): string

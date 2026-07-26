@@ -31,7 +31,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.room-types.store') }}" method="POST" class="space-y-6">
+        <form action="{{ route('admin.room-types.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -82,6 +82,17 @@
                     <textarea id="description" name="description" rows="4" placeholder="Describe the room type, amenities, view, etc."
                               class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] resize-none">{{ old('description') }}</textarea>
                     @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                {{-- Images --}}
+                <div class="md:col-span-2">
+                    <label for="images" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        Room Images <span class="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <input type="file" id="images" name="images[]" multiple accept="image/*"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-hotel-gold/10 file:text-hotel-dark hover:file:bg-hotel-gold/20">
+                    <p class="text-xs text-gray-400 mt-1">You can upload multiple images (max 2MB each).</p>
+                    @error('images.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

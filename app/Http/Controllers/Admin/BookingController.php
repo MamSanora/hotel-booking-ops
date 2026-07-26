@@ -44,6 +44,59 @@ class BookingController extends Controller
     }
 
     /**
+     * View POS-style receipt for a booking.
+     */
+    public function receipt(Booking $booking): View
+    {
+        $latestTxn = $booking->transactions()->latest()->first();
+        return view('admin.bookings.receipt', compact('booking', 'latestTxn'));
+    }
+
+    /**
+     * Export bookings to CSV.
+     */
+    public function export()
+    {
+        $bookings = Booking::with(['guest', 'room', 'transactions'])->orderByDesc('created_at')->get();
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=bookings_report_" . now()->format('Y-m-d') . ".csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['Booking ID', 'Reference', 'Guest Name', 'Room', 'Check-In', 'Check-Out', 'Total Price', 'Status', 'Payment Status'];
+
+        $callback = function() use($bookings, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($bookings as $booking) {
+                $latestTxn = $booking->transactions->sortByDesc('created_at')->first();
+                $paymentStatus = $latestTxn ? $latestTxn->displayStatus() : 'Unpaid';
+                
+                fputcsv($file, [
+                    $booking->id,
+                    $booking->referenceNumber(),
+                    $booking->guest?->full_name ?? 'Walk-in Guest',
+                    $booking->room?->displayType() . ' (Room ' . $booking->room?->room_number . ')',
+                    $booking->check_in_date?->format('Y-m-d'),
+                    $booking->check_out_date?->format('Y-m-d'),
+                    $booking->total_price,
+                    $booking->booking_status,
+                    $paymentStatus
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
      * Approve a pending booking — marks it as 'booked' (payment confirmed).
      * In normal flow, booking moves to 'booked' after KHQR payment is verified.
      * Admin approval is for cases requiring manual confirmation.

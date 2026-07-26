@@ -67,6 +67,7 @@ class RoomType extends Model
         'overbooking_multiplier',
         'price_per_night',
         'description',
+        'images',
     ];
 
     protected function casts(): array
@@ -78,6 +79,7 @@ class RoomType extends Model
             'adult_capacity'         => 'integer',
             'child_capacity'         => 'integer',
             'overbooking_multiplier' => 'float',
+            'images'                 => 'array',
         ];
     }
 

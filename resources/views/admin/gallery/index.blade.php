@@ -67,7 +67,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
             @foreach($gallery as $item)
                 <div class="group relative bg-white rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.13)] transition-all duration-300">
-                    <img src="{{ asset('gallery/' . $item->image) }}" alt="Gallery Image" class="w-full h-48 object-cover">
+                    <img src="{{ asset('gallery_images/' . $item->image) }}" alt="Gallery Image" class="w-full h-48 object-cover">
                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <form action="{{ route('admin.gallery.destroy', $item) }}" method="POST" onsubmit="return confirm('Delete this image?')">
                             @csrf @method('DELETE')

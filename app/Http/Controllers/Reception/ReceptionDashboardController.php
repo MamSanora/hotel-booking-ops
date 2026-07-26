@@ -123,7 +123,10 @@ class ReceptionDashboardController extends Controller
         $booking->update(['booking_status' => Booking::STATUS_CHECKED_IN]);
 
         // Mark the room as occupied so it won't show as available.
-        $booking->room?->update(['current_status' => 'occupied']);
+        $booking->room?->update([
+            'current_status' => \App\Models\Room::STATUS_OCCUPIED,
+            'status_updated_at' => now(),
+        ]);
 
         $guestName = $booking->guest?->full_name ?? 'Guest';
 
@@ -154,8 +157,11 @@ class ReceptionDashboardController extends Controller
 
         $booking->update(['booking_status' => Booking::STATUS_CHECKED_OUT]);
 
-        // Return the room to available so it can be booked again.
-        $booking->room?->update(['current_status' => 'available']);
+        // Return the room to cleaning so housekeeping can clean it.
+        $booking->room?->update([
+            'current_status' => \App\Models\Room::STATUS_CLEANING,
+            'status_updated_at' => now(),
+        ]);
 
         $guestName = $booking->guest?->full_name ?? 'Guest';
 

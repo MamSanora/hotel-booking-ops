@@ -31,7 +31,7 @@ class GalleryController extends Controller
     /**
      * Store a new gallery image uploaded by the admin.
      *
-     * Files are saved to public/gallery/ (accessible via asset() in views).
+     * Files are saved to public/gallery_images/ (accessible via asset() in views).
      */
     public function store(Request $request): RedirectResponse
     {
@@ -40,7 +40,7 @@ class GalleryController extends Controller
         ]);
 
         $imageName = time() . '.' . $request->image->getClientOriginalExtension();
-        $request->image->move(public_path('gallery'), $imageName);
+        $request->image->move(public_path('gallery_images'), $imageName);
 
         Gallery::create(['image' => $imageName]);
 
@@ -53,7 +53,7 @@ class GalleryController extends Controller
     public function destroy(Gallery $gallery): RedirectResponse
     {
         // Remove file from public disk if it exists.
-        $filePath = public_path('gallery/' . $gallery->image);
+        $filePath = public_path('gallery_images/' . $gallery->image);
         if (file_exists($filePath)) {
             @unlink($filePath);
         }

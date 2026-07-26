@@ -18,14 +18,89 @@
                 </h1>
             </div>
             @if($booking->canCancel())
-            <form method="POST" action="{{ route('guest.booking.cancel', $booking) }}"
-                  onsubmit="return confirm('Are you sure you want to cancel this booking?')">
-                @csrf
-                @method('PATCH')
-                <button type="submit" class="inline-flex items-center bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm px-5 py-2.5 rounded-xl border border-red-200 transition-colors">
-                    <i class="bi bi-x-circle mr-2"></i> Cancel Booking
-                </button>
-            </form>
+                @php
+                    $isRefundable = $booking->isRefundable();
+                    $hasPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->isNotEmpty();
+                    $needsQrUpload = $isRefundable && $hasPaid;
+                @endphp
+                <div x-data="{ showCancelModal: false }">
+                    <button type="button" @click="showCancelModal = true" class="inline-flex items-center bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm px-5 py-2.5 rounded-xl border border-red-200 transition-colors">
+                        <i class="bi bi-x-circle mr-2"></i> Cancel Booking
+                    </button>
+
+                    {{-- Cancellation Modal --}}
+                    <div x-show="showCancelModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                            
+                            <div x-show="showCancelModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-60 transition-opacity" @click="showCancelModal = false" aria-hidden="true"></div>
+                            
+                            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                            
+                            <div x-show="showCancelModal" 
+                                 x-transition:enter="ease-out duration-300" 
+                                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                                 x-transition:leave="ease-in duration-200" 
+                                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                                 class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                                
+                                <form method="POST" action="{{ route('guest.booking.cancel', $booking) }}" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PATCH')
+                                    
+                                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                        <div class="sm:flex sm:items-start">
+                                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                                <i class="bi bi-exclamation-triangle text-red-600 text-lg"></i>
+                                            </div>
+                                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                                <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title">
+                                                    Cancel Booking
+                                                </h3>
+                                                <div class="mt-2">
+                                                    <p class="text-sm text-gray-500 mb-4">
+                                                        Are you sure you want to cancel booking <strong>{{ $booking->referenceNumber() }}</strong>?
+                                                    </p>
+                                                    
+                                                    @if($needsQrUpload)
+                                                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 mb-4">
+                                                        <p class="font-semibold mb-1"><i class="bi bi-info-circle mr-1"></i> Refund Eligible</p>
+                                                        <p>Your booking is eligible for a full refund! Please upload your ABA or KHQR receiving code image. For your security, ensure the QR code does not have a specific amount attached (must be $0).</p>
+                                                    </div>
+                                                    
+                                                    <div class="mb-2">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Upload KHQR Code for Refund</label>
+                                                        <input type="file" name="refund_qr" accept="image/*" required
+                                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                                                    </div>
+                                                    @else
+                                                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-2">
+                                                        @if($hasPaid)
+                                                        <p class="font-semibold mb-1"><i class="bi bi-shield-exclamation mr-1"></i> Non-Refundable</p>
+                                                        <p>Because you are cancelling within 24 hours of check-in, your payment is non-refundable per our cancellation policy.</p>
+                                                        @else
+                                                        <p>This booking has not been paid yet. It will be cancelled immediately.</p>
+                                                        @endif
+                                                    </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-2xl">
+                                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                                            Confirm Cancellation
+                                        </button>
+                                        <button type="button" @click="showCancelModal = false" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hotel-gold sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                                            Keep Booking
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endif
         </div>
 

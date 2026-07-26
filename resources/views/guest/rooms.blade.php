@@ -48,14 +48,37 @@
                        class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none">
             </div>
 
+            {{-- Adults / Children Counter --}}
             <div>
-                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Room Type</label>
-                <select name="type" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                    <option value="">All Types</option>
-                    <option value="standard_room"      {{ request('type') === 'standard_room'      ? 'selected' : '' }}>Standard Room</option>
-                    <option value="deluxe_room"        {{ request('type') === 'deluxe_room'        ? 'selected' : '' }}>Deluxe Room</option>
-                    <option value="family_triple_room" {{ request('type') === 'family_triple_room' ? 'selected' : '' }}>Family Triple Room</option>
-                </select>
+                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Guests</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <div>
+                            <div class="text-[0.65rem] text-gray-500 font-semibold uppercase tracking-wider">Adults</div>
+                            <div class="text-gray-800 text-sm font-bold" id="adults-display-rooms">{{ request('adults', 1) }}</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="adjustRoomCount('adults', -1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                            <button type="button" onclick="adjustRoomCount('adults', 1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                        </div>
+                        <input type="hidden" name="adults" id="adults-value-rooms" value="{{ request('adults', 1) }}">
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <div>
+                            <div class="text-[0.65rem] text-gray-500 font-semibold uppercase tracking-wider">Children</div>
+                            <div class="text-gray-800 text-sm font-bold" id="children-display-rooms">{{ request('children', 0) }}</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="adjustRoomCount('children', -1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                            <button type="button" onclick="adjustRoomCount('children', 1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                        </div>
+                        <input type="hidden" name="children" id="children-value-rooms" value="{{ request('children', 0) }}">
+                    </div>
+                </div>
             </div>
 
             <div>
@@ -247,12 +270,7 @@
                                 </template>
                             </div>
                             @endif
-                            {{-- Availability Badge --}}
-                            @if($isAvailable && $roomsLeft > 0)
-                                <span class="absolute top-4 right-4 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full tracking-wide shadow-md flex items-center gap-1.5 border border-emerald-400/30">
-                                    <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
-                                </span>
-                            @else
+                            @if(!($isAvailable && $roomsLeft > 0))
                                 <span class="absolute top-4 right-4 z-10 bg-red-500/90 backdrop-blur-sm text-white text-[0.72rem] font-bold px-3.5 py-1.5 rounded-full tracking-wider shadow-sm flex items-center gap-1.5">
                                     <i class="bi bi-x-circle-fill"></i>Fully Booked
                                 </span>
@@ -265,11 +283,6 @@
                                 <i class="bi bi-door-closed text-5xl block mb-2"></i>
                                 <span class="text-xs font-medium">Test Room</span>
                             </div>
-                            @if($isAvailable && $roomsLeft > 0)
-                                <span class="absolute top-4 right-4 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full tracking-wide shadow-md flex items-center gap-1.5 border border-emerald-400/30">
-                                    <i class="bi bi-check-circle-fill"></i>Available
-                                </span>
-                            @endif
                         </div>
                     @endif
 
@@ -278,7 +291,6 @@
                         <div class="flex justify-between items-center mb-3">
                             <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
                                 <i class="bi bi-people mr-1"></i>Up to {{ $roomType->capacity }} guests
-                                &middot; <span class="text-emerald-700 font-semibold">{{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left</span>
                             </span>
                             <div class="font-playfair text-2xl font-bold text-hotel-gold">
                                 <span data-price-usd="{{ $roomType->price_per_night ?? 0 }}">${{ number_format($roomType->price_per_night ?? 0, 0) }}</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
@@ -356,6 +368,18 @@
                 checkoutEl.value = d.toISOString().split('T')[0];
             }
         });
+    }
+
+    function adjustRoomCount(field, delta) {
+        const valEl  = document.getElementById(field + '-value-rooms');
+        const dispEl = document.getElementById(field + '-display-rooms');
+        if (!valEl || !dispEl) return;
+        const min = field === 'adults' ? 1 : 0;
+        const max = field === 'adults' ? 2 : 2;
+        let cur = parseInt(valEl.value, 10);
+        cur = Math.min(max, Math.max(min, cur + delta));
+        valEl.value    = cur;
+        dispEl.textContent = cur;
     }
 </script>
 @endpush

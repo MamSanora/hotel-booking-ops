@@ -38,25 +38,61 @@
 
                 {{-- Room Number --}}
                 <div>
-                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Room Number</label>
-                    <input type="text" name="room_number" value="{{ old('room_number') }}" required placeholder="e.g. 101"
+                    <label for="room_number" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        Room Number <span class="text-red-400">*</span>
+                    </label>
+                    <input type="text" id="room_number" name="room_number" value="{{ old('room_number') }}" required
                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
                     @error('room_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Room Type (FK to room_types) --}}
+                {{-- Room Type --}}
                 <div>
-                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Room Type</label>
-                    <select name="room_type_id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
-                        <option value="">Select a Room Type...</option>
+                    <label for="room_type_id" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        Room Type <span class="text-red-400">*</span>
+                    </label>
+                    <select id="room_type_id" name="room_type_id" required
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] bg-white">
+                        <option value="">-- Select Room Type --</option>
                         @foreach($roomTypes as $type)
                             <option value="{{ $type->id }}" {{ old('room_type_id') == $type->id ? 'selected' : '' }}>
-                                {{ $type->display_name }} — ${{ number_format($type->price_per_night, 2) }}/night ({{ $type->capacity }} guests)
+                                {{ $type->display_name }}
                             </option>
                         @endforeach
                     </select>
                     @error('room_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    <p class="text-xs text-gray-400 mt-1">Price and capacity are inherited from the room type.</p>
+                </div>
+                
+                {{-- Bed Configuration --}}
+                <div>
+                    <label for="bed_configuration" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        Bed Configuration
+                    </label>
+                    <select id="bed_configuration" name="bed_configuration"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] bg-white">
+                        <option value="">-- Default / Inherit --</option>
+                        <option value="twin" {{ old('bed_configuration') == 'twin' ? 'selected' : '' }}>Twin</option>
+                        <option value="double" {{ old('bed_configuration') == 'double' ? 'selected' : '' }}>Double</option>
+                        <option value="triple" {{ old('bed_configuration') == 'triple' ? 'selected' : '' }}>Triple</option>
+                    </select>
+                    @error('bed_configuration') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                {{-- View Type --}}
+                <div>
+                    <label for="view_type" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        View Type
+                    </label>
+                    <select id="view_type" name="view_type"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] bg-white">
+                        <option value="">-- Default / Inherit --</option>
+                        <option value="city" {{ old('view_type') == 'city' ? 'selected' : '' }}>City View</option>
+                        <option value="pool" {{ old('view_type') == 'pool' ? 'selected' : '' }}>Pool View</option>
+                        <option value="garden" {{ old('view_type') == 'garden' ? 'selected' : '' }}>Garden View</option>
+                        <option value="ocean" {{ old('view_type') == 'ocean' ? 'selected' : '' }}>Ocean View</option>
+                        <option value="none" {{ old('view_type') == 'none' ? 'selected' : '' }}>No Specific View</option>
+                    </select>
+                    @error('view_type') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

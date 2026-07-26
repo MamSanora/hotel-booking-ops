@@ -44,7 +44,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.room-types.update', $roomType) }}" method="POST" class="space-y-6">
+        <form action="{{ route('admin.room-types.update', $roomType) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @method('PUT')
 
@@ -102,6 +102,40 @@
                               placeholder="Describe the room type, amenities, view, etc."
                               class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] resize-none">{{ old('description', $roomType->description) }}</textarea>
                     @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                {{-- Existing Images --}}
+                @if(!empty($roomType->images))
+                <div class="md:col-span-2">
+                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-3">
+                        Current Images
+                    </label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @foreach($roomType->images as $imagePath)
+                            <div class="relative group rounded-xl overflow-hidden border border-gray-200">
+                                <img src="{{ asset('storage/' . $imagePath) }}" alt="Room Image" class="w-full h-32 object-cover">
+                                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <label class="cursor-pointer text-white text-sm font-semibold flex items-center gap-1 bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg">
+                                        <input type="checkbox" name="remove_images[]" value="{{ $imagePath }}" class="hidden">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Click remove on an image to delete it upon saving.</p>
+                </div>
+                @endif
+
+                {{-- Upload New Images --}}
+                <div class="md:col-span-2">
+                    <label for="images" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        Upload Additional Images <span class="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <input type="file" id="images" name="images[]" multiple accept="image/*"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-hotel-gold/10 file:text-hotel-dark hover:file:bg-hotel-gold/20">
+                    <p class="text-xs text-gray-400 mt-1">You can upload multiple images (max 2MB each).</p>
+                    @error('images.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

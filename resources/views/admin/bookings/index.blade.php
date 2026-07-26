@@ -60,6 +60,9 @@
         <a href="{{ route('admin.dashboard') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">
             <i class="bi bi-arrow-left mr-2"></i> Back to Dashboard
         </a>
+        <a href="{{ route('admin.bookings.export') }}" class="bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Export Report (CSV)
+        </a>
     </div>
 
     <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
@@ -93,6 +96,11 @@
                                     <span class="inline-flex items-center gap-1 text-[0.7rem] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
                                         <i class="bi bi-arrow-return-left"></i> Refund Due
                                     </span>
+                                    @if($booking->refund_qr_path)
+                                        <a href="{{ Storage::url($booking->refund_qr_path) }}" target="_blank" class="block mt-1.5 text-[0.75rem] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+                                            <i class="bi bi-qr-code-scan"></i> View Guest KHQR
+                                        </a>
+                                    @endif
                                 </div>
                             @endif
                         </td>
@@ -199,6 +207,13 @@
                                         </button>
                                     </form>
                                 @endif
+
+                                {{-- Print Receipt (always available) --}}
+                                <a href="{{ route('admin.bookings.receipt', $booking->id) }}" target="_blank"
+                                    class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors flex items-center justify-center"
+                                    title="Print Receipt">
+                                    <i class="bi bi-printer"></i>
+                                </a>
 
                                 {{-- Delete (always available) --}}
                                 <form action="{{ route('admin.bookings.destroy', $booking->id) }}" method="POST">

@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Dara Meas Hotel — Phnom Penh, Cambodia')
-@section('meta_description', 'Book your stay at Dara Meas Hotel, a comfortable hotel in the heart of Phnom Penh, Cambodia. Standard Twin, Double, and Deluxe rooms from $35/night.')
+@section('meta_description', 'Book your stay at Dara Meas Hotel, a comfortable hotel in Street 2004, Sen Sok, Phnom Penh, Cambodia. Standard Twin, Double, and Deluxe rooms from $30/night.')
 
 @section('content')
 
@@ -18,16 +18,16 @@
             <div>
                 <span class="inline-flex items-center gap-1.5 text-hotel-gold font-semibold uppercase tracking-widest text-xs mb-4 border border-hotel-gold/40 bg-hotel-gold/15 px-4 py-1.5 rounded-full backdrop-blur-sm">
                     <i class="bi bi-geo-alt-fill text-[0.8rem]"></i>
-                    <span data-en="Toul Kork, Phnom Penh · 2-Star Boutique Hospitality" data-km="ទួលគោក, ភ្នំពេញ · សណ្ឋាគារ ២ ផ្កាយ">Toul Kork, Phnom Penh · 2-Star Boutique Hospitality</span>
+                    <span data-en="Street 2004, Sen Sok · 2-Star Boutique Hospitality" data-km="ស្ត្រឹត 2004, សេនសុក, ភ្នំពេញ · សណ្ឋាគារ ២ ផ្កាយ">Street 2004, Sen Sok · 2-Star Boutique Hospitality</span>
                 </span>
                 <h1 class="font-playfair text-5xl lg:text-[3.8rem] font-extrabold text-white leading-tight mb-6">
                     <span data-en="Warm Hospitality." data-km="ភាពស្វាគមន៍ ពិតប្រាកដ។">Warm Hospitality.</span><br>
                     <span data-en="Authentic Comfort." data-km="ផាសុខភាព សុទ្ធសាធ។">Authentic Comfort.</span>
                 </h1>
                 <p class="text-white/80 text-lg leading-relaxed mb-10 max-w-lg font-light"
-                   data-en="Welcome to Dara Meas Hotel — a clean, welcoming 2-star boutique hotel located right in Toul Kork, Phnom Penh. Enjoy 47 spotless rooms, 24/7 service, and transparent rates starting at $35/night."
-                   data-km="សូមស្វាគមន៍មកកាន់សណ្ឋាគារ ដារា មាស — សណ្ឋាគារ ២ ផ្កាយ ស្អាត សប្បាយ ស្ថិតក្នុងទួលគោក ភ្នំពេញ។ ចំណុះ ៤៧ បន្ទប់ ។ ថ្លៃចាប់ពី $35/យប់។">
-                    Welcome to Dara Meas Hotel — a clean, welcoming 2-star boutique hotel located right in Toul Kork, Phnom Penh. Enjoy 47 spotless rooms, 24/7 service, and transparent rates starting at $35/night.
+                   data-en="Welcome to Dara Meas Hotel — a clean, welcoming 2-star boutique hotel located on Street 2004, Sen Sok, Phnom Penh. Enjoy 41 spotless rooms, 24/7 service, and transparent rates starting at $30/night."
+                   data-km="សូមស្វាគមន៍មកកាន់សណ្ឋាគារ ដារា មាស — សណ្ឋាគារ ២ ផ្កាយ ស្អាត សប្បាយ ស្ថិតក្នុងសេនសុក ភ្នំពេញ។ ចំណុះ ៤១ បន្ទប់ ។ ថ្លៃចាប់ពី $30/យប់។">
+                    Welcome to Dara Meas Hotel — a clean, welcoming 2-star boutique hotel located on Street 2004, Sen Sok, Phnom Penh. Enjoy 41 spotless rooms, 24/7 service, and transparent rates starting at $30/night.
                 </p>
                 <div class="flex flex-wrap gap-4">
                     <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-gradient-to-r from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-hotel-dark font-bold px-8 py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(200,169,110,0.45)] text-[1.05rem]">
@@ -112,10 +112,10 @@
 <div class="container mx-auto px-4 md:px-6 -mt-6 relative z-20 mb-16">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach([
-            ['bi-building',       '47',        'Guest Rooms',    'បន្ទប់អតិថិជន'],
+            ['bi-building',       '41',        'Guest Rooms',    'បន្ទប់អតិថិជន'],
             ['bi-calendar2-check','2019',       'Est. Year',      'ឆ្នាំបង្កើត'],
             ['bi-clock',          '24/7',       'Front Desk',     'ទទួលភ្ញៀវ'],
-            ['bi-geo-alt',        'Phnom Penh', 'Prime Location', 'ទីតាំងល្អ'],
+            ['bi-geo-alt',        'Sen Sok',    'Prime Location', 'ទីតាំងល្អ'],
         ] as [$icon, $value, $label, $labelKm])
         <div class="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.09)] p-5 text-center border border-[#f0ebe2]">
             <i class="bi {{ $icon }} text-hotel-gold text-2xl block mb-2"></i>
@@ -218,13 +218,6 @@
                             {{ $room->displayType() }}
                         </span>
                     </div>
-                    @if($roomsLeft > 0)
-                        <div class="absolute top-4 right-4 z-10">
-                            <span class="bg-emerald-600/95 backdrop-blur-md text-white border border-emerald-400/30 text-[0.74rem] font-bold px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
-                                <i class="bi bi-check-circle-fill"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
-                            </span>
-                        </div>
-                    @endif
                 </div>
                 <div class="p-6 flex flex-col flex-grow">
                     <div class="flex justify-between items-center mb-3">
@@ -323,19 +316,6 @@
                 </p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 transition-all duration-300 hover:bg-white/15 hover:border-hotel-gold/50">
-                        <div class="flex items-start gap-3.5">
-                            <div class="w-10 h-10 rounded-xl bg-hotel-gold text-hotel-dark flex items-center justify-center font-bold text-lg flex-shrink-0 mt-0.5 shadow-md">
-                                <i class="bi bi-airplane-fill"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-white text-sm">Phnom Penh Airport (PNH)</h4>
-                                <p class="text-hotel-gold text-xs font-semibold mt-0.5">15–20 Mins by Car</p>
-                                <p class="text-white/60 text-[0.75rem] mt-1">Private Tuk-Tuk or SUV transfer arranged by front desk.</p>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 transition-all duration-300 hover:bg-white/15 hover:border-hotel-gold/50">
                         <div class="flex items-start gap-3.5">
                             <div class="w-10 h-10 rounded-xl bg-hotel-gold text-hotel-dark flex items-center justify-center font-bold text-lg flex-shrink-0 mt-0.5 shadow-md">
@@ -552,13 +532,13 @@
     }
 
     // ── Guest Counter Stepper ────────────────────────────────────────────────
-    const counters = {
-        adults:   { min: 1, max: 4 },
-        children: { min: 0, max: 4 },
+    const limits = {
+        adults:   { min: 1, max: 2 },
+        children: { min: 0, max: 2 }
     };
 
     function adjustCount(type, delta) {
-        const cfg    = counters[type];
+        const cfg    = limits[type];
         const input  = document.getElementById(type + '-value');
         const display = document.getElementById(type + '-display');
         if (!input || !display) return;

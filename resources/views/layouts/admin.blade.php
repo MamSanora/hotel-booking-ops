@@ -171,11 +171,13 @@
             <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Settings</p>
 
-                <a href="{{ route('admin.payment-gateways.index') }}"
+                {{-- Payment Gateways nav hidden for production deployment (Point 13) --}}
+                {{-- Uncomment to restore: --}}
+                {{-- <a href="{{ route('admin.payment-gateways.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.payment-gateways.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-credit-card text-base w-5 text-center"></i>
                     <span>Payment Gateways</span>
-                </a>
+                </a> --}}
 
                 <a href="{{ route('admin.qr-calculator') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.qr-calculator') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">

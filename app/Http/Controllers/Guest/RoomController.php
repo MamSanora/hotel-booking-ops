@@ -61,9 +61,22 @@ class RoomController extends Controller
         $checkinDate  = $request->input('checkin');
         $checkoutDate = $request->input('checkout');
         $typeFilter   = $request->input('type');
+        $adults       = (int) $request->input('adults', 1);
+        $children     = (int) $request->input('children', 0);
+        $totalGuests  = $adults + $children;
 
         // Load room types — exclude test_room from public listing (internal only).
-        $roomTypes = RoomType::with('rooms')->where('slug', '!=', 'test_room')->get();
+        // Filter by capacity immediately via query to optimize.
+        $roomTypesQuery = RoomType::with('rooms')
+            ->where('slug', '!=', 'test_room')
+            ->where('capacity', '>=', $totalGuests);
+            
+        // If type filter is provided, also apply it to the query
+        if ($typeFilter) {
+            $roomTypesQuery->where('slug', $typeFilter);
+        }
+
+        $roomTypes = $roomTypesQuery->get();
 
         // For each room type, compute virtual availability status and remaining counts.
         // We pass this to the view so it can show "Available" / "Fully Booked" badges and "X rooms left".
@@ -82,11 +95,6 @@ class RoomController extends Controller
                 $availability[$rt->id] = $rt->rooms()->where('current_status', '!=', 'maintenance')->exists();
             }
             $availableCounts[$rt->id] = $rt->getAvailableCount($checkinDate, $checkoutDate);
-        }
-
-        // Filter by type slug if requested.
-        if ($typeFilter) {
-            $roomTypes = $roomTypes->filter(fn ($rt) => $rt->slug === $typeFilter)->values();
         }
 
         // We still need $rooms for backward compat with count() calls in views;
@@ -266,7 +274,7 @@ class RoomController extends Controller
      * Cancel a booking (guest-initiated).
      * Policy: only allowed for pending or booked bookings.
      */
-    public function cancel(Booking $booking): RedirectResponse
+    public function cancel(Request $request, Booking $booking, \App\Services\KhqrValidatorService $validator): RedirectResponse
     {
         $guestId = Auth::user()->guest_id;
 
@@ -279,8 +287,30 @@ class RoomController extends Controller
         $isRefundable = $booking->isRefundable();
         $hasPaid = $booking->transactions()->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])->exists();
 
-        DB::transaction(function () use ($booking, $isRefundable, $hasPaid) {
-            $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+        $refundQrPath = null;
+        if ($isRefundable && $hasPaid) {
+            $request->validate([
+                'refund_qr' => 'required|image|max:5120',
+            ]);
+
+            $path = $request->file('refund_qr')->store('refund_qrs', 'public');
+            $fullPath = storage_path('app/public/' . $path);
+
+            try {
+                $validator->validateRefundQr($fullPath);
+                $refundQrPath = $path;
+            } catch (\Exception $e) {
+                // Delete the invalid file
+                @unlink($fullPath);
+                return back()->with('error', $e->getMessage());
+            }
+        }
+
+        DB::transaction(function () use ($booking, $isRefundable, $hasPaid, $refundQrPath) {
+            $booking->update([
+                'booking_status' => Booking::STATUS_CANCELLED,
+                'refund_qr_path' => $refundQrPath,
+            ]);
 
             if ($isRefundable && $hasPaid) {
                 $booking->transactions()
@@ -438,6 +468,75 @@ class RoomController extends Controller
         $booking->load(['room', 'guest', 'transactions', 'roomServices.requestedItems.catalog']);
 
         return view('guest.invoice', compact('booking'));
+    }
+
+    /**
+     * Check if a room matching specific preferences is available.
+     * Used by the booking form AJAX call to show a warning if preferences aren't met.
+     */
+    public function checkPreferences(Request $request, Room $room)
+    {
+        $request->validate([
+            'check_in_date'    => 'required|date|after_or_equal:today',
+            'check_out_date'   => 'required|date|after:check_in_date',
+            'payment_tier'     => 'required|integer',
+            'bed_type'         => 'nullable|string',
+            'floor_preference' => 'nullable|string',
+            'view_preference'  => 'nullable|string',
+        ]);
+
+        $roomType = $room->roomType;
+        
+        // 1. Is there ANY room available? If not, even without preferences it fails.
+        // We do this to ensure we don't say "preferences available" when the hotel is full.
+        if (!$roomType->hasAvailableVirtualCapacity(
+            $request->check_in_date,
+            $request->check_out_date,
+            $request->payment_tier
+        )) {
+            return response()->json(['available' => false, 'reason' => 'fully_booked']);
+        }
+
+        // 2. Check if there is a physical room that meets the preferences AND is available
+        // Note: pickAvailableRoom already filters by maintenance, cleaning, etc.
+        // We'll run a custom query here similar to pickAvailableRoom but with preference filters.
+        
+        $query = $roomType->rooms()->where('current_status', '!=', 'maintenance');
+        
+        if ($request->bed_type) {
+            $query->where('bed_type', $request->bed_type);
+        }
+        if ($request->floor_preference) {
+            $query->where('floor', $request->floor_preference);
+        }
+        if ($request->view_preference) {
+            $query->where('view_type', $request->view_preference);
+        }
+
+        $matchingRooms = $query->get();
+
+        if ($matchingRooms->isEmpty()) {
+            return response()->json(['available' => false, 'reason' => 'preferences_unavailable']);
+        }
+
+        // 3. Among the matching physical rooms, is at least one of them actually free for these dates?
+        $availableMatch = $matchingRooms->first(function($physicalRoom) use ($request) {
+            // A room is free if it doesn't have an overlapping booking of equal or higher tier
+            $conflict = $physicalRoom->bookings()
+                ->whereIn('booking_status', [Booking::STATUS_PENDING, Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+                ->where('check_in_date', '<', $request->check_out_date)
+                ->where('check_out_date', '>', $request->check_in_date)
+                ->where('payment_tier', '>=', $request->payment_tier)
+                ->exists();
+                
+            return !$conflict;
+        });
+
+        if ($availableMatch) {
+            return response()->json(['available' => true]);
+        }
+
+        return response()->json(['available' => false, 'reason' => 'preferences_unavailable']);
     }
 }
 

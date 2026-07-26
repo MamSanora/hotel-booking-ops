@@ -153,6 +153,19 @@
             </div>
         </button>
 
+        {{-- Pending Refunds --}}
+        <a href="{{ route('admin.bookings.index') }}"
+                class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] text-left w-full group cursor-pointer flex flex-col">
+            <div class="w-12 h-12 rounded-xl {{ $pendingRefundCount > 0 ? 'bg-amber-50 text-amber-500 group-hover:bg-amber-100' : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100' }} flex items-center justify-center text-[1.4rem] mb-4 transition-colors">
+                <i class="bi bi-arrow-return-left"></i>
+            </div>
+            <div class="font-playfair text-3xl font-bold {{ $pendingRefundCount > 0 ? 'text-amber-600' : 'text-hotel-dark' }} leading-none mb-1">{{ $pendingRefundCount }}</div>
+            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Pending Refunds</div>
+            <div class="text-[0.7rem] text-gray-400 font-medium mt-2 flex items-center gap-1 group-hover:text-gray-600 transition-colors">
+                <i class="bi bi-link-45deg"></i> Go to bookings
+            </div>
+        </a>
+
         {{-- System Backup --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] flex flex-col">
             @php
@@ -219,12 +232,22 @@
                 <div class="flex items-center gap-2">
                     <span class="w-4 h-4 rounded-md bg-emerald-400 inline-block"></span>
                     <span class="text-sm font-semibold text-gray-700">Available</span>
-                    <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $availableRooms }}</span>
+                    <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $allRooms->where('current_status', \App\Models\Room::STATUS_AVAILABLE)->count() }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="w-4 h-4 rounded-md bg-red-400 inline-block"></span>
                     <span class="text-sm font-semibold text-gray-700">Occupied</span>
-                    <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $occupiedRooms }}</span>
+                    <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $allRooms->where('current_status', \App\Models\Room::STATUS_OCCUPIED)->count() }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded-md bg-blue-400 inline-block"></span>
+                    <span class="text-sm font-semibold text-gray-700">Cleaning</span>
+                    <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $allRooms->where('current_status', \App\Models\Room::STATUS_CLEANING)->count() }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded-md bg-amber-400 inline-block"></span>
+                    <span class="text-sm font-semibold text-gray-700">Maintenance</span>
+                    <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ $allRooms->where('current_status', \App\Models\Room::STATUS_MAINTENANCE)->count() }}</span>
                 </div>
                 <div class="flex items-center gap-2 ml-auto">
                     <span class="text-xs text-gray-400">Occupancy rate:</span>
@@ -258,36 +281,70 @@
                     <div class="flex flex-wrap gap-3">
                         @foreach($rooms as $room)
                         @php
-                            $isOccupied = $room->isOccupied();
+                            $status = $room->current_status;
                             $guest = $room->activeBooking?->guest;
+                            
+                            $isCleaningStale = false;
+                            if ($status === \App\Models\Room::STATUS_CLEANING && $room->status_updated_at) {
+                                $isCleaningStale = $room->status_updated_at->diffInHours(now()) >= 2;
+                            }
+
+                            $colors = match($status) {
+                                \App\Models\Room::STATUS_OCCUPIED => 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 hover:shadow-md hover:shadow-red-100',
+                                \App\Models\Room::STATUS_CLEANING => 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:shadow-md hover:shadow-blue-100',
+                                \App\Models\Room::STATUS_MAINTENANCE => 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300 hover:shadow-md hover:shadow-amber-100',
+                                default => 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100',
+                            };
+
+                            $dotColor = match($status) {
+                                \App\Models\Room::STATUS_OCCUPIED => 'bg-red-400',
+                                \App\Models\Room::STATUS_CLEANING => 'bg-blue-400',
+                                \App\Models\Room::STATUS_MAINTENANCE => 'bg-amber-400',
+                                default => 'bg-emerald-400',
+                            };
                         @endphp
-                        <div title="{{ $isOccupied ? ($guest?->full_name ?? 'Occupied') : 'Available' }}"
-                             class="relative group flex flex-col items-center justify-center rounded-2xl border-2 font-bold transition-all duration-200 cursor-default select-none
-                                    {{ $isOccupied
-                                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 hover:shadow-md hover:shadow-red-100'
-                                        : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100'
-                                    }}"
-                             style="width: 80px; height: 80px;">
+                        
+                        <div class="relative group" style="width: 80px; height: 80px;">
+                            <div title="{{ ucfirst($status) }}{{ $status === 'occupied' ? ': ' . ($guest?->full_name ?? 'Occupied') : '' }}"
+                                 class="w-full h-full flex flex-col items-center justify-center rounded-2xl border-2 font-bold transition-all duration-200 cursor-pointer select-none {{ $colors }}">
 
-                            {{-- Status dot --}}
-                            <div class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full {{ $isOccupied ? 'bg-red-400' : 'bg-emerald-400' }}"></div>
+                                {{-- Stale Cleaning Warning --}}
+                                @if($isCleaningStale)
+                                    <div class="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse z-20" title="Has been cleaning for > 2 hours">
+                                        <i class="bi bi-exclamation-lg text-xs"></i>
+                                    </div>
+                                @endif
 
-                            {{-- Room Number --}}
-                            <div class="text-lg font-extrabold leading-none">{{ $room->room_number }}</div>
+                                {{-- Status dot --}}
+                                <div class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full {{ $dotColor }}"></div>
 
-                            {{-- Type label --}}
-                            <div class="text-[0.6rem] font-semibold uppercase tracking-wide mt-1 opacity-70 text-center px-1 leading-tight">
-                                {{ Str::limit($room->roomType?->display_name ?? '', 10, '') }}
+                                {{-- Room Number --}}
+                                <div class="text-lg font-extrabold leading-none">{{ $room->room_number }}</div>
+
+                                {{-- Type label --}}
+                                <div class="text-[0.6rem] font-semibold uppercase tracking-wide mt-1 opacity-70 text-center px-1 leading-tight">
+                                    {{ Str::limit($room->roomType?->display_name ?? '', 10, '') }}
+                                </div>
+
+                                {{-- Occupied: guest name tooltip on hover --}}
+                                @if($status === \App\Models\Room::STATUS_OCCUPIED)
+                                <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-hotel-dark text-white text-[0.65rem] font-semibold px-2 py-1 rounded-lg whitespace-nowrap
+                                            opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-lg">
+                                    {{ Str::limit($guest?->full_name ?? 'Occupied', 20) }}
+                                </div>
+                                @endif
+                                
+                                {{-- Status Dropdown Overlay --}}
+                                <form action="{{ route('admin.rooms.quick-status', $room->id) }}" method="POST" class="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center pointer-events-none group-hover:pointer-events-auto">
+                                    @csrf @method('PATCH')
+                                    <select name="current_status" onchange="this.form.submit()" class="text-[0.6rem] font-bold uppercase w-11/12 p-1 border border-gray-300 rounded shadow-sm focus:outline-none">
+                                        <option value="available" {{ $status == 'available' ? 'selected' : '' }}>Ready</option>
+                                        <option value="cleaning" {{ $status == 'cleaning' ? 'selected' : '' }}>Clean</option>
+                                        <option value="maintenance" {{ $status == 'maintenance' ? 'selected' : '' }}>Maint</option>
+                                    </select>
+                                    <div class="text-[0.55rem] text-gray-400 mt-1">Change</div>
+                                </form>
                             </div>
-
-                            {{-- Occupied: guest name tooltip on hover --}}
-                            @if($isOccupied)
-                            <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-hotel-dark text-white text-[0.65rem] font-semibold px-2 py-1 rounded-lg whitespace-nowrap
-                                        opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-lg">
-                                {{ Str::limit($guest?->full_name ?? 'Occupied', 20) }}
-                                <div class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-hotel-dark"></div>
-                            </div>
-                            @endif
                         </div>
                         @endforeach
                     </div>

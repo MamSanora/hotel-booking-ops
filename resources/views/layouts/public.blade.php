@@ -89,6 +89,10 @@
                         <i class="bi bi-door-open mr-1"></i>
                         <span data-en="Rooms" data-km="បន្ទប់">Rooms</span>
                     </a>
+                    <a href="{{ route('gallery.index') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('gallery*') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
+                        <i class="bi bi-images mr-1"></i>
+                        <span data-en="Gallery" data-km="វិចិត្រសាល">Gallery</span>
+                    </a>
                     <a href="{{ route('about') }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('about*') ? 'text-hotel-gold bg-hotel-gold/10' : 'text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10' }}">
                         <i class="bi bi-info-circle mr-1"></i>
                         <span data-en="About" data-km="អំពីយើង">About</span>
@@ -187,6 +191,7 @@
             <div class="px-4 py-4 space-y-2">
                 <a href="{{ url('/') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('/') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">Home</a>
                 <a href="{{ route('rooms.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('rooms*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">Rooms</a>
+                <a href="{{ route('gallery.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('gallery*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">Gallery</a>
                 <a href="{{ route('about') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('about*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">About</a>
                 <a href="{{ route('contact') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->is('contact*') ? 'text-hotel-gold bg-white/5' : 'text-white/85' }}">Contact</a>
 
@@ -310,7 +315,7 @@
                     <ul class="space-y-3 text-sm">
                         <li class="flex items-start">
                             <i class="bi bi-geo-alt text-hotel-gold mr-3 mt-0.5"></i> 
-                            <span>Street 2004, Sen Sok, Phnom Penh, Cambodia</span>
+                            <span>#40E Street 2004, Sangkat Tuek Thla, Khan Sen Sok, Phnom Penh, Cambodia</span>
                         </li>
                         <li class="flex items-start">
                             <i class="bi bi-telephone text-hotel-gold mr-3 mt-0.5"></i> 

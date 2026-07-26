@@ -45,8 +45,11 @@
             <a href="{{ route('admin.room-types.index') }}" class="bg-white hover:bg-gray-50 text-hotel-dark border border-gray-200 px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center">
                 <i class="bi bi-tag mr-2 text-hotel-gold"></i> Room Types
             </a>
+            <a href="{{ route('admin.rooms.bulk-create') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center shadow-sm">
+                <i class="bi bi-copy mr-2"></i> Bulk Generate
+            </a>
             <a href="{{ route('admin.rooms.create') }}" class="bg-hotel-gold hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center shadow-lg shadow-hotel-gold/20">
-                <i class="bi bi-plus-lg mr-2"></i> Add New Room
+                <i class="bi bi-plus-lg mr-2"></i> Add Room
             </a>
         </div>
     </div>
