@@ -130,46 +130,39 @@ class RoomController extends Controller
         $requestedTier = (int) $validated['payment_tier'];
         $roomType      = $room->roomType;
 
-        // ── Step 1: Predictive overbooking check ────────────────────────────
-        // Check virtual capacity at the Room Type level (not physical room level).
-        // A 10% overbooking buffer is applied — e.g., 10 physical rooms = 11 virtual slots.
-        // Tier priority is also applied: a 50%-tier guest only competes against
-        // 50%+ tier bookings, allowing higher-tier guests to always find capacity.
-        if (!$roomType->hasAvailableVirtualCapacity(
-            $validated['check_in_date'],
-            $validated['check_out_date'],
-            $requestedTier
-        )) {
-            return back()
-                ->withErrors(['check_in_date' => 'This room type is fully booked for the selected dates. Please choose different dates or another room type.'])
-                ->withInput();
-        }
-
-        // ── Step 2: Auto-assign the best physical room ──────────────────────
-        // The guest doesn't pick a physical room — we do it for them.
-        // We prefer a completely empty room; fall back to a room with only
-        // lower-tier bookings (tier priority allows this).
-        $assignedRoom = $roomType->pickAvailableRoom(
-            $validated['check_in_date'],
-            $validated['check_out_date'],
-            $requestedTier
-        );
-
-        // Safety net: if pickAvailableRoom returns null (shouldn't happen after
-        // the virtual capacity check, but defend against a race window), use
-        // the original room from the URL as a last resort.
-        if (!$assignedRoom) {
-            $assignedRoom = $room;
-        }
-
-        // GuestAuth → guest_id (bookings are linked to Guest, not GuestAuth).
+        // GuestAuth -> guest_id (bookings are linked to Guest, not GuestAuth).
         $guestId = Auth::user()->guest_id;
 
-        $booking = DB::transaction(function () use ($validated, $assignedRoom, $roomType, $guestId, $requestedTier) {
-            $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
-                ->diffInDays(Carbon::parse($validated['check_out_date'])));
+        try {
+            $booking = DB::transaction(function () use ($validated, $room, $roomType, $guestId, $requestedTier) {
+                // Lock the room type to prevent concurrent overbooking evaluations.
+                // This is the core fix: concurrent requests will queue here.
+                $lockedRoomType = \App\Models\RoomType::where('id', $roomType->id)->lockForUpdate()->first();
 
-            $total = $nights * (float) $roomType->price_per_night;
+                // ── Step 1: Predictive overbooking check (Thread-Safe) ────────────────────────────
+                if (!$lockedRoomType->hasAvailableVirtualCapacity(
+                    $validated['check_in_date'],
+                    $validated['check_out_date'],
+                    $requestedTier
+                )) {
+                    throw new \Exception('CAPACITY_EXHAUSTED');
+                }
+
+                // ── Step 2: Auto-assign the best physical room ──────────────────────
+                $assignedRoom = $lockedRoomType->pickAvailableRoom(
+                    $validated['check_in_date'],
+                    $validated['check_out_date'],
+                    $requestedTier
+                );
+
+                if (!$assignedRoom) {
+                    $assignedRoom = $room;
+                }
+
+                $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
+                    ->diffInDays(Carbon::parse($validated['check_out_date'])));
+
+                $total = $nights * (float) $lockedRoomType->price_per_night;
 
             // Deposit = total × (tier / 100). For 100% tier this equals total.
             $depositAmount = round($total * ($requestedTier / 100), 2);
@@ -244,7 +237,15 @@ class RoomController extends Controller
             ]);
 
             return $booking;
-        });
+            });
+        } catch (\Exception $e) {
+            if ($e->getMessage() === 'CAPACITY_EXHAUSTED') {
+                return back()
+                    ->withErrors(['check_in_date' => 'This room type is fully booked for the selected dates. Please choose different dates or another room type.'])
+                    ->withInput();
+            }
+            throw $e;
+        }
 
         return redirect()
             ->route('payment.show', $booking->id)

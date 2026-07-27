@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -34,7 +35,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Transaction extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     public const STATUS_PENDING  = 'pending';
     public const STATUS_PARTIAL  = 'partial';
