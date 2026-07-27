@@ -25,10 +25,11 @@ class KhqrGenerator
      * Convenience factory: reads merchant credentials from config and
      * generates a KHQR string for the given USD amount.
      *
-     * @param  float  $amount  The exact amount to encode in the QR (e.g. 6.00).
-     * @return string          The complete EMVCo KHQR payload string.
+     * @param  float  $amount           The exact amount to encode in the QR (e.g. 6.00).
+     * @param  string $bookingReference The booking reference (e.g. BK-00042) to embed.
+     * @return string                   The complete EMVCo KHQR payload string.
      */
-    public static function forAmount(float $amount): string
+    public static function forAmount(float $amount, string $bookingReference = ''): string
     {
         $merchantName  = config('telegram.aba_merchant_name', 'KEO SAMNANG DARAMEAS');
         $accountNumber = config('telegram.aba_account_number', '');
@@ -36,8 +37,19 @@ class KhqrGenerator
         if (empty($accountNumber)) {
             Log::warning('KhqrGenerator: TELEGRAM_ABA_ACCOUNT_NUMBER is not set in .env');
         }
+        
+        // Extracted from Keo Samnang's original qr_30.00.png static QR code
+        $keoSamnangTag68 = '0010PAYWAY@ABA01071852379020903238434906199FF998462822479918Q99340013178498462822401131816541580224';
 
-        return self::generate($merchantName, $accountNumber, $amount);
+        return self::generate($merchantName, $accountNumber, $amount, '840', $bookingReference, $keoSamnangTag68);
+    }
+
+    /**
+     * Generates a KHQR string specifically for Mam Sanora.
+     */
+    public static function forMamSanora(float $amount, string $bookingReference = ''): string
+    {
+        return self::generate('MAM SANORA DARA MEAS', '126072417440245', $amount, '840', $bookingReference, '0010PAYWAY@ABA010718485360209032383462');
     }
 
     /**
@@ -47,13 +59,17 @@ class KhqrGenerator
      * @param  string  $accountNumber  ABA account number (e.g. 126072520000678).
      * @param  float   $amount         Transaction amount in USD.
      * @param  string  $currency       ISO 4217 numeric code. 840 = USD, 116 = KHR.
+     * @param  string  $bookingRef     Optional booking reference for Tag 62.
+     * @param  string  $paywayTag68    Optional ABA PayWay terminal string (Tag 68).
      * @return string
      */
     public static function generate(
         string $merchantName,
         string $accountNumber,
         float  $amount,
-        string $currency = '840'
+        string $currency = '840',
+        string $bookingRef = '',
+        string $paywayTag68 = ''
     ): string {
         // Tag 00: Payload Format Indicator
         $payload  = self::tlv('00', '01');
@@ -83,8 +99,16 @@ class KhqrGenerator
         $payload .= self::tlv('60', 'PHNOM PENH');
 
         // Tag 62: Additional Data Field Template
-        //   Sub-tag 01: Bill Number / Invoice Reference
-        $sub62  = self::tlv('01', 'INV-' . time());
+        //   Sub-tag 01: Bill Number / Invoice Reference (ABA copies this to the Transfer Remark)
+        $billNumber = empty($bookingRef) ? ('INV-' . time()) : $bookingRef;
+        $sub62  = self::tlv('01', $billNumber);
+        
+        // Inject ABA PayWay terminal info into Sub-tag 68 if provided.
+        // This is what forces ABA to route it as a Merchant payment instead of Personal.
+        if (!empty($paywayTag68)) {
+            $sub62 .= self::tlv('68', $paywayTag68);
+        }
+        
         $payload .= self::tlv('62', $sub62);
 
         // Tag 63: CRC-16/CCITT-FALSE checksum (4 hex characters, appended last)

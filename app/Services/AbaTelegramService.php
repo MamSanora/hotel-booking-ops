@@ -24,8 +24,8 @@ use Illuminate\Support\Facades\Log;
  *      message, extracts the booking reference, and marks the transaction paid.
  *
  * Health check:
- *   isConfigured() ? TELEGRAM_BOT_TOKEN is set in .env
- *   isReachable()  ? Telegram Bot API /getMe responds with ok:true
+ *   isConfigured() → TELEGRAM_BOT_TOKEN is set in .env
+ *   isReachable()  → Telegram Bot API /getMe responds with ok:true
  *
  * File: app/Services/AbaTelegramService.php
  */
@@ -79,19 +79,24 @@ class AbaTelegramService implements PaymentGatewayInterface
 
     /**
      * Parse a Telegram message text (forwarded from ABA bot) and attempt to
-     * match it against a pending transaction by the booking reference embedded
-     * in the "Remark" field.
+     * match it against a transaction by the booking reference embedded in the
+     * "Remark" field.
      *
      * ABA notification messages generally look like:
      *   "You received $25.00 from John Doe.
      *    Remark: BK-00042
      *    ..."
      *
-     * We extract the remark and amount, then look for a matching pending
-     * transaction and confirm it.
+     * Handles two scenarios:
+     *   1. Normal first payment   — pending transaction exists → confirm it,
+     *                               then promote the booking and assign a room.
+     *   2. Duplicate / overpayment — no pending transaction found → record a
+     *                               new overpayment transaction and alert staff
+     *                               via special_requests so the money can be
+     *                               refunded on arrival.
      *
      * @param  string $messageText  Raw text of the Telegram message
-     * @return bool                 True if a matching transaction was confirmed
+     * @return bool                 True if a matching transaction was handled
      */
     public function processIncomingMessage(string $messageText): bool
     {
@@ -117,16 +122,16 @@ class AbaTelegramService implements PaymentGatewayInterface
 
         // -- Find matching pending transaction -------------------------------
         $transaction = Transaction::where('booking_id', $bookingId)
-            ->where('payment_method', Transaction::METHOD_TELEGRAM)
+            ->whereIn('payment_method', [Transaction::METHOD_TELEGRAM, Transaction::METHOD_KHQR])
             ->where('payment_status', Transaction::STATUS_PENDING)
             ->latest()
             ->first();
 
+        // -- Overpayment / duplicate payment detection -----------------------
+        // If there is no pending transaction, the booking was already paid.
+        // Record the duplicate as a new transaction and alert staff.
         if (! $transaction) {
-            Log::warning('AbaTelegramService: no matching pending transaction', [
-                'booking_id' => $bookingId,
-            ]);
-            return false;
+            return $this->handleOverpayment($bookingId, $amount);
         }
 
         $booking = $transaction->booking;
@@ -146,15 +151,10 @@ class AbaTelegramService implements PaymentGatewayInterface
             : Transaction::STATUS_PARTIAL;
 
         $transaction->update([
-            'amount_paid'    => $confirmedAmount,
-            'payment_status' => $newStatus,
+            'amount_paid'     => $confirmedAmount,
+            'payment_status'  => $newStatus,
             'tracking_status' => 'TELEGRAM_CONFIRMED',
         ]);
-
-        // Promote booking if still pending.
-        if ($booking->booking_status === \App\Models\Booking::STATUS_PENDING) {
-            $booking->update(['booking_status' => \App\Models\Booking::STATUS_BOOKED]);
-        }
 
         Log::info('AbaTelegramService: payment confirmed via Telegram', [
             'booking_id'     => $bookingId,
@@ -163,8 +163,150 @@ class AbaTelegramService implements PaymentGatewayInterface
             'new_status'     => $newStatus,
         ]);
 
+        // -- Promote booking (handles browser-closed scenario) ---------------
+        // This runs on the server, so it fires even if the guest closes the
+        // payment page before the JS polling detects the confirmation.
+        if ($booking->booking_status === \App\Models\Booking::STATUS_PENDING) {
+            $this->promoteBookingAfterPayment($booking);
+        }
+
         return true;
     }
+
+    // -- Booking Promotion Logic --------------------------------------------
+
+    /**
+     * Promote a booking from 'pending' to 'booked' after a confirmed payment.
+     *
+     * Race Condition Handling:
+     *   Checks if the currently assigned room is still available. If it has
+     *   been snatched (another guest at the same tier paid first), the system
+     *   automatically searches for any other available room of the SAME type.
+     *
+     *   - If an alternate room is found  → silently reassign and mark 'booked'.
+     *     The guest never experiences a failure; the receptionist sees the new
+     *     room number in the dashboard.
+     *   - If no alternate room exists    → mark as 'snatched' and flag for a
+     *     refund. Only happens in a fully-sold-out scenario for that room type.
+     *
+     * @param  \App\Models\Booking $booking
+     */
+    public function promoteBookingAfterPayment(\App\Models\Booking $booking): void
+    {
+        $room = \App\Models\Room::find($booking->room_id);
+
+        $roomIsAvailable = $room && $room->isAvailableForDates(
+            $booking->check_in_date,
+            $booking->check_out_date,
+            $booking->id,
+            $booking->payment_tier
+        );
+
+        if ($roomIsAvailable) {
+            // Happy path: the room is still free.
+            $booking->update(['booking_status' => \App\Models\Booking::STATUS_BOOKED]);
+
+            Log::info('AbaTelegramService: booking promoted to booked', [
+                'booking_id' => $booking->id,
+                'room_id'    => $booking->room_id,
+            ]);
+            return;
+        }
+
+        // The assigned room was snatched. Try to find another of the same type.
+        $roomTypeId    = $room?->room_type_id ?? null;
+        $alternateRoom = null;
+
+        if ($roomTypeId) {
+            $alternateRoom = \App\Models\Room::where('room_type_id', $roomTypeId)
+                ->where('id', '!=', $booking->room_id)
+                ->availableForDates(
+                    $booking->check_in_date,
+                    $booking->check_out_date,
+                    null,
+                    $booking->payment_tier
+                )
+                ->first();
+        }
+
+        if ($alternateRoom) {
+            // Auto-reassign to the alternate room. Guest is unaffected.
+            $booking->update([
+                'room_id'        => $alternateRoom->id,
+                'booking_status' => \App\Models\Booking::STATUS_BOOKED,
+            ]);
+
+            Log::info('AbaTelegramService: room snatched, auto-reassigned to alternate', [
+                'booking_id'       => $booking->id,
+                'original_room_id' => $room?->id,
+                'new_room_id'      => $alternateRoom->id,
+            ]);
+        } else {
+            // Fully sold out for this room type. Staff must manually refund.
+            $booking->update([
+                'booking_status'   => \App\Models\Booking::STATUS_SNATCHED,
+                'special_requests' => '[REFUND REQUIRED: Room type fully booked. No alternate available.] '
+                    . $booking->special_requests,
+            ]);
+
+            Log::warning('AbaTelegramService: booking snatched, no alternate room found', [
+                'booking_id'   => $booking->id,
+                'room_type_id' => $roomTypeId,
+            ]);
+        }
+    }
+
+    // -- Overpayment Handling -----------------------------------------------
+
+    /**
+     * Handle a duplicate / second payment for an already-confirmed booking.
+     *
+     * Creates a new transaction record with tracking_status = 'OVERPAYMENT'
+     * and appends an alert to special_requests so the receptionist sees it
+     * immediately when the guest checks in.
+     *
+     * @param  int        $bookingId
+     * @param  float|null $amount     Amount parsed from the Telegram message
+     * @return bool
+     */
+    protected function handleOverpayment(int $bookingId, ?float $amount): bool
+    {
+        $booking = \App\Models\Booking::find($bookingId);
+
+        if (! $booking) {
+            Log::warning('AbaTelegramService: overpayment received for unknown booking', [
+                'booking_id' => $bookingId,
+            ]);
+            return false;
+        }
+
+        $overpaidAmount = $amount ?? 0.00;
+
+        // Record the duplicate payment so accounting has a clear trail.
+        Transaction::create([
+            'booking_id'      => $bookingId,
+            'amount_paid'     => $overpaidAmount,
+            'payment_for'     => Transaction::FOR_BOOKING,
+            'payment_method'  => Transaction::METHOD_TELEGRAM,
+            'payment_status'  => Transaction::STATUS_FULL,
+            'tracking_status' => 'OVERPAYMENT',
+        ]);
+
+        // Append an alert to special_requests so it's visible on the reception dashboard.
+        $alert = '[OVERPAYMENT ALERT: $' . number_format($overpaidAmount, 2) . ' received twice. Refund on arrival.]';
+        $booking->update([
+            'special_requests' => trim($alert . ' ' . $booking->special_requests),
+        ]);
+
+        Log::warning('AbaTelegramService: overpayment detected and recorded', [
+            'booking_id'      => $bookingId,
+            'overpaid_amount' => $overpaidAmount,
+        ]);
+
+        return true;
+    }
+
+    // -- Messaging ----------------------------------------------------------
 
     /**
      * Send a text message back to a specific Telegram chat.

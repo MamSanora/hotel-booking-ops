@@ -53,6 +53,8 @@ class AdminRoomTypeController extends Controller
             'capacity'        => ['required', 'integer', 'min:1', 'max:20'],
             'price_per_night' => ['required', 'numeric', 'min:0'],
             'description'     => ['nullable', 'string', 'max:2000'],
+            'is_visible'      => ['nullable', 'boolean'],
+            'use_mam_sanora_qr' => ['nullable', 'boolean'],
         ], [
             'display_name.unique'      => 'A room type with this name already exists.',
             'display_name.required'    => 'Please provide a room type name.',
@@ -84,6 +86,8 @@ class AdminRoomTypeController extends Controller
             'capacity'        => $validated['capacity'],
             'price_per_night' => $validated['price_per_night'],
             'description'     => $validated['description'] ?? null,
+            'is_visible'      => $request->has('is_visible'),
+            'use_mam_sanora_qr' => $request->has('use_mam_sanora_qr'),
             'images'          => empty($images) ? null : $images,
         ]);
 
@@ -114,6 +118,8 @@ class AdminRoomTypeController extends Controller
             'capacity'        => ['required', 'integer', 'min:1', 'max:20'],
             'price_per_night' => ['required', 'numeric', 'min:0'],
             'description'     => ['nullable', 'string', 'max:2000'],
+            'is_visible'      => ['nullable', 'boolean'],
+            'use_mam_sanora_qr' => ['nullable', 'boolean'],
         ], [
             'display_name.unique'      => 'A room type with this name already exists.',
             'display_name.required'    => 'Please provide a room type name.',
@@ -159,6 +165,8 @@ class AdminRoomTypeController extends Controller
             'capacity'        => $validated['capacity'],
             'price_per_night' => $validated['price_per_night'],
             'description'     => $validated['description'] ?? null,
+            'is_visible'      => $request->has('is_visible'),
+            'use_mam_sanora_qr' => $request->has('use_mam_sanora_qr'),
             'images'          => empty($images) ? null : $images,
         ]);
 

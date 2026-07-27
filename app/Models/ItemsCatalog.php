@@ -25,6 +25,7 @@ class ItemsCatalog extends Model
     protected $fillable = [
         'item_name',
         'category',
+        'price',
         'created_by_admin_id',
     ];
 

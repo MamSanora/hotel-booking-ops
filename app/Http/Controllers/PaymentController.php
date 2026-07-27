@@ -60,6 +60,10 @@ class PaymentController extends Controller
             ->latest()
             ->firstOrFail();
 
+        if ($booking->room->roomType->use_mam_sanora_qr) {
+            return $this->showMamSanoraStatic($booking, $transaction);
+        }
+
         return match ($transaction->payment_method) {
             Transaction::METHOD_ABA      => $this->showPayWay($booking, $transaction),
             Transaction::METHOD_TELEGRAM => $this->showAbaTelegram($booking, $transaction),
@@ -130,12 +134,23 @@ class PaymentController extends Controller
     {
         $abaAccountNumber = $this->abaTelegramService->getAbaAccountNumber();
         $reference        = $booking->referenceNumber();
+        $khqrString       = null;
+
+        if ($booking->room->room_type_id == 4) {
+            $amount = $transaction->amount_paid > 0
+                ? $transaction->amount_paid
+                : $booking->depositAmount();
+            
+            // Mam Sanora credentials for Test Room
+            $khqrString = \App\Services\KhqrGenerator::generate('MAM SANORA', '126072315150668', $amount, '840', $reference);
+        }
 
         return view('payment.telegram-transfer', compact(
             'booking',
             'transaction',
             'abaAccountNumber',
             'reference',
+            'khqrString'
         ));
     }
 
@@ -154,8 +169,30 @@ class PaymentController extends Controller
      */
     protected function showKhqrAbaStatic(Booking $booking, Transaction $transaction): View
     {
-        $amount    = (float) $transaction->amount_paid;
-        $khqrString = \App\Services\KhqrGenerator::forAmount($amount);
+        $amount = $transaction->amount_paid > 0
+            ? $transaction->amount_paid
+            : $booking->depositAmount();
+
+        // Inject the booking reference into the KHQR so ABA sets it as the transfer remark!
+        $khqrString = \App\Services\KhqrGenerator::forAmount($amount, $booking->referenceNumber());
+
+        return view('payment.payway-static-qr', compact(
+            'booking',
+            'transaction',
+            'khqrString',
+        ));
+    }
+    
+    /**
+     * Display the Mam Sanora dynamic KHQR payment page.
+     */
+    protected function showMamSanoraStatic(Booking $booking, Transaction $transaction): View
+    {
+        $amount = $transaction->amount_paid > 0
+            ? $transaction->amount_paid
+            : $booking->depositAmount();
+
+        $khqrString = \App\Services\KhqrGenerator::forMamSanora($amount, $booking->referenceNumber());
 
         return view('payment.payway-static-qr', compact(
             'booking',
@@ -165,102 +202,57 @@ class PaymentController extends Controller
     }
 
 
-    // ── Status Polling Endpoint (Bakong only) ──────────────────────────────
+    // ── Status Polling Endpoint (Local Database verification via Telegram) ──
 
     /**
-     * AJAX polling endpoint — check if a KHQR payment has been received.
+     * AJAX polling endpoint — check if a Telegram payment has been received.
      *
-     * The frontend calls this every few seconds. We query the Bakong Open
-     * API using the md5_hash. If paid, we mark the transaction as full and
-     * the booking as booked, then return a redirect URL for the frontend.
+     * The frontend calls this every few seconds. It checks if the
+     * TelegramWebhookController has marked the transaction as paid.
+     *
+     * All complex booking promotion logic (room reassignment, overpayment
+     * detection) is handled server-side inside AbaTelegramService when the
+     * webhook fires — this endpoint only needs to report the final result.
      *
      * Returns JSON:
      *   { "paid": false }
      *   { "paid": true, "redirect": "/payment/success/123" }
+     *   { "paid": true, "redirect": "/payment/failed" }  ← fully sold out
      */
     public function checkStatus(Request $request, Booking $booking): JsonResponse
     {
         $this->authorizeBookingAccess($booking);
 
-        // If already confirmed (booked or still checked-in after an extension), return success.
-        if (in_array($booking->booking_status, [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])) {
-            // Only redirect to success immediately if there are no more pending transactions.
-            $hasPending = $booking->transactions()
-                ->where('payment_status', Transaction::STATUS_PENDING)
-                ->exists();
+        // Refresh the booking from DB so we get the latest status set by the webhook.
+        $booking->refresh();
 
-            if (! $hasPending) {
-                return response()->json([
-                    'paid'     => true,
-                    'redirect' => route('payment.success', $booking->id),
-                ]);
-            }
-        }
-
-        $transaction = $booking->transactions()
-            ->where('payment_status', Transaction::STATUS_PENDING)
-            ->where('payment_method', Transaction::METHOD_KHQR)
-            ->latest()
-            ->first();
-
-        if (! $transaction || ! $transaction->md5_hash) {
+        // Still waiting for payment.
+        if ($booking->booking_status === Booking::STATUS_PENDING) {
             return response()->json(['paid' => false]);
         }
 
-        $isPaid = $this->bakongApiService->checkPayment($transaction);
-
-        if ($isPaid) {
-            $amount = $transaction->amount_paid > 0
-                ? $transaction->amount_paid
-                : $booking->depositAmount();
-
-            $transaction->update([
-                'amount_paid'    => $amount,
-                'payment_status' => ($amount + 0.01 >= (float)$booking->total_price)
-                    ? Transaction::STATUS_FULL
-                    : Transaction::STATUS_PARTIAL,
-            ]);
-
-            // Only promote to 'booked' if the booking was still pending.
-            // A checked-in guest paying for an extension stays checked-in.
-            if ($booking->booking_status === Booking::STATUS_PENDING) {
-                $room = \App\Models\Room::find($booking->room_id);
-                // Race condition check: is there now a SAME-tier (or higher) booking
-                // that completed payment before this one? Pass the booking's tier so
-                // we don't cancel just because a lower-tier double-booking exists.
-                if (!$room || !$room->isAvailableForDates(
-                    $booking->check_in_date,
-                    $booking->check_out_date,
-                    $booking->id,
-                    $booking->payment_tier
-                )) {
-                    $booking->update([
-                        'booking_status'   => Booking::STATUS_SNATCHED,
-                        'special_requests' => '[RACE CONDITION: SAME-TIER BOOKING SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
-                    ]);
-
-                    return response()->json([
-                        'paid'     => true,
-                        'redirect' => route('payment.failed'),
-                    ]);
-                }
-
-                $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
-            }
-
+        // Payment was received but the room type was fully sold out — refund required.
+        if ($booking->booking_status === Booking::STATUS_SNATCHED) {
             return response()->json([
                 'paid'     => true,
-                'redirect' => route('payment.success', $booking->id),
+                'redirect' => route('payment.failed'),
             ]);
         }
 
-        return response()->json(['paid' => false]);
+        // All other statuses (booked, checked-in, etc.) mean payment succeeded.
+        return response()->json([
+            'paid'     => true,
+            'redirect' => route('payment.success', $booking->id),
+        ]);
     }
 
     // ── Dev / Demo Helper ──────────────────────────────────────────────────
 
     /**
      * Simulate a successful payment for development / demo.
+     *
+     * Mirrors the exact same code path as the real Telegram webhook so that
+     * dev testing (race conditions, auto-reassign, overpayments) is accurate.
      * Must NEVER be reachable in production.
      */
     public function simulatePay(Request $request, Booking $booking): RedirectResponse
@@ -279,33 +271,23 @@ class PaymentController extends Controller
 
             $transaction->update([
                 'amount_paid'     => $amount,
-                'payment_status'  => ($amount + 0.01 >= (float)$booking->total_price)
+                'payment_status'  => ($amount + 0.01 >= (float) $booking->total_price)
                     ? Transaction::STATUS_FULL
                     : Transaction::STATUS_PARTIAL,
                 'tracking_status' => 'SIMULATED',
             ]);
         }
 
-        // Only promote to 'booked' if the booking hasn't advanced further.
-        // A checked-in guest paying for an extension stays checked-in.
+        // Use the same promotion logic as the real webhook for dev parity.
         if ($booking->booking_status === Booking::STATUS_PENDING) {
-            $room = \App\Models\Room::find($booking->room_id);
-            if (!$room || !$room->isAvailableForDates(
-                $booking->check_in_date,
-                $booking->check_out_date,
-                $booking->id,
-                $booking->payment_tier
-            )) {
-                $booking->update([
-                    'booking_status'   => Booking::STATUS_SNATCHED,
-                    'special_requests' => '[RACE CONDITION: SAME-TIER BOOKING SNATCHED. REFUND REQUIRED] ' . $booking->special_requests,
-                ]);
+            $this->abaTelegramService->promoteBookingAfterPayment($booking);
+        }
 
-                return redirect()->route('payment.failed')
-                    ->with('error', 'Payment simulated, but the room was booked by someone else at the same tier moments ago! Refund required.');
-            }
+        $booking->refresh();
 
-            $booking->update(['booking_status' => Booking::STATUS_BOOKED]);
+        if ($booking->booking_status === Booking::STATUS_SNATCHED) {
+            return redirect()->route('payment.failed')
+                ->with('error', 'Simulated: payment received but room type was fully sold out. Refund required.');
         }
 
         return redirect()->route('payment.success', $booking->id)

@@ -73,7 +73,7 @@
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                         </span>
-                        Awaiting receptionist confirmation&hellip;
+                        Awaiting payment confirmation&hellip;
                     </div>
                     <i class="bi bi-bell text-hotel-gold text-sm"></i>
                 </div>
@@ -156,5 +156,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Poll the server every 3 seconds to see if Telegram webhook marked it paid
+        const pollInterval = setInterval(() => {
+            fetch("{{ route('payment.check-status', $booking->id) }}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.paid && data.redirect) {
+                        clearInterval(pollInterval);
+                        window.location.href = data.redirect;
+                    }
+                })
+                .catch(err => console.error('Polling error:', err));
+        }, 3000);
+    });
+</script>
 
 @endsection

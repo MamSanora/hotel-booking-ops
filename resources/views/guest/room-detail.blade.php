@@ -270,41 +270,77 @@
                         </div>
 
                         {{-- Guest Preferences --}}
+                        @if($availableBeds->count() > 0 || $availableFloors->count() > 0 || $availableViews->count() > 0)
                         <div class="mb-4">
                             <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-3">Room Preferences <span class="font-normal normal-case lowercase">(optional)</span></label>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {{-- Bed Type --}}
+                                @if($availableBeds->count() > 1)
                                 <div>
                                     <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bed Type</label>
                                     <select name="bed_type" id="bed_type" class="w-full border-[1.5px] border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.75rem top 50%; background-size: 0.65rem auto;">
                                         <option value="">No Preference</option>
-                                        <option value="twin" {{ old('bed_type') === 'twin' ? 'selected' : '' }}>Twin Beds</option>
-                                        <option value="double" {{ old('bed_type') === 'double' ? 'selected' : '' }}>Double Bed</option>
+                                        @foreach($availableBeds as $bed)
+                                            <option value="{{ $bed }}" {{ old('bed_type') === $bed ? 'selected' : '' }}>
+                                                {{ ucfirst($bed) . ' Bed' . (in_array($bed, ['twin', 'triple']) ? 's' : '') }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
+                                @elseif($availableBeds->count() === 1)
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bed Type</label>
+                                    <div class="w-full border-[1.5px] border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-[0.9rem] text-gray-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                                        <i class="bi bi-check2-circle text-hotel-gold mr-1"></i> 
+                                        @php $bed = $availableBeds->first(); @endphp
+                                        {{ ucfirst($bed) . ' Bed' . (in_array($bed, ['twin', 'triple']) ? 's' : '') }}
+                                    </div>
+                                </div>
+                                @endif
+
                                 {{-- Floor --}}
+                                @if($availableFloors->count() > 1)
                                 <div>
                                     <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Floor</label>
                                     <select name="floor_preference" id="floor_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.75rem top 50%; background-size: 0.65rem auto;">
                                         <option value="">No Preference</option>
-                                        <option value="2" {{ old('floor_preference') === '2' ? 'selected' : '' }}>Floor 2</option>
-                                        <option value="3" {{ old('floor_preference') === '3' ? 'selected' : '' }}>Floor 3</option>
-                                        <option value="4" {{ old('floor_preference') === '4' ? 'selected' : '' }}>Floor 4</option>
-                                        <option value="5" {{ old('floor_preference') === '5' ? 'selected' : '' }}>Floor 5</option>
+                                        @foreach($availableFloors as $floor)
+                                            <option value="{{ $floor }}" {{ old('floor_preference') == $floor ? 'selected' : '' }}>Floor {{ $floor }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
+                                @elseif($availableFloors->count() === 1)
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Floor</label>
+                                    <div class="w-full border-[1.5px] border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-[0.9rem] text-gray-500 font-medium">
+                                        <i class="bi bi-check2-circle text-hotel-gold mr-1"></i> Floor {{ $availableFloors->first() }}
+                                    </div>
+                                </div>
+                                @endif
+
                                 {{-- View --}}
+                                @if($availableViews->count() > 1)
                                 <div>
                                     <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">View</label>
                                     <select name="view_preference" id="view_preference" class="w-full border-[1.5px] border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-[0.9rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.75rem top 50%; background-size: 0.65rem auto;">
                                         <option value="">No Preference</option>
-                                        <option value="balcony" {{ old('view_preference') === 'balcony' ? 'selected' : '' }}>Balcony View</option>
-                                        <option value="window" {{ old('view_preference') === 'window' ? 'selected' : '' }}>Window View</option>
+                                        @foreach($availableViews as $view)
+                                            <option value="{{ $view }}" {{ old('view_preference') === $view ? 'selected' : '' }}>{{ ucfirst($view) }} View</option>
+                                        @endforeach
                                     </select>
                                 </div>
+                                @elseif($availableViews->count() === 1)
+                                <div>
+                                    <label class="block text-[0.75rem] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">View</label>
+                                    <div class="w-full border-[1.5px] border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-[0.9rem] text-gray-500 font-medium">
+                                        <i class="bi bi-check2-circle text-hotel-gold mr-1"></i> {{ ucfirst($availableViews->first()) }}
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                             <p class="text-[0.72rem] text-gray-400 mt-2"><i class="bi bi-info-circle"></i> Preferences are requests and subject to availability at check-in.</p>
                         </div>
+                        @endif
                         
                         {{-- Preference Availability Warning Container --}}
                         <div id="preferenceWarning" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
@@ -314,6 +350,19 @@
                                     <h5 class="text-amber-800 font-bold text-[0.9rem] mb-1">Preferences Unavailable</h5>
                                     <p class="text-amber-700 text-[0.82rem] leading-relaxed">
                                         We don't have a physical room matching all these exact preferences available for these dates. You can still proceed with your booking, but we may not be able to guarantee this request.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Fully Booked Warning Container --}}
+                        <div id="fullyBookedWarning" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                            <div class="flex items-start gap-3">
+                                <i class="bi bi-x-circle-fill text-red-500 mt-0.5"></i>
+                                <div>
+                                    <h5 class="text-red-800 font-bold text-[0.9rem] mb-1">Fully Booked</h5>
+                                    <p class="text-red-700 text-[0.82rem] leading-relaxed">
+                                        This room type is fully booked for the selected dates and payment option. Please choose different dates or another room type.
                                     </p>
                                 </div>
                             </div>
@@ -503,16 +552,14 @@
         const floorSelect = document.getElementById('floor_preference');
         const viewSelect = document.getElementById('view_preference');
         const warningBox = document.getElementById('preferenceWarning');
+        const fullyBookedBox = document.getElementById('fullyBookedWarning');
+        const submitBtn = document.querySelector('#bookingForm button[type="submit"]');
         const roomId = '{{ $room->id }}';
 
         async function checkPreferences() {
             if (!checkInEl.value || !checkOutEl.value) return;
             
-            const hasPref = bedSelect.value || floorSelect.value || viewSelect.value;
-            if (!hasPref) {
-                warningBox.classList.add('hidden');
-                return;
-            }
+            const hasPref = (bedSelect && bedSelect.value) || (floorSelect && floorSelect.value) || (viewSelect && viewSelect.value);
 
             const tierChecked = document.querySelector('input[name="payment_tier"]:checked');
             const tierValue = tierChecked ? tierChecked.value : 100;
@@ -528,9 +575,9 @@
                         check_in_date: checkInEl.value,
                         check_out_date: checkOutEl.value,
                         payment_tier: tierValue,
-                        bed_type: bedSelect.value,
-                        floor_preference: floorSelect.value,
-                        view_preference: viewSelect.value
+                        bed_type: bedSelect ? bedSelect.value : null,
+                        floor_preference: floorSelect ? floorSelect.value : null,
+                        view_preference: viewSelect ? viewSelect.value : null
                     })
                 });
 
@@ -538,24 +585,46 @@
                 
                 const data = await response.json();
                 
-                if (data.available === false && data.reason === 'preferences_unavailable') {
-                    warningBox.classList.remove('hidden');
+                if (data.available === false && data.reason === 'fully_booked') {
+                    if (fullyBookedBox) fullyBookedBox.classList.remove('hidden');
+                    if (warningBox) warningBox.classList.add('hidden');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                } else if (data.available === false && data.reason === 'preferences_unavailable' && hasPref) {
+                    if (fullyBookedBox) fullyBookedBox.classList.add('hidden');
+                    if (warningBox) warningBox.classList.remove('hidden');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
                 } else {
-                    warningBox.classList.add('hidden');
+                    if (fullyBookedBox) fullyBookedBox.classList.add('hidden');
+                    if (warningBox) warningBox.classList.add('hidden');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
                 }
             } catch (error) {
                 console.error('Error checking preferences:', error);
                 // On error, we just hide the warning to not block the user
-                warningBox.classList.add('hidden');
+                if (fullyBookedBox) fullyBookedBox.classList.add('hidden');
+                if (warningBox) warningBox.classList.add('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             }
         }
 
         // Attach listeners to dates, tiers, and preferences
         checkInEl.addEventListener('change', checkPreferences);
         checkOutEl.addEventListener('change', checkPreferences);
-        bedSelect.addEventListener('change', checkPreferences);
-        floorSelect.addEventListener('change', checkPreferences);
-        viewSelect.addEventListener('change', checkPreferences);
+        if (bedSelect) bedSelect.addEventListener('change', checkPreferences);
+        if (floorSelect) floorSelect.addEventListener('change', checkPreferences);
+        if (viewSelect) viewSelect.addEventListener('change', checkPreferences);
         document.querySelectorAll('input.tier-radio').forEach(function (radio) {
             radio.addEventListener('change', checkPreferences);
         });

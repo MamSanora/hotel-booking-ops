@@ -68,6 +68,8 @@ class RoomType extends Model
         'price_per_night',
         'description',
         'images',
+        'is_visible',
+        'use_mam_sanora_qr',
     ];
 
     protected function casts(): array
@@ -79,6 +81,8 @@ class RoomType extends Model
             'adult_capacity'         => 'integer',
             'child_capacity'         => 'integer',
             'overbooking_multiplier' => 'float',
+            'is_visible'             => 'boolean',
+            'use_mam_sanora_qr'      => 'boolean',
             'images'                 => 'array',
         ];
     }
@@ -125,6 +129,16 @@ class RoomType extends Model
      */
     public function computeProtectionLevels(int $virtualCapacity): array
     {
+        // Don't protect if capacity is extremely low (< 3). 
+        // A physical room count of 1 should be bookable on any tier.
+        if ($virtualCapacity < 3) {
+            return [
+                Booking::TIER_FULL       => 0,
+                Booking::TIER_DEPOSIT_50 => 0,
+                Booking::TIER_DEPOSIT_20 => 0,
+            ];
+        }
+
         $step = max(1, (int) floor($virtualCapacity * self::PROTECTION_STEP_FRACTION));
 
         return [

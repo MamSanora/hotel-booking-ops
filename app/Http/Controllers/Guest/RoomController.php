@@ -43,13 +43,13 @@ class RoomController extends Controller
         // Exclude test_room — it is internal and not for public display.
         $featuredRooms = Room::available()
             ->with('roomType')
-            ->whereHas('roomType', fn ($q) => $q->where('slug', '!=', 'test_room'))
+            ->whereHas('roomType', fn ($q) => $q->where('is_visible', true))
             ->get()
             ->unique('room_type_id')
             ->sortBy(fn($room) => $room->roomType?->price_per_night)
             ->values();
 
-        $roomTypes = RoomType::where('slug', '!=', 'test_room')->get()->keyBy('slug');
+        $roomTypes = RoomType::where('is_visible', true)->get()->keyBy('slug');
 
         return view('guest.home', compact('roomTypes', 'featuredRooms'));
     }
@@ -67,10 +67,9 @@ class RoomController extends Controller
         $children     = (int) $request->input('children', 0);
         $totalGuests  = $adults + $children;
 
-        // Load room types — exclude test_room from public listing (internal only).
-        // Filter by capacity immediately via query to optimize.
+        // Load room types — filter by visibility and capacity immediately via query to optimize.
         $roomTypesQuery = RoomType::with('rooms')
-            ->where('slug', '!=', 'test_room')
+            ->where('is_visible', true)
             ->where('capacity', '>=', $totalGuests);
             
         // If type filter is provided, also apply it to the query
@@ -112,7 +111,19 @@ class RoomController extends Controller
     public function show(Room $room): View
     {
         $room->load('roomType');
-        return view('guest.room-detail', compact('room'));
+        $roomType = $room->roomType;
+
+        $availableBeds = $roomType->rooms()->whereNotNull('bed_configuration')->distinct()->pluck('bed_configuration');
+        $availableViews = $roomType->rooms()->whereNotNull('view_type')->distinct()->pluck('view_type');
+        $availableFloors = $roomType->rooms()
+            ->get()
+            ->map(fn($r) => substr($r->room_number, 0, 1))
+            ->filter(fn($f) => is_numeric($f))
+            ->unique()
+            ->sort()
+            ->values();
+
+        return view('guest.room-detail', compact('room', 'availableBeds', 'availableViews', 'availableFloors'));
     }
 
     /**
@@ -139,11 +150,22 @@ class RoomController extends Controller
                 // This is the core fix: concurrent requests will queue here.
                 $lockedRoomType = \App\Models\RoomType::where('id', $roomType->id)->lockForUpdate()->first();
 
+                // Check if there's already a pending booking for this guest, same type,
+                // dates, AND the same tier (i.e. they hit back and re-submitted).
+                $existingBooking = Booking::where('guest_id', $guestId)
+                    ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
+                    ->where('check_in_date', $validated['check_in_date'])
+                    ->where('check_out_date', $validated['check_out_date'])
+                    ->where('payment_tier', $requestedTier)
+                    ->where('booking_status', Booking::STATUS_PENDING)
+                    ->first();
+
                 // ── Step 1: Predictive overbooking check (Thread-Safe) ────────────────────────────
                 if (!$lockedRoomType->hasAvailableVirtualCapacity(
                     $validated['check_in_date'],
                     $validated['check_out_date'],
-                    $requestedTier
+                    $requestedTier,
+                    $existingBooking?->id
                 )) {
                     throw new \Exception('CAPACITY_EXHAUSTED');
                 }
@@ -166,16 +188,6 @@ class RoomController extends Controller
 
             // Deposit = total × (tier / 100). For 100% tier this equals total.
             $depositAmount = round($total * ($requestedTier / 100), 2);
-
-            // Check if there's already a pending booking for this guest, same type,
-            // dates, AND the same tier (i.e. they hit back and re-submitted).
-            $existingBooking = Booking::where('guest_id', $guestId)
-                ->whereHas('room', fn ($q) => $q->where('room_type_id', $assignedRoom->room_type_id))
-                ->where('check_in_date', $validated['check_in_date'])
-                ->where('check_out_date', $validated['check_out_date'])
-                ->where('payment_tier', $requestedTier)
-                ->where('booking_status', Booking::STATUS_PENDING)
-                ->first();
 
             if ($existingBooking) {
                 // Update total price and special requests if needed
@@ -490,12 +502,25 @@ class RoomController extends Controller
 
         $roomType = $room->roomType;
         
+        $guestId = Auth::check() ? Auth::user()->guest_id : null;
+        $existingBooking = null;
+        if ($guestId) {
+             $existingBooking = Booking::where('guest_id', $guestId)
+                ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
+                ->where('check_in_date', $request->check_in_date)
+                ->where('check_out_date', $request->check_out_date)
+                ->where('payment_tier', $request->payment_tier)
+                ->where('booking_status', Booking::STATUS_PENDING)
+                ->first();
+        }
+
         // 1. Is there ANY room available? If not, even without preferences it fails.
         // We do this to ensure we don't say "preferences available" when the hotel is full.
         if (!$roomType->hasAvailableVirtualCapacity(
             $request->check_in_date,
             $request->check_out_date,
-            $request->payment_tier
+            $request->payment_tier,
+            $existingBooking?->id
         )) {
             return response()->json(['available' => false, 'reason' => 'fully_booked']);
         }
@@ -507,10 +532,10 @@ class RoomController extends Controller
         $query = $roomType->rooms()->where('current_status', '!=', 'maintenance');
         
         if ($request->bed_type) {
-            $query->where('bed_type', $request->bed_type);
+            $query->where('bed_configuration', $request->bed_type);
         }
         if ($request->floor_preference) {
-            $query->where('floor', $request->floor_preference);
+            $query->where('room_number', 'like', $request->floor_preference . '%');
         }
         if ($request->view_preference) {
             $query->where('view_type', $request->view_preference);
@@ -523,13 +548,14 @@ class RoomController extends Controller
         }
 
         // 3. Among the matching physical rooms, is at least one of them actually free for these dates?
-        $availableMatch = $matchingRooms->first(function($physicalRoom) use ($request) {
+        $availableMatch = $matchingRooms->first(function($physicalRoom) use ($request, $existingBooking) {
             // A room is free if it doesn't have an overlapping booking of equal or higher tier
             $conflict = $physicalRoom->bookings()
                 ->whereIn('booking_status', [Booking::STATUS_PENDING, Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
                 ->where('check_in_date', '<', $request->check_out_date)
                 ->where('check_out_date', '>', $request->check_in_date)
                 ->where('payment_tier', '>=', $request->payment_tier)
+                ->when($existingBooking, fn($q) => $q->where('id', '!=', $existingBooking->id))
                 ->exists();
                 
             return !$conflict;

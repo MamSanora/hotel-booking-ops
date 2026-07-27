@@ -64,8 +64,7 @@
     <div class="thermal-paper">
         <!-- Header -->
         <div class="text-center mb-4">
-            <h1 class="font-bold text-lg">MAM SANORA</h1>
-            <p class="text-[10px]">Hotel & Booking Ops</p>
+            <h1 class="font-bold text-lg">DARA MEAS HOTEL</h1>
             <p class="text-[10px]">Phnom Penh, Cambodia</p>
             <p class="text-[10px]">Tel: +855 12 345 678</p>
         </div>
@@ -87,33 +86,16 @@
         <table class="w-full text-left mb-2">
             <thead>
                 <tr>
-                    <th class="w-1/2">Item</th>
-                    <th class="w-1/4 text-right">Qty</th>
-                    <th class="w-1/4 text-right">Amt</th>
+                    <th class="w-2/3">Description</th>
+                    <th class="w-1/3 text-right">Amt</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Room Stay -->
                 <tr>
-                    <td>Room {{ $booking->room?->roomType->name ?? 'Stay' }}</td>
-                    <td class="text-right">{{ $booking->check_out_date->diffInDays($booking->check_in_date) + $booking->number_of_stay_extension }}N</td>
+                    <td>Room Stay ({{ $booking->check_out_date->diffInDays($booking->check_in_date) + $booking->number_of_stay_extension }}N)</td>
                     <td class="text-right">${{ number_format($booking->total_price, 2) }}</td>
                 </tr>
-                <!-- Room Services -->
-                @php $servicesTotal = 0; @endphp
-                @foreach($booking->roomServices as $rs)
-                    @foreach($rs->requestedItems as $item)
-                        @php
-                            $itemTotal = $item->quantity * $item->unit_price;
-                            $servicesTotal += $itemTotal;
-                        @endphp
-                        <tr>
-                            <td class="pl-2">- {{ $item->serviceItem->name }}</td>
-                            <td class="text-right">{{ $item->quantity }}</td>
-                            <td class="text-right">${{ number_format($itemTotal, 2) }}</td>
-                        </tr>
-                    @endforeach
-                @endforeach
             </tbody>
         </table>
 
@@ -122,12 +104,12 @@
         <!-- Totals -->
         <div class="flex justify-between font-bold mb-1">
             <span>TOTAL DUE:</span>
-            <span>${{ number_format($booking->total_price + $servicesTotal, 2) }}</span>
+            <span>${{ number_format($booking->total_price, 2) }}</span>
         </div>
 
         @php
             $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->sum('amount_paid');
-            $balance = max(0, ($booking->total_price + $servicesTotal) - $totalPaid);
+            $balance = max(0, $booking->total_price - $totalPaid);
         @endphp
 
         <div class="flex justify-between mb-1">

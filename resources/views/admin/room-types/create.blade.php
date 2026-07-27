@@ -94,6 +94,34 @@
                     <p class="text-xs text-gray-400 mt-1">You can upload multiple images (max 2MB each).</p>
                     @error('images.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+
+                {{-- Visibility --}}
+                <div class="md:col-span-2 mt-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" name="is_visible" value="1" class="peer sr-only" {{ old('is_visible', true) ? 'checked' : '' }}>
+                            <div class="block h-6 w-10 rounded-full bg-gray-300 transition peer-checked:bg-hotel-gold"></div>
+                            <div class="dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4"></div>
+                        </div>
+                        <div class="text-[0.95rem] font-medium text-gray-700">
+                            Show on Guest Page <span class="text-gray-400 font-normal ml-1">(uncheck to hide this room type from the public booking page)</span>
+                        </div>
+                    </label>
+                </div>
+
+                {{-- Mam Sanora QR --}}
+                <div class="md:col-span-2 mt-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" name="use_mam_sanora_qr" value="1" class="peer sr-only" {{ old('use_mam_sanora_qr', false) ? 'checked' : '' }}>
+                            <div class="block h-6 w-10 rounded-full bg-gray-300 transition peer-checked:bg-hotel-gold"></div>
+                            <div class="dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4"></div>
+                        </div>
+                        <div class="text-[0.95rem] font-medium text-gray-700">
+                            Use Mam Sanora Dynamic QR <span class="text-gray-400 font-normal ml-1">(check to use Mam Sanora's KHQR instead of the default payment flow)</span>
+                        </div>
+                    </label>
+                </div>
             </div>
 
             <div class="pt-4 border-t border-gray-100 flex justify-end gap-3">

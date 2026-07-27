@@ -1,8 +1,8 @@
-﻿@extends(''layouts.public'')
+@extends('layouts.public')
 
-@section(''title'', ''ABA Transfer Payment — '' . $booking->referenceNumber())
+@section('title', 'ABA Transfer Payment — ' . $booking->referenceNumber())
 
-@push(''styles'')
+@push('styles')
 <style>
     .tg-page-bg {
         background: linear-gradient(135deg, #f0f4f8 0%, #e8edf5 100%);
@@ -26,7 +26,7 @@
     }
 
     .tg-header::after {
-        content: '';
+        content: ';
         position: absolute;
         bottom: -1px;
         left: 0;
@@ -86,7 +86,7 @@
 </style>
 @endpush
 
-@section(''content'')
+@section('content')
 <div class="tg-page-bg py-10 px-4">
     <div class="container mx-auto flex flex-col lg:flex-row gap-8 items-start justify-center">
 
@@ -118,15 +118,22 @@
                     </div>
                 </div>
 
+                @if(!empty($khqrString))
+                <div class="flex flex-col items-center justify-center pt-2">
+                    <div class="text-[0.72rem] text-gray-500 uppercase tracking-widest font-semibold mb-3">Scan with ABA Mobile</div>
+                    <div id="khqr-matrix" class="p-3 bg-white rounded-xl shadow border border-gray-100 inline-block"></div>
+                </div>
+                @endif
+
                 {{-- ABA Account Number --}}
                 <div class="account-box">
                     <div class="text-[0.72rem] text-gray-500 uppercase tracking-widest font-semibold mb-1">Transfer To (ABA Account)</div>
                     <div class="flex items-center justify-center gap-2">
                         <span class="text-[1.55rem] font-black text-[#003087] tracking-wider" id="abaAccNum">
-                            {{ $abaAccountNumber ?: config(''telegram.aba_account_number'', ''—'') }}
+                            {{ $abaAccountNumber ?: config('telegram.aba_account_number', '—') }}
                         </span>
                         <button class="copy-btn" title="Copy account number"
-                                onclick="copyText(''abaAccNum'', this)">
+                                onclick="copyText('abaAccNum', this)">
                             <i class="bi bi-copy"></i>
                         </button>
                     </div>
@@ -143,7 +150,7 @@
                             {{ $reference }}
                         </span>
                         <button class="copy-btn" title="Copy reference"
-                                onclick="copyText(''bookingRef'', this)">
+                                onclick="copyText('bookingRef', this)">
                             <i class="bi bi-copy"></i>
                         </button>
                     </div>
@@ -163,8 +170,8 @@
                 </div>
 
                 {{-- Simulate button (dev only) --}}
-                @if(app()->isLocal() || app()->environment(''staging''))
-                    <form method="POST" action="{{ route(''payment.simulate'', $booking->id) }}" class="mt-1">
+                @if(app()->isLocal() || app()->environment('staging'))
+                    <form method="POST" action="{{ route('payment.simulate', $booking->id) }}" class="mt-1">
                         @csrf
                         <button type="submit"
                                 class="w-full border-2 border-dashed border-amber-400 text-amber-600 hover:bg-amber-50 font-semibold py-2.5 rounded-xl text-sm transition-colors">
@@ -189,11 +196,11 @@
             {{-- Steps --}}
             <div class="space-y-4 mb-8">
                 @foreach([
-                    [''Open ABA Mobile'', ''Launch your ABA Mobile App or log in to ABA Internet Banking.''],
-                    [''Transfer Funds'', ''Go to <strong>Transfer</strong> → enter the ABA account number shown on the left.''],
-                    [''Enter Amount'', ''Transfer exactly <strong>$'' . number_format($transaction->amount_paid, 2) . '' USD</strong>.''],
-                    [''Add Remark'', ''In the Remark / Note field, type exactly: <strong class="text-hotel-gold font-mono">' . $reference . '</strong><br><span class="text-red-500 text-xs">Do not skip this — it is how we identify your payment!</span>''],
-                    [''Confirm Transfer'', ''Complete the transfer. We will be notified automatically via Telegram and your booking will be confirmed shortly.''],
+                    ['Open ABA Mobile', 'Launch your ABA Mobile App or log in to ABA Internet Banking.'],
+                    ['Transfer Funds', 'Go to <strong>Transfer</strong> → enter the ABA account number shown on the left.'],
+                    ['Enter Amount', 'Transfer exactly <strong>$' . number_format($transaction->amount_paid, 2) . ' USD</strong>.'],
+                    ['Add Remark', 'In the Remark / Note field, type exactly: <strong class="text-hotel-gold font-mono">' . $reference . '</strong><br><span class="text-red-500 text-xs">Do not skip this — it is how we identify your payment!</span>'],
+                    ['Confirm Transfer', 'Complete the transfer. We will be notified automatically via Telegram and your booking will be confirmed shortly.'],
                 ] as [$title, $desc])
                 <div class="flex gap-4 items-start">
                     <div class="step-circle shrink-0 mt-0.5">{{ $loop->iteration }}</div>
@@ -215,15 +222,15 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Room</span>
-                        <span class="font-semibold text-hotel-dark">{{ $booking->room->name ?? ''—'' }}</span>
+                        <span class="font-semibold text-hotel-dark">{{ $booking->room->name ?? '—' }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Check-in</span>
-                        <span class="font-semibold text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_in_date)->format(''d M Y'') }}</span>
+                        <span class="font-semibold text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_in_date)->format('d M Y') }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Check-out</span>
-                        <span class="font-semibold text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_out_date)->format(''d M Y'') }}</span>
+                        <span class="font-semibold text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_out_date)->format('d M Y') }}</span>
                     </div>
                     <div class="border-t border-[#ede8df] pt-2 flex justify-between">
                         <span class="text-gray-500 font-semibold">Amount to Pay</span>
@@ -232,7 +239,7 @@
                 </div>
             </div>
 
-            <a href="{{ route(''guest.dashboard'') }}"
+            <a href="{{ route('guest.dashboard') }}"
                class="mt-4 inline-flex items-center text-gray-400 hover:text-hotel-dark text-[0.82rem] transition-colors">
                 <i class="bi bi-arrow-left mr-1.5"></i> Back to My Bookings
             </a>
@@ -242,15 +249,30 @@
 </div>
 @endsection
 
-@push(''scripts'')
+@push('scripts')
 <script>
 function copyText(elementId, btn) {
     const text = document.getElementById(elementId).innerText.trim();
     navigator.clipboard.writeText(text).then(() => {
         const orig = btn.innerHTML;
-        btn.innerHTML = ''<i class="bi bi-check2 text-green-500"></i>'';
+        btn.innerHTML = '<i class="bi bi-check2 text-green-500"></i>';
         setTimeout(() => { btn.innerHTML = orig; }, 1500);
     });
 }
 </script>
+@if(!empty($khqrString))
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new QRCode(document.getElementById('khqr-matrix'), {
+            text: @json($khqrString),
+            width: 220,
+            height: 220,
+            colorDark:  '#003087', // ABA Blue for brand
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    });
+</script>
+@endif
 @endpush

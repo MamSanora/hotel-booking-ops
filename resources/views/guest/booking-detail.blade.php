@@ -291,11 +291,11 @@
         </div>
 
         @if($status === 'checked-in')
-        {{-- Room Service Section --}}
+        {{-- Housekeeping Service Section --}}
         <div class="bg-white rounded-2xl shadow-sm border border-[#f0ebe2] overflow-hidden mb-6">
             <div class="p-6 border-b border-[#f0ebe2] flex justify-between items-center bg-gradient-to-r from-hotel-dark to-hotel-accent text-white">
                 <div>
-                    <h2 class="font-playfair text-xl font-bold mb-1">Room Service</h2>
+                    <h2 class="font-playfair text-xl font-bold mb-1">Housekeeping Service</h2>
                     <p class="text-white/70 text-sm">Request amenities or report issues directly to reception.</p>
                 </div>
                 <i class="bi bi-bell-fill text-3xl opacity-50"></i>
@@ -311,7 +311,12 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             @foreach($catalogItems as $item)
                             <div class="flex items-center justify-between border border-gray-200 rounded-lg p-3 hover:border-hotel-gold transition-colors bg-gray-50/50">
-                                <span class="text-sm font-medium text-gray-700">{{ $item->item_name }}</span>
+                                <span class="text-sm font-medium text-gray-700">
+                                    {{ $item->item_name }}
+                                    @if($item->price > 0)
+                                        <span class="text-xs text-hotel-gold ml-1 font-bold">(${{ number_format($item->price, 2) }})</span>
+                                    @endif
+                                </span>
                                 <input type="number" name="items[{{ $item->id }}]" min="0" max="10" placeholder="0" value="{{ old('items.' . $item->id) }}" class="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold">
                             </div>
                             @endforeach

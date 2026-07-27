@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'payment/callback',
             'api/payment/callback', // Just in case it's ever moved to API routes
+            'webhooks/telegram',
         ]);
 
         $middleware->alias([
