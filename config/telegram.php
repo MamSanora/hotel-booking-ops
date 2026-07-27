@@ -43,6 +43,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | ABA Merchant Name (for KHQR Generation)
+    |--------------------------------------------------------------------------
+    |
+    | The merchant name registered with ABA — exactly as it appears on your
+    | ABA merchant account. This is embedded in the KHQR payload and shown
+    | to the payer in their banking app when they scan the QR code.
+    |
+    | Decoded from your existing qr_30.00.png: 'KEO SAMNANG DARAMEAS'
+    |
+    */
+    'aba_merchant_name' => env('TELEGRAM_ABA_MERCHANT_NAME', 'KEO SAMNANG DARAMEAS'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Telegram Group / Chat ID
     |--------------------------------------------------------------------------
     |

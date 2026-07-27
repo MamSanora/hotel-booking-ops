@@ -179,11 +179,6 @@
                     <span>Payment Gateways</span>
                 </a> --}}
 
-                <a href="{{ route('admin.qr-calculator') }}"
-                   class="admin-nav-link {{ request()->routeIs('admin.qr-calculator') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
-                    <i class="bi bi-qr-code-scan text-base w-5 text-center"></i>
-                    <span>QR Calculator</span>
-                </a>
 
                 <form method="POST" action="{{ route('admin.logout') }}" class="mt-4 border-t border-white/5 pt-2">
                     @csrf

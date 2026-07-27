@@ -27,7 +27,7 @@ class AdminRoomTypeController extends Controller
     public function index(): View
     {
         $roomTypes = RoomType::withCount('rooms')
-            ->orderBy('display_name')
+            ->orderBy('id')
             ->paginate(20);
 
         return view('admin.room-types.index', compact('roomTypes'));

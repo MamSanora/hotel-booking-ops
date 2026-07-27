@@ -20,6 +20,16 @@ use Illuminate\View\View;
  */
 class PageController extends Controller
 {
+    public function khqrTest(): View
+    {
+        $amount        = 1.00;
+        $merchantName  = config('telegram.aba_merchant_name', 'KEO SAMNANG DARAMEAS');
+        $merchantId    = config('telegram.aba_account_number', '–');
+        $khqrString    = \App\Services\KhqrGenerator::forAmount($amount);
+
+        return view('public.khqr-test', compact('khqrString', 'amount', 'merchantName', 'merchantId'));
+    }
+
     /**
      * About Us page.
      */

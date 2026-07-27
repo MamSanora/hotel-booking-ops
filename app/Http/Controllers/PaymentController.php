@@ -139,30 +139,28 @@ class PaymentController extends Controller
         ));
     }
 
-    // ── KHQR & ABA Pay Static Flow ─────────────────────────────────────────
+    // ── KHQR & ABA Pay Dynamic Flow ──────────────────────────────────────────
 
     /**
-     * Display the static QR code payment page.
+     * Display the dynamic KHQR payment page.
      *
-     * No dynamic API call — we serve a pre-saved QR image from disk.
-     * The QR image filename is derived from the transaction amount:
-     *   public/qr_codes/hotel_owner_QR_codes/qr_{amount}.png
+     * The QR code is generated on-the-fly using the ABA merchant account
+     * credentials stored in config/telegram.php (TELEGRAM_ABA_ACCOUNT_NUMBER
+     * and TELEGRAM_ABA_MERCHANT_NAME). No pre-uploaded images are required.
      *
      * Payment confirmation is manual: the receptionist verifies the transfer
-     * notification in the hotel owner's ABA/Bakong app, then marks the
-     * booking as paid via the Reception dashboard.
+     * notification in the hotel owner's ABA app, then marks the booking as
+     * paid via the Reception dashboard.
      */
     protected function showKhqrAbaStatic(Booking $booking, Transaction $transaction): View
     {
-        $amount      = (float) $transaction->amount_paid;
-        $qrImagePath = $this->khqrAbaStaticService->getQrImagePath($amount);
-        $qrExists    = $this->khqrAbaStaticService->qrImageExists($amount);
+        $amount    = (float) $transaction->amount_paid;
+        $khqrString = \App\Services\KhqrGenerator::forAmount($amount);
 
         return view('payment.payway-static-qr', compact(
             'booking',
             'transaction',
-            'qrImagePath',
-            'qrExists',
+            'khqrString',
         ));
     }
 

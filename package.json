@@ -20,7 +20,9 @@
     },
     "dependencies": {
         "@alpinejs/collapse": "^3.15.12",
-        "alpinejs": "^3.15.12"
+        "alpinejs": "^3.15.12",
+        "jimp": "^1.6.1",
+        "qrcode-reader": "^1.0.4"
     },
     "allowScripts": {
         "esbuild@0.28.1": true

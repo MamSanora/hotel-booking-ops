@@ -41,6 +41,7 @@ Route::post('/rooms/{room}/check-preferences', [RoomController::class, 'checkPre
 
 // Static pages
 Route::get('/about',   [PageController::class, 'about'])->name('about');
+Route::get('/khqr-test', [PageController::class, 'khqrTest'])->name('khqr.test');
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery.index');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/blog',    [PageController::class, 'blog'])->name('blog');
@@ -177,8 +178,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Analytics AJAX endpoint — powers the dynamic chart date-range filter
         Route::get('/dashboard/analytics', [AdminDashboardController::class, 'analytics'])->name('dashboard.analytics');
 
-        // QR Code Calculator
-        Route::get('/qr-calculator', [\App\Http\Controllers\Admin\QrCodeCalculatorController::class, 'index'])->name('qr-calculator');
+        // QR Code Calculator route removed — KHQR codes are now generated dynamically
+        // per transaction and no longer require pre-uploaded images or manual calculation.
 
         // Manual backup trigger (rate-limited inside the controller)
         Route::post('/backup/run', [BackupController::class, 'run'])->name('backup.run');

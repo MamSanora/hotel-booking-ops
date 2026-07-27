@@ -31,9 +31,9 @@
             {{-- LEFT: QR Card --}}
             <div class="lg:col-span-5 flex flex-col items-center">
 
-                {{-- KHQR Card using the provided template image with CSS crop to remove gray border --}}
+                {{-- KHQR Card using the template image. The QR matrix is generated
+                     dynamically by qrcodejs and overlaid in the exact same position. --}}
                 <div class="w-full max-w-[340px] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
-                    {{-- Inner wrapper shifted and scaled to crop the image. Overlays are inside so they stay perfectly aligned --}}
                     <div class="relative" style="width: 106%; margin-left: -3%; margin-top: -3%; margin-bottom: -3%;">
                         {{-- Background Template Image --}}
                         <img src="{{ asset('qr_codes/hotel_owner_QR_codes/KHQR_Code_Template.jpg') }}" alt="KHQR Template" class="w-full h-auto">
@@ -44,19 +44,27 @@
                             <span class="text-4xl font-bold text-gray-900 tracking-tight">{{ number_format($transaction->amount_paid, 2) }}</span>
                         </div>
 
-                        {{-- QR Code Matrix Overlay --}}
-                        <div class="absolute" style="top: 39%; left: 13.5%; width: 73%; height: auto; aspect-ratio: 1/1;">
-                            @if($qrExists)
-                                <img src="{{ $qrImagePath }}" alt="KHQR Payment QR Code" class="w-full h-full object-contain">
-                            @else
-                                <div class="w-full h-full bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center rounded-xl p-4">
-                                    <i class="bi bi-qr-code text-4xl text-gray-300 mb-2"></i>
-                                    <p class="text-center text-xs text-gray-400">QR image not found</p>
-                                </div>
-                            @endif
+                        {{-- Dynamic QR Code Matrix Overlay (rendered by qrcodejs) --}}
+                        <div class="absolute flex items-center justify-center" style="top: 39%; left: 13.5%; width: 73%; height: auto; aspect-ratio: 1/1;">
+                            <div id="khqr-matrix" class="w-full h-full"></div>
                         </div>
                     </div>
                 </div>
+
+                {{-- qrcodejs: renders the KHQR string as a QR matrix locally in the browser --}}
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        new QRCode(document.getElementById('khqr-matrix'), {
+                            text: @json($khqrString),
+                            width: document.getElementById('khqr-matrix').offsetWidth || 256,
+                            height: document.getElementById('khqr-matrix').offsetWidth || 256,
+                            colorDark:  '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    });
+                </script>
 
                 {{-- Awaiting confirmation badge --}}
                 <div class="mt-4 w-full max-w-[300px] bg-white border border-gray-200/80 rounded-xl py-3 px-4 shadow-sm flex items-center justify-between text-xs font-medium text-gray-600">

@@ -91,20 +91,28 @@ namespace App\Models{
  *   pending → booked → checked-in → checked-out
  *                    ↘ cancelled / no_show
  *
- * @property int         $id
- * @property int|null    $guest_id
- * @property int|null    $room_id
- * @property int|null    $handled_by_staff_id
+ * @property int $id
+ * @property int|null $guest_id
+ * @property int|null $room_id
+ * @property int|null $handled_by_staff_id
  * @property string|null $check_in_date
  * @property string|null $check_out_date
- * @property int         $number_of_stay_extension
- * @property float|null  $total_price
- * @property string      $booking_status
+ * @property int $number_of_stay_extension
+ * @property float|null $total_price
+ * @property string $booking_status
  * @property string|null $guest_type
+ * @property string|null $bed_type         'twin' | 'double' | null
+ * @property string|null $floor_preference Floor number string ('2'..'5') | null
+ * @property string|null $view_preference  'balcony' | 'window' | null
+ * @property int $payment_tier Upfront deposit tier: 20, 50, or 100 percent of total_price
+ * @property string|null $refund_qr_path
+ * @property int|null $relocated_to_booking_id
+ * @property string|null $special_requests
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Guest|null $guest
  * @property-read \App\Models\Staff|null $handledBy
+ * @property-read Booking|null $relocatedTo
  * @property-read \App\Models\Room|null $room
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\RoomService> $roomServices
  * @property-read int|null $room_services_count
@@ -121,18 +129,27 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking recentHistory()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking upcomingArrivals()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereBedType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereBookingStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereCheckInDate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereCheckOutDate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereFloorPreference($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereGuestId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereGuestType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereHandledByStaffId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereNumberOfStayExtension($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking wherePaymentTier($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereRefundQrPath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereRelocatedToBookingId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereRoomId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereSpecialRequests($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereTotalPrice($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereViewPreference($value)
  */
 	class Booking extends \Eloquent {}
 }
@@ -165,6 +182,37 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereUpdatedAt($value)
  */
 	class Contact extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * ExchangeRate
+ *
+ * Represents a single historical exchange rate snapshot.
+ * The latest row (by fetched_at) is always the active rate used by the application.
+ *
+ * @property int    $id
+ * @property string $base        e.g. "USD"
+ * @property string $target      e.g. "KHR"
+ * @property float  $rate        e.g. 4100.0000
+ * @property string $source      e.g. "frankfurter_nbc" | "fallback"
+ * @property \Carbon\Carbon $fetched_at
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate usdToKhr()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereBase($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereFetchedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereSource($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereTarget($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ExchangeRate whereUpdatedAt($value)
+ */
+	class ExchangeRate extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -233,19 +281,30 @@ namespace App\Models{
  * GuestAuth Model
  *
  * The authenticatable model for the 'web' guard. Holds login credentials
- * (email + passwordhash) for guests who register an online account.
+ * for guests who register an online account.
  *
- * This model intentionally separates authentication from profile data.
- * The guest's profile (name, gender, nationality) lives in the `guests`
- * table and is accessed via the guest() relationship.
+ * Supports two registration paths:
+ *   - Email path  : email + passwordhash (classic)
+ *   - Phone path  : login_phone + passwordhash (new)
  *
- * Implements MustVerifyEmail to enable the existing email verification flow.
+ * A single guest_auths row may have:
+ *   - email only        (email-registered user, no phone login)
+ *   - login_phone only  (phone-registered user, no email login)
+ *   - both              (user who added both after registration)
+ *
+ * OTP flow (mock — no real SMS API):
+ *   otp_code and otp_expires_at are populated on phone registration.
+ *   phone_verified_at is set after the guest enters the correct code.
  *
  * @property int         $id
  * @property int         $guest_id
- * @property string      $email
+ * @property string|null $email
+ * @property string|null $login_phone
  * @property string      $passwordhash
  * @property string|null $email_verified_at
+ * @property string|null $phone_verified_at
+ * @property string|null $otp_code
+ * @property string|null $otp_expires_at
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -261,7 +320,11 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereEmailVerifiedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereGuestId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereLoginPhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereOtpCode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereOtpExpiresAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth wherePasswordhash($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth wherePhoneVerifiedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GuestAuth whereUpdatedAt($value)
  */
@@ -296,6 +359,34 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ItemsCatalog whereUpdatedAt($value)
  */
 	class ItemsCatalog extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * PaymentGateway Model
+ *
+ * Represents an admin-configurable payment gateway entry.
+ * The admin_status column is the manual control knob.
+ * The PaymentGatewayManager further overrides the effective state
+ * based on live credential and API health checks.
+ *
+ * @property int    $id
+ * @property string $slug          e.g. 'bakong' | 'aba_payway'
+ * @property string $name          e.g. 'Bakong Open API' | 'ABA PayWay'
+ * @property string $admin_status  'active' | 'disabled' | 'hidden'
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway whereAdminStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway whereSlug($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGateway whereUpdatedAt($value)
+ */
+	class PaymentGateway extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -355,17 +446,20 @@ namespace App\Models{
 /**
  * Room Model
  *
- * Represents a physical hotel room. Replaces the old Room model which had
- * legacy columns (room_title, wifi, bed_type) and a separate RoomType FK.
- * Room type is now stored directly as an enum for simplicity.
+ * Represents a physical hotel room. Room type-level attributes
+ * (price_per_night, capacity, description) are now stored in the
+ * `room_types` table and accessed via the `roomType()` relationship.
+ * This eliminates the previous 3NF violation where those values were
+ * duplicated across every room row.
  *
  * @property int         $id
  * @property string|null $room_number
- * @property string      $current_status  'available' | 'occupied'
- * @property string|null $room_type
- * @property float|null  $price_per_night
- * @property int|null    $capacity
- * @property string|null $description
+ * @property int         $room_type_id
+ * @property string      $current_status   'available' | 'occupied'
+ * @property string|null $bed_configuration 'twin' | 'double' | 'triple'
+ * @property string      $view_type         'balcony' | 'window' | 'none'
+ * @property-read RoomType $roomType
+ * @property \Illuminate\Support\Carbon|null $status_updated_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Booking|null $activeBooking
@@ -374,21 +468,23 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\RoomManagement> $roomManagements
  * @property-read int|null $room_managements_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room available()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Room availableForDates(string $checkIn, string $checkOut, ?int $excludeBookingId = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room availableForDates(string $checkIn, string $checkOut, ?int $excludeBookingId = null, ?int $requestedTier = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room cleaning()
  * @method static \Database\Factories\RoomFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room maintenance()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room occupied()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereCapacity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereBedConfiguration($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereCurrentStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereDescription($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Room wherePricePerNight($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereRoomNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereRoomType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereRoomTypeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereStatusUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Room whereViewType($value)
  */
 	class Room extends \Eloquent {}
 }
@@ -466,6 +562,49 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * RoomType Model
+ *
+ * Represents a category of hotel room (e.g. Standard Twin, Deluxe Double).
+ * Extracted from the `rooms` table to eliminate the 3NF violation where
+ * capacity, price, and description were duplicated across every room row.
+ *
+ * @property int         $id
+ * @property string      $slug            e.g. 'standard_room'
+ * @property string      $display_name    e.g. 'Standard Room'
+ * @property int         $capacity        Legacy single-integer capacity (kept for compat).
+ * @property int|null    $size_sqm        Fixed room size in square metres.
+ * @property int         $adult_capacity  Maximum adults this type accommodates.
+ * @property int         $child_capacity  Maximum children (under 12) this type accommodates.
+ * @property float       $price_per_night
+ * @property string|null $description
+ * @property float $overbooking_multiplier
+ * @property array<array-key, mixed>|null $images
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Room> $rooms
+ * @property-read int|null $rooms_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereAdultCapacity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereCapacity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereChildCapacity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereDisplayName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereImages($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereOverbookingMultiplier($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType wherePricePerNight($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereSizeSqm($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereSlug($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereUpdatedAt($value)
+ */
+	class RoomType extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
  * Staff Model
  *
  * Represents a front-desk receptionist. Replaces the old Receptionist model.
@@ -518,19 +657,20 @@ namespace App\Models{
  * A booking can have multiple transactions — e.g. one for the initial
  * booking payment and one or more for stay extensions (Process 5.0 DFD).
  *
- * The 'half' payment_status supports Process 3.2 ("Confirm Remaining Balance")
+ * The 'partial' payment_status supports Process 3.2 ("Confirm Remaining Balance")
  * in the DFD — a guest pays part upfront and the balance on check-in.
  *
  * @property int         $id
  * @property int         $booking_id
+ * @property string|null $transaction_id  ABA PayWay reference (legacy, kept for compat)
+ * @property string|null $khqr_string     Raw KHQR TLV string shown as the QR code
+ * @property string|null $md5_hash        MD5 hash of khqr_string (for Bakong API lookup)
+ * @property string|null $tracking_status Last Bakong API payment status
+ * @property string|null $apv             ABA PayWay bank approval code
  * @property float       $amount_paid
  * @property string|null $payment_for     'booking' | 'stay_extension'
  * @property string|null $payment_method  'cash' | 'khqr'
- * @property string      $payment_status  'pending'|'half'|'full'|'refunded'
- * @property string|null $transaction_id
- * @property string|null $merchant_reference
- * @property string|null $payment_link
- * @property string|null $qr_code_url
+ * @property string      $payment_status  'pending'|'partial'|'full'|'refunded'
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Booking $booking
@@ -541,15 +681,16 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction successful()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereAmountPaid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereApv($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereBookingId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereMerchantReference($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereKhqrString($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereMd5Hash($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction wherePaymentFor($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction wherePaymentLink($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction wherePaymentMethod($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction wherePaymentStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereQrCodeUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereTrackingStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereTransactionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereUpdatedAt($value)
  */

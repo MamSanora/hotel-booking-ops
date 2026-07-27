@@ -245,7 +245,7 @@
 
                     {{-- Image Slider --}}
                     @if(count($imgs) > 0)
-                        <div class="relative overflow-hidden h-[220px]" x-data="{ current: 0, imgs: {{ json_encode($imgs) }} }">
+                        <div class="relative overflow-hidden h-[220px]" x-data="{ current: 0, imgs: {{ json_encode($imgs) }} }" x-init="setInterval(() => { current = (current + 1) % imgs.length }, 3500)">
                             <template x-for="(img, i) in imgs" :key="i">
                                 <img :src="img" :alt="'{{ $roomType->display_name }} image ' + (i+1)"
                                      class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
