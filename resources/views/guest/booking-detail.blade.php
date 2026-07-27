@@ -258,7 +258,7 @@
                     <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 text-sm">
                         <div>
                             <div class="font-semibold text-hotel-dark">
-                                {{ ucfirst($txn->payment_method ?? '—') }} &mdash; {{ ucfirst($txn->payment_for ?? '—') }}
+                                {{ $txn->displayPaymentMethod() }} &mdash; {{ ucfirst($txn->payment_for ?? '—') }}
                             </div>
                             @if($txn->created_at)
                             <div class="text-gray-400 text-xs mt-0.5">{{ $txn->created_at->format('d M Y, H:i') }}</div>

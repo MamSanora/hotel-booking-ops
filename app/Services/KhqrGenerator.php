@@ -38,8 +38,9 @@ class KhqrGenerator
             Log::warning('KhqrGenerator: TELEGRAM_ABA_ACCOUNT_NUMBER is not set in .env');
         }
         
-        // Extracted from Keo Samnang's original qr_30.00.png static QR code
-        $keoSamnangTag68 = '0010PAYWAY@ABA01071852379020903238434906199FF998462822479918Q99340013178498462822401131816541580224';
+        // Verified against the official ABA Pay printed QR card (IMG_20260727_202149_319.jpg)
+        // Tag 68 = ABA PayWay terminal identifier, exactly 38 chars
+        $keoSamnangTag68 = '0010PAYWAY@ABA010718523790209032384349';
 
         return self::generate($merchantName, $accountNumber, $amount, '840', $bookingReference, $keoSamnangTag68);
     }
@@ -60,7 +61,8 @@ class KhqrGenerator
      * @param  float   $amount         Transaction amount in USD.
      * @param  string  $currency       ISO 4217 numeric code. 840 = USD, 116 = KHR.
      * @param  string  $bookingRef     Optional booking reference for Tag 62.
-     * @param  string  $paywayTag68    Optional ABA PayWay terminal string (Tag 68).
+     * @param  string  $paywayTag68    Optional ABA PayWay terminal string (Tag 68 inside Tag 62).
+     * @param  string  $paywayTag99    Optional ABA PayWay signature string (Top-level Tag 99).
      * @return string
      */
     public static function generate(
@@ -69,7 +71,8 @@ class KhqrGenerator
         float  $amount,
         string $currency = '840',
         string $bookingRef = '',
-        string $paywayTag68 = ''
+        string $paywayTag68 = '',
+        string $paywayTag99 = ''
     ): string {
         // Tag 00: Payload Format Indicator
         $payload  = self::tlv('00', '01');
@@ -110,6 +113,11 @@ class KhqrGenerator
         }
         
         $payload .= self::tlv('62', $sub62);
+
+        // Tag 99: Proprietary / Signature Data (Top Level)
+        if (!empty($paywayTag99)) {
+            $payload .= self::tlv('99', $paywayTag99);
+        }
 
         // Tag 63: CRC-16/CCITT-FALSE checksum (4 hex characters, appended last)
         $payload .= '6304';

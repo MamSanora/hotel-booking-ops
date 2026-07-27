@@ -10,14 +10,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 # ---------------------------------------------------------
 
 # 1. Get these from https://my.telegram.org (Teammate will provide)
-API_ID = 12345678  # Replace with the integer API ID
-API_HASH = 'your_api_hash_here' # Replace with the string API Hash
+API_ID = 37439557  # Replace with the integer API ID
+API_HASH = 'ace9aa091b0908cc062ca4cb6e754c37' # Replace with the string API Hash
 
 # 2. The username of the official ABA Bot
-ABA_BOT_USERNAME = 'ababank_bot' 
+ABA_BOT_USERNAME = 'PayWayByABA_bot'
 
 # 3. The Chat ID of your DARA MEAS TEST OPERATION Group Chat (Usually starts with -100)
-HOTEL_GROUP_ID = -1003717684477
+HOTEL_GROUP_ID = -1003989697331
 
 # ---------------------------------------------------------
 
@@ -39,9 +39,10 @@ async def payment_handler(event):
     
     logging.info(f"Received message from ABA Bot in group: {message_text[:50]}...")
     
-    # Check if the message contains a booking reference (BK-)
-    if "BK-" in message_text:
-        logging.info("[INFO] Found a booking reference! Relaying to Hotel Group...")
+    # Since ABA PayWay strips the 'BK-' reference from merchant receipts,
+    # we just look for any message containing a dollar amount ($).
+    if "$" in message_text:
+        logging.info("[INFO] Found a payment message! Relaying to Hotel Group...")
         
         try:
             # Send a clean relay message to the exact same group chat

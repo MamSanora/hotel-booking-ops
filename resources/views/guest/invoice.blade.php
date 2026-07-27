@@ -153,7 +153,7 @@
                                 <td class="py-4 px-5 text-gray-600">{{ $txn->created_at->format('d M Y, H:i') }}</td>
                                 <td class="py-4 px-5 font-medium text-gray-700">
                                     <i class="bi bi-credit-card mr-2 text-gray-400"></i>
-                                    {{ ucfirst($txn->payment_method) }}
+                                    {{ $txn->displayPaymentMethod() }}
                                 </td>
                                 <td class="py-4 px-5 text-right font-semibold text-emerald-600">${{ number_format($txn->amount_paid, 2) }}</td>
                             </tr>

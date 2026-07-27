@@ -189,6 +189,28 @@ class RoomController extends Controller
             // Deposit = total × (tier / 100). For 100% tier this equals total.
             $depositAmount = round($total * ($requestedTier / 100), 2);
 
+            // ── Step 2b: Payment Amount Lock (Thread-Safe) ────────────────────
+            // ABA PayWay Telegram bot does not include the BK- booking reference in
+            // its notifications, so we match payments by exact dollar amount.
+            // To guarantee that match is always 1-to-1, we disallow two KHQR/Telegram
+            // pending transactions from sharing the same deposit amount at the same time.
+            // Using lockForUpdate() inside the existing DB transaction makes this check
+            // itself race-condition-proof (concurrent requests will queue here).
+            $automatedMethods = [Transaction::METHOD_KHQR_ABA, Transaction::METHOD_KHQR, Transaction::METHOD_TELEGRAM];
+            if (in_array($validated['payment_method'], $automatedMethods)) {
+                $conflictingTransaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
+                    ->whereIn('payment_method', $automatedMethods)
+                    ->where('amount_paid', $depositAmount)
+                    ->whereHas('booking', fn ($q) => $q->where('booking_status', Booking::STATUS_PENDING))
+                    ->where('booking_id', '!=', $existingBooking?->id ?? 0) // Don't block re-submissions of the same booking
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($conflictingTransaction) {
+                    throw new \Exception('AMOUNT_COLLISION:' . $depositAmount);
+                }
+            }
+
             if ($existingBooking) {
                 // Update total price and special requests if needed
                 $existingBooking->update([
@@ -256,6 +278,14 @@ class RoomController extends Controller
                     ->withErrors(['check_in_date' => 'This room type is fully booked for the selected dates. Please choose different dates or another room type.'])
                     ->withInput();
             }
+
+            if (str_starts_with($e->getMessage(), 'AMOUNT_COLLISION:')) {
+                $lockedAmount = str_replace('AMOUNT_COLLISION:', '', $e->getMessage());
+                return back()
+                    ->withErrors(['payment_method' => "Our automated payment system is currently processing another transaction for the amount of $$lockedAmount. This resolves in a few minutes. Please try again shortly."])
+                    ->withInput();
+            }
+
             throw $e;
         }
 

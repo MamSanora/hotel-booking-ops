@@ -105,33 +105,88 @@ class AbaTelegramService implements PaymentGatewayInterface
         ]);
 
         // -- Extract amount --------------------------------------------------
-        // Matches "$25.00", "USD 25.00", "25.00 USD", etc.
+        // Matches "$0.02", "$30.00", etc. from ABA PayWay message format.
         $amount = null;
         if (preg_match('/\$\s*(\d+(?:\.\d{1,2})?)/u', $messageText, $m)) {
             $amount = (float) $m[1];
         }
 
-        // -- Extract booking reference from Remark ---------------------------
-        // Expected format in the Remark field: "BK-00042" (see Booking::referenceNumber())
-        if (! preg_match('/\bBK-(\d+)\b/i', $messageText, $rm)) {
-            Log::warning('AbaTelegramService: no booking reference found in message');
-            return false;
+        // -- Extract APV code ------------------------------------------------
+        // ABA PayWay always includes "APV: 537035" (6 digits) in its message.
+        $apvCode = null;
+        if (preg_match('/APV:\s*(\d+)/u', $messageText, $apvMatch)) {
+            $apvCode = $apvMatch[1];
         }
 
-        $bookingId = (int) $rm[1];
+        // -- Extract Transaction Number --------------------------------------
+        // ABA PayWay includes "លេខប្រតិបត្តិការ: 178516144530426" (15 digits).
+        // This is globally unique and acts as an irrefutable payment reference.
+        $transactionNumber = null;
+        if (preg_match('/(\d{10,20})/', $messageText, $txnMatch)) {
+            $transactionNumber = $txnMatch[1];
+        }
 
-        // -- Find matching pending transaction -------------------------------
-        $transaction = Transaction::where('booking_id', $bookingId)
-            ->whereIn('payment_method', [Transaction::METHOD_TELEGRAM, Transaction::METHOD_KHQR])
-            ->where('payment_status', Transaction::STATUS_PENDING)
-            ->latest()
-            ->first();
+        Log::info('AbaTelegramService: extracted payment identifiers', [
+            'amount'             => $amount,
+            'apv_code'           => $apvCode,
+            'transaction_number' => $transactionNumber,
+        ]);
+
+        // -- Duplicate payment guard ----------------------------------------
+        // If we already processed this exact ABA transaction number, ignore it.
+        if ($transactionNumber) {
+            $alreadyProcessed = Transaction::where('tracking_status', 'LIKE', '%' . $transactionNumber . '%')
+                ->exists();
+            if ($alreadyProcessed) {
+                Log::info('AbaTelegramService: duplicate transaction number detected, ignoring.', [
+                    'transaction_number' => $transactionNumber,
+                ]);
+                return false;
+            }
+        }
+
+        // -- Extract booking reference from Remark ---------------------------
+        // Expected format in the Remark field: "BK-00042" (see Booking::referenceNumber())
+        $transaction = null;
+        $bookingId = null;
+
+        if (preg_match('/\bBK-(\d+)\b/i', $messageText, $rm)) {
+            $bookingId = (int) $rm[1];
+            
+            // -- Find matching pending transaction -------------------------------
+            $transaction = Transaction::where('booking_id', $bookingId)
+                ->whereIn('payment_method', [Transaction::METHOD_TELEGRAM, Transaction::METHOD_KHQR, Transaction::METHOD_KHQR_ABA])
+                ->where('payment_status', Transaction::STATUS_PENDING)
+                ->latest()
+                ->first();
+        } else {
+            // -- Fallback: Match by Exact Amount --------------------------------
+            // ABA PayWay Merchant bots strip the BK- reference from Telegram receipts.
+            // In this case, we find the pending transaction matching the exact amount.
+            if ($amount) {
+                Log::info('AbaTelegramService: No BK- reference found. Attempting fallback match by exact amount: $' . $amount);
+                
+                $transaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
+                    ->whereIn('payment_method', [Transaction::METHOD_TELEGRAM, Transaction::METHOD_KHQR, Transaction::METHOD_KHQR_ABA])
+                    ->where('amount_paid', $amount)
+                    ->oldest() // FIFO: Credit the person who has been waiting the longest first
+                    ->first();
+
+                if ($transaction) {
+                    $bookingId = $transaction->booking_id;
+                    Log::info('AbaTelegramService: Fallback match successful for Booking ID: ' . $bookingId);
+                }
+            }
+        }
 
         // -- Overpayment / duplicate payment detection -----------------------
-        // If there is no pending transaction, the booking was already paid.
-        // Record the duplicate as a new transaction and alert staff.
+        // If there is no pending transaction, the booking was already paid (or not found).
         if (! $transaction) {
-            return $this->handleOverpayment($bookingId, $amount);
+            if ($bookingId) {
+                return $this->handleOverpayment($bookingId, $amount);
+            }
+            Log::warning('AbaTelegramService: No pending transaction found for this payment message.');
+            return false;
         }
 
         $booking = $transaction->booking;
@@ -150,10 +205,15 @@ class AbaTelegramService implements PaymentGatewayInterface
             ? Transaction::STATUS_FULL
             : Transaction::STATUS_PARTIAL;
 
+        // Build tracking status with ABA's unique identifiers for full audit trail.
+        $trackingParts = ['TELEGRAM_CONFIRMED'];
+        if ($apvCode)           { $trackingParts[] = 'APV:' . $apvCode; }
+        if ($transactionNumber) { $trackingParts[] = 'TXN:' . $transactionNumber; }
+
         $transaction->update([
             'amount_paid'     => $confirmedAmount,
             'payment_status'  => $newStatus,
-            'tracking_status' => 'TELEGRAM_CONFIRMED',
+            'tracking_status' => implode('|', $trackingParts),
         ]);
 
         Log::info('AbaTelegramService: payment confirmed via Telegram', [
