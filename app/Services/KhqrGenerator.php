@@ -50,7 +50,10 @@ class KhqrGenerator
      */
     public static function forMamSanora(float $amount, string $bookingReference = ''): string
     {
-        return self::generate('MAM SANORA DARA MEAS', '126072417440245', $amount, '840', $bookingReference, '0010PAYWAY@ABA010718485360209032383462');
+        $merchantName = config('telegram.aba_merchant_name_2', 'MAM SANORA DARA MEAS');
+        $accountNumber = config('telegram.aba_account_number_2', '126072417440245');
+        
+        return self::generate($merchantName, $accountNumber, $amount, '840', $bookingReference, '0010PAYWAY@ABA010718485360209032383462');
     }
 
     /**

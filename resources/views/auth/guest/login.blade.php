@@ -129,21 +129,6 @@
                 </a>
             </p>
 
-            {{-- Staff Login Links --}}
-            <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-                <p class="text-xs text-gray-400 mb-3 uppercase tracking-wider">Staff Access</p>
-                <div class="flex justify-center gap-4">
-                    <a href="{{ route('admin.login') }}"
-                       class="text-xs text-gray-500 hover:text-hotel-dark transition-colors flex items-center gap-1">
-                        <i class="bi bi-shield-lock"></i> Admin Portal
-                    </a>
-                    <span class="text-gray-200">|</span>
-                    <a href="{{ route('reception.login') }}"
-                       class="text-xs text-gray-500 hover:text-hotel-dark transition-colors flex items-center gap-1">
-                        <i class="bi bi-person-badge"></i> Reception Portal
-                    </a>
-                </div>
-            </div>
 
         </div>
     </div>

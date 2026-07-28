@@ -179,14 +179,29 @@
                                         <a href="{{ route('guest.booking.show', $booking->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-hotel-gold transition-colors" title="View Details">
                                             <i class="bi bi-eye text-lg"></i>
                                         </a>
+                                        @if($booking->booking_status === \App\Models\Booking::STATUS_PENDING)
+                                            <a href="{{ route('payment.show', $booking->id) }}" class="inline-flex items-center justify-center h-8 px-3 rounded-lg border border-hotel-gold text-hotel-gold hover:bg-hotel-gold hover:text-white transition-colors" title="Pay Now">
+                                                <span class="text-[0.7rem] font-bold uppercase tracking-wider whitespace-nowrap">Pay Now</span>
+                                            </a>
+                                        @endif
                                         @if($booking->canCancel())
-                                            <form method="POST" action="{{ route('guest.booking.cancel', $booking->id) }}"
-                                                  onsubmit="return confirm('Cancel this booking?')" class="inline-block">
-                                                @csrf @method('PATCH')
-                                                <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors" title="Cancel">
+                                            @php
+                                                $hasPaid = $booking->transactions()->whereIn('payment_status', [\App\Models\Transaction::STATUS_FULL, \App\Models\Transaction::STATUS_PARTIAL])->exists();
+                                                $requiresQr = $booking->isRefundable() && $hasPaid;
+                                            @endphp
+                                            @if($requiresQr)
+                                                <a href="{{ route('guest.booking.show', $booking->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors" title="Cancel (Requires QR)">
                                                     <i class="bi bi-x text-lg"></i>
-                                                </button>
-                                            </form>
+                                                </a>
+                                            @else
+                                                <form method="POST" action="{{ route('guest.booking.cancel', $booking->id) }}"
+                                                      onsubmit="return confirm('Cancel this booking?')" class="inline-block">
+                                                    @csrf @method('PATCH')
+                                                    <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors" title="Cancel">
+                                                        <i class="bi bi-x text-lg"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
                                         @endif
                                     </div>
                                 </td>

@@ -55,6 +55,9 @@ return [
     */
     'aba_merchant_name' => env('TELEGRAM_ABA_MERCHANT_NAME', 'KEO SAMNANG DARAMEAS'),
 
+    'aba_account_number_2' => env('TELEGRAM_ABA_ACCOUNT_NUMBER_2', ''),
+    'aba_merchant_name_2' => env('TELEGRAM_ABA_MERCHANT_NAME_2', 'MAM SANORA DARA MEAS'),
+
     /*
     |--------------------------------------------------------------------------
     | Telegram Group / Chat ID

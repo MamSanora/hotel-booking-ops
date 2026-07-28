@@ -158,7 +158,14 @@
                     @elseif($status === 'checked-out')
                         This stay has been completed.
                     @elseif($status === 'cancelled')
-                        This booking has been cancelled.
+                        @php
+                            $refundPending = $booking->transactions->where('payment_status', \App\Models\Transaction::STATUS_REFUND_PENDING)->isNotEmpty();
+                        @endphp
+                        @if($refundPending)
+                            This booking has been cancelled. Your refund is pending review by our reception team.
+                        @else
+                            This booking has been cancelled.
+                        @endif
                     @endif
                 </div>
             </div>

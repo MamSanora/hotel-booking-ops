@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\ExchangeRateController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\Auth\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Auth\Guest\ForgotPasswordController as GuestForgotPasswordController;
 use App\Http\Controllers\Auth\Guest\LoginController as GuestLoginController;
@@ -231,6 +232,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Payment gateway management
         Route::get('/payment-gateways',           [PaymentGatewayController::class, 'index'])->name('payment-gateways.index');
         Route::patch('/payment-gateways/{gateway}', [PaymentGatewayController::class, 'update'])->name('payment-gateways.update');
+
+        // Maker-Checker Refund Workflow
+        Route::get('/refunds', [RefundController::class, 'pendingRefunds'])->name('refunds.index');
+        Route::get('/refunds/{transaction}', [RefundController::class, 'showRefund'])->name('refunds.show');
+        Route::post('/refunds/{transaction}/complete', [RefundController::class, 'completeRefund'])->name('refunds.complete');
     });
 });
 
@@ -254,7 +260,7 @@ Route::prefix('reception')->name('reception.')->group(function () {
         // Booking lifecycle actions
         Route::post('/checkin/{booking}',         [ReceptionDashboardController::class, 'checkin'])->name('checkin');
         Route::post('/checkout/{booking}',        [ReceptionDashboardController::class, 'checkout'])->name('checkout');
-        Route::post('/payment/manual/{booking}',  [ReceptionDashboardController::class, 'markAsPaid'])->name('payment.manual');
+        Route::post('/payment/manual/{booking}', [ReceptionDashboardController::class, 'markAsPaid'])->name('payment.manual');
         Route::get('/receipt/{booking}',          [ReceptionDashboardController::class, 'receipt'])->name('receipt');
 
         // Walk-in bookings

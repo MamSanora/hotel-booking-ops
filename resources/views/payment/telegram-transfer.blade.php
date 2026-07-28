@@ -259,6 +259,12 @@ function copyText(elementId, btn) {
         setTimeout(() => { btn.innerHTML = orig; }, 1500);
     });
 }
+
+// ── 1-min Session Expiry (Matches Backend Lock) ────────────────────────
+setTimeout(() => {
+    alert('Your payment session has expired to free up the room for other guests. Please start a new booking.');
+    window.location.href = '/guest/dashboard';
+}, 60000);
 </script>
 @if(!empty($khqrString))
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>

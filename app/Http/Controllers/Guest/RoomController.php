@@ -201,6 +201,7 @@ class RoomController extends Controller
                 $conflictingTransaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
                     ->whereIn('payment_method', $automatedMethods)
                     ->where('amount_paid', $depositAmount)
+                    ->where('updated_at', '>=', now()->subMinutes(1)) // 1-minute expiry for the amount lock
                     ->whereHas('booking', fn ($q) => $q->where('booking_status', Booking::STATUS_PENDING))
                     ->where('booking_id', '!=', $existingBooking?->id ?? 0) // Don't block re-submissions of the same booking
                     ->lockForUpdate()
@@ -360,7 +361,7 @@ class RoomController extends Controller
             if ($isRefundable && $hasPaid) {
                 $booking->transactions()
                     ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
-                    ->update(['payment_status' => Transaction::STATUS_REFUNDED]);
+                    ->update(['payment_status' => Transaction::STATUS_REFUND_PENDING]);
             }
         });
 
@@ -368,7 +369,7 @@ class RoomController extends Controller
         
         if ($hasPaid) {
             if ($isRefundable) {
-                $message .= " Your payment will be refunded according to our cancellation policy.";
+                $message .= " Your refund is now pending review by our reception team.";
             } else {
                 $message .= " As this is within 24 hours of check-in, the payment is non-refundable.";
             }

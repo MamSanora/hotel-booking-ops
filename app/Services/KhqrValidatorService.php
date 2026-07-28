@@ -18,9 +18,7 @@ class KhqrValidatorService
     public function validateRefundQr(string $imagePath): bool
     {
         try {
-            $qr = new QRCode();
-            $result = $qr->readFromFile($imagePath);
-            $khqrString = (string) $result; // In php-qrcode, casting result to string gets the content
+            $khqrString = $this->readQrString($imagePath);
             
             if (empty($khqrString)) {
                 throw new Exception("QR code contains no data.");
@@ -30,6 +28,19 @@ class KhqrValidatorService
         } catch (\Throwable $e) {
             Log::error('QR Validation failed', ['error' => $e->getMessage(), 'path' => $imagePath]);
             throw new Exception("Could not read QR code. Please ensure the image is clear and contains a valid KHQR code.");
+        }
+    }
+
+    /**
+     * Reads a QR code image and returns the raw string content.
+     */
+    public function readQrString(string $imagePath): string
+    {
+        try {
+            $qr = new QRCode();
+            return (string) $qr->readFromFile($imagePath);
+        } catch (\Throwable $e) {
+            throw new Exception("Could not read QR code from image.");
         }
     }
 

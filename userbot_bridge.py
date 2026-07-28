@@ -13,8 +13,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 API_ID = 37439557  # Replace with the integer API ID
 API_HASH = 'ace9aa091b0908cc062ca4cb6e754c37' # Replace with the string API Hash
 
-# 2. The username of the official ABA Bot
-ABA_BOT_USERNAME = 'PayWayByABA_bot'
+# 2. The usernames of the official ABA Bots (Merchant & Personal)
+ABA_BOT_USERNAMES = ['PayWayByABA_bot', 'ababank_bot']
 
 # 3. The Chat ID of your DARA MEAS TEST OPERATION Group Chat (Usually starts with -100)
 HOTEL_GROUP_ID = -1003989697331
@@ -32,7 +32,7 @@ async def payment_handler(event):
     """
     # Check if the sender is actually the ABA Bot
     sender = await event.get_sender()
-    if not sender or sender.username != ABA_BOT_USERNAME:
+    if not sender or sender.username not in ABA_BOT_USERNAMES:
         return # Ignore messages sent by humans or other bots
         
     message_text = event.message.message

@@ -65,7 +65,7 @@ namespace App\Models{
  * @property string $provider_key  The OAuth provider's unique user ID
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Guest $guest
+ * @property-read \App\Models\Guest|null $guest
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AuthMethod newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AuthMethod newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AuthMethod query()
@@ -110,6 +110,7 @@ namespace App\Models{
  * @property string|null $special_requests
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\Guest|null $guest
  * @property-read \App\Models\Staff|null $handledBy
  * @property-read Booking|null $relocatedTo
@@ -127,6 +128,7 @@ namespace App\Models{
  * @method static \Database\Factories\BookingFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking recentHistory()
@@ -136,6 +138,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereCheckInDate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereCheckOutDate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereFloorPreference($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereGuestId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereGuestType($value)
@@ -150,6 +153,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereTotalPrice($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking whereViewPreference($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Booking withoutTrashed()
  */
 	class Booking extends \Eloquent {}
 }
@@ -254,6 +259,7 @@ namespace App\Models{
  * @property string|null $nationality
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\Booking|null $activeBooking
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AuthMethod> $authMethods
  * @property-read int|null $auth_methods_count
@@ -265,13 +271,17 @@ namespace App\Models{
  * @method static \Database\Factories\GuestFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereFullName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereGender($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereNationality($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Guest withoutTrashed()
  */
 	class Guest extends \Eloquent {}
 }
@@ -308,7 +318,7 @@ namespace App\Models{
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Guest $guest
+ * @property-read \App\Models\Guest|null $guest
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @method static \Database\Factories\GuestAuthFactory factory($count = null, $state = [])
@@ -343,6 +353,7 @@ namespace App\Models{
  * @property string      $item_name
  * @property string|null $category          'amenity' | 'bedding' | 'beverage'
  * @property int|null    $created_by_admin_id
+ * @property numeric $price
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Admin|null $createdBy
@@ -356,6 +367,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ItemsCatalog whereCreatedByAdminId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ItemsCatalog whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ItemsCatalog whereItemName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ItemsCatalog wherePrice($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ItemsCatalog whereUpdatedAt($value)
  */
 	class ItemsCatalog extends \Eloquent {}
@@ -401,7 +413,7 @@ namespace App\Models{
  * @property string $phone_number
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Guest $guest
+ * @property-read \App\Models\Guest|null $guest
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Phone newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Phone newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Phone query()
@@ -428,6 +440,7 @@ namespace App\Models{
  * @property int $catalog_id
  * @property int $amount_per_item
  * @property \Illuminate\Support\Carbon $created_at
+ * @property string|null $deleted_at
  * @property-read \App\Models\ItemsCatalog $catalog
  * @property-read \App\Models\RoomService $roomService
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem newModelQuery()
@@ -436,6 +449,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem whereAmountPerItem($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem whereCatalogId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RequestedItem whereRequestId($value)
  */
@@ -538,7 +552,8 @@ namespace App\Models{
  * @property string|null $response
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Booking $booking
+ * @property string|null $deleted_at
+ * @property-read \App\Models\Booking|null $booking
  * @property-read \App\Models\Staff|null $handledBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\RequestedItem> $requestedItems
  * @property-read int|null $requested_items_count
@@ -549,6 +564,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService whereBookingId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService whereGuestNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService whereHandledByStaffId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomService whereId($value)
@@ -577,6 +593,8 @@ namespace App\Models{
  * @property int         $child_capacity  Maximum children (under 12) this type accommodates.
  * @property float       $price_per_night
  * @property string|null $description
+ * @property bool $is_visible
+ * @property bool $use_mam_sanora_qr
  * @property float $overbooking_multiplier
  * @property array<array-key, mixed>|null $images
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -594,11 +612,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereDisplayName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereImages($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereIsVisible($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereOverbookingMultiplier($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType wherePricePerNight($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereSizeSqm($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RoomType whereUseMamSanoraQr($value)
  */
 	class RoomType extends \Eloquent {}
 }
@@ -673,10 +693,12 @@ namespace App\Models{
  * @property string      $payment_status  'pending'|'partial'|'full'|'refunded'
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Booking $booking
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\Booking|null $booking
  * @method static \Database\Factories\TransactionFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction successful()
@@ -684,6 +706,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereApv($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereBookingId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereKhqrString($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereMd5Hash($value)
@@ -693,6 +716,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereTrackingStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereTransactionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Transaction withoutTrashed()
  */
 	class Transaction extends \Eloquent {}
 }

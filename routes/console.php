@@ -16,3 +16,6 @@ Schedule::command('app:optimize-overbooking')->dailyAt('02:05');
 // Fetch the latest USD→KHR rate from NBC (via Frankfurter API) every morning
 // before business hours so admins always see a fresh rate on login.
 Schedule::command('app:sync-exchange-rate')->dailyAt('08:00');
+
+// Free up inventory for bookings abandoned at payment
+Schedule::command('bookings:cleanup-abandoned')->everyMinute();

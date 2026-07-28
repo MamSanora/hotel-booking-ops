@@ -133,6 +133,12 @@
                     <span>Bookings</span>
                 </a>
 
+                <a href="{{ route('admin.refunds.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-arrow-counterclockwise text-base w-5 text-center"></i>
+                    <span>Pending Refunds</span>
+                </a>
+
                 <a href="{{ route('admin.rooms.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.rooms.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-door-closed text-base w-5 text-center"></i>

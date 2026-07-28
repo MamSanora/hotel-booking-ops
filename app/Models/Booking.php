@@ -63,6 +63,12 @@ class Booking extends Model
      */
     public const STATUS_SNATCHED = 'snatched';
 
+    /**
+     * Abandoned — set by the cleanup command when a pending booking has not
+     * been paid within 15 minutes. This frees up room inventory automatically.
+     */
+    public const STATUS_ABANDONED = 'abandoned';
+
     // ── Payment Tier Constants ─────────────────────────────────────────────
 
     /** Guest pays 20% upfront; remainder settled at check-in. */
@@ -116,6 +122,8 @@ class Booking extends Model
         'bed_type',
         'floor_preference',
         'view_preference',
+        // Refund QR uploaded by the guest during cancellation (for Maker-Checker flow)
+        'refund_qr_path',
     ];
 
     protected function casts(): array

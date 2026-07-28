@@ -141,8 +141,11 @@ class PaymentController extends Controller
                 ? $transaction->amount_paid
                 : $booking->depositAmount();
             
+            $merchantName = config('telegram.aba_merchant_name_2', 'MAM SANORA');
+            $accountNumber = config('telegram.aba_account_number_2', '126072315150668');
+            
             // Mam Sanora credentials for Test Room
-            $khqrString = \App\Services\KhqrGenerator::generate('MAM SANORA', '126072315150668', $amount, '840', $reference);
+            $khqrString = \App\Services\KhqrGenerator::generate($merchantName, $accountNumber, $amount, '840', $reference);
         }
 
         return view('payment.telegram-transfer', compact(

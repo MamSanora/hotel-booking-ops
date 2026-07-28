@@ -440,19 +440,24 @@
         correctLevel: QRCode.CorrectLevel.H,
     });
 
-    // ── 15-min Countdown ─────────────────────────────────────────────────
-    let secs = 15 * 60;
+    // ── 1-min Countdown (Matches Backend Lock Expiry) ────────────────────
+    let secs = 60;
     const countEl = document.getElementById('countdown');
     const timer = setInterval(() => {
         secs--;
         const m = String(Math.floor(secs / 60)).padStart(2, '0');
         const s = String(secs % 60).padStart(2, '0');
-        countEl.textContent = `${m}:${s}`;
+        if (countEl) countEl.textContent = `${m}:${s}`;
+        
         if (secs <= 0) {
             clearInterval(timer);
             clearInterval(poll);
-            countEl.textContent = 'Expired';
-            countEl.style.color = '#ef4444';
+            if (countEl) {
+                countEl.textContent = 'Session Expired';
+                countEl.style.color = '#ef4444';
+            }
+            alert('Your payment session has expired. Please start a new booking.');
+            window.location.href = '/guest/dashboard';
         }
     }, 1000);
 

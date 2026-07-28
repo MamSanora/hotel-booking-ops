@@ -37,6 +37,13 @@ class ReceptionDashboardController extends Controller
             ->orderBy('check_in_date')
             ->get();
 
+        // No-shows: bookings that were never checked in but whose check-in date is in the past.
+        $noShows = Booking::with(['guest', 'room'])
+            ->where('booking_status', Booking::STATUS_BOOKED)
+            ->whereDate('check_in_date', '<', today())
+            ->orderBy('check_in_date')
+            ->get();
+
         // Guests arriving specifically today (for Today's Guest Movement block).
         $arrivalsToday = Booking::with(['guest', 'room.roomType'])
             ->arrivingToday()
@@ -104,6 +111,7 @@ class ReceptionDashboardController extends Controller
             'extensionLimits',
             'pendingRoomServices',
             'recentHistory',
+            'noShows',
         ));
     }
 
