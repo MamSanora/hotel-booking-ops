@@ -108,7 +108,7 @@
 
             <div class="px-6 pb-6 pt-2 text-center text-gray-500 text-[0.78rem]">
                 <i class="bi bi-shield-check mr-1 text-green-500"></i>
-                Powered by {{ $method === 'aba_payway' ? 'ABA PayWay' : 'Bakong • NBC' }} &nbsp;&middot;&nbsp; Dara Meas Hotel, Phnom Penh
+                Secure Payment &nbsp;&middot;&nbsp; Dara Meas Hotel, Phnom Penh
             </div>
 
         </div>

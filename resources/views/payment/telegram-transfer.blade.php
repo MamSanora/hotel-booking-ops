@@ -160,12 +160,17 @@
                 </div>
 
                 {{-- Confirmation Status --}}
-                <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
-                    <span class="pulse-dot w-2.5 h-2.5 bg-blue-500 rounded-full mt-1 shrink-0 inline-block"></span>
-                    <div class="text-[0.8rem] text-blue-700">
-                        <strong>Waiting for confirmation.</strong><br>
-                        After you transfer, our team will confirm your payment via Telegram notification.
-                        Your booking will be confirmed automatically — you may close this page.
+                <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex flex-col gap-2">
+                    <div class="flex items-start gap-3">
+                        <span class="pulse-dot w-2.5 h-2.5 bg-blue-500 rounded-full mt-1 shrink-0 inline-block"></span>
+                        <div class="text-[0.8rem] text-blue-700">
+                            <strong>Waiting for confirmation.</strong><br>
+                            After you transfer, our team will confirm your payment.
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 text-gray-500 font-semibold self-end">
+                        <i class="bi bi-clock text-[11px]"></i>
+                        <span id="countdown">01:00</span>
                     </div>
                 </div>
 
@@ -230,7 +235,13 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Check-out</span>
-                        <span class="font-semibold text-hotel-dark">{{ \Carbon\Carbon::parse($booking->check_out_date)->format('d M Y') }}</span>
+                        <span class="font-semibold text-hotel-dark">
+                            @if($transaction->payment_for === \App\Models\Transaction::FOR_STAY_EXTENSION)
+                                {{ \Carbon\Carbon::parse($transaction->extension_new_checkout)->format('d M Y') }}
+                            @else
+                                {{ \Carbon\Carbon::parse($booking->check_out_date)->format('d M Y') }}
+                            @endif
+                        </span>
                     </div>
                     <div class="border-t border-[#ede8df] pt-2 flex justify-between">
                         <span class="text-gray-500 font-semibold">Amount to Pay</span>
@@ -260,11 +271,6 @@ function copyText(elementId, btn) {
     });
 }
 
-// ── 1-min Session Expiry (Matches Backend Lock) ────────────────────────
-setTimeout(() => {
-    alert('Your payment session has expired to free up the room for other guests. Please start a new booking.');
-    window.location.href = '/guest/dashboard';
-}, 60000);
 </script>
 @if(!empty($khqrString))
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -281,4 +287,7 @@ setTimeout(() => {
     });
 </script>
 @endif
+
+@include('payment.partials.countdown-script')
+@include('payment.partials.unlock-script')
 @endpush

@@ -17,6 +17,7 @@ export default {
             fontFamily: {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
                 playfair: ['"Playfair Display"', 'serif'],
+                khmer: ['Battambang', 'sans-serif'],
             },
             colors: {
                 hotel: {

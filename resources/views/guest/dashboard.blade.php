@@ -163,7 +163,9 @@
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="text-[0.75rem] text-gray-500 font-semibold mb-0.5">Total: ${{ number_format($booking->total_price, 2) }}</div>
-                                    @if($booking->balanceDue() > 0)
+                                    @if($booking->booking_status === \App\Models\Booking::STATUS_PENDING)
+                                        <div class="text-[0.85rem] font-bold text-red-500">Deposit: ${{ number_format($booking->depositAmount(), 2) }}</div>
+                                    @elseif($booking->balanceDue() > 0)
                                         <div class="text-[0.85rem] font-bold text-red-500">Due: ${{ number_format($booking->balanceDue(), 2) }}</div>
                                     @else
                                         <div class="text-[0.85rem] font-bold text-emerald-600">Paid in Full</div>
@@ -253,6 +255,7 @@
                                     'checked-in'  => 'bg-green-100 text-green-800',
                                     'checked-out' => 'bg-gray-200 text-gray-800',
                                     'cancelled'   => 'bg-red-100 text-red-800',
+                                    'abandoned'   => 'bg-gray-200 text-gray-500',
                                 ];
                                 $statusClass  = $statusColors[$booking->booking_status] ?? 'bg-gray-100 text-gray-800';
                                 $statusLabels = [
@@ -261,6 +264,7 @@
                                     'checked-in'  => 'Checked In',
                                     'checked-out' => 'Checked Out',
                                     'cancelled'   => 'Cancelled',
+                                    'abandoned'   => 'Abandoned',
                                 ];
                                 $statusLabel = $statusLabels[$booking->booking_status] ?? ucfirst($booking->booking_status);
                             @endphp
@@ -279,7 +283,9 @@
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="text-[0.75rem] text-gray-500 font-semibold mb-0.5">Total: ${{ number_format($booking->total_price, 2) }}</div>
-                                    @if($booking->balanceDue() > 0)
+                                    @if($booking->booking_status === \App\Models\Booking::STATUS_PENDING)
+                                        <div class="text-[0.85rem] font-bold text-red-500">Deposit: ${{ number_format($booking->depositAmount(), 2) }}</div>
+                                    @elseif($booking->balanceDue() > 0)
                                         <div class="text-[0.85rem] font-bold text-red-500">Due: ${{ number_format($booking->balanceDue(), 2) }}</div>
                                     @else
                                         <div class="text-[0.85rem] font-bold text-emerald-600">Paid in Full</div>

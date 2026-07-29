@@ -94,7 +94,7 @@ class ReceptionDashboardController extends Controller
         // Pending room service requests
         $pendingRoomServices = RoomService::with(['booking.room', 'booking.guest', 'requestedItems.catalog'])
             ->pending()
-            ->oldest()
+            ->latest()
             ->get();
 
         // Recent booking history — checked-out, cancelled, or relocated within the last 14 days.

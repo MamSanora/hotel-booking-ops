@@ -52,9 +52,9 @@ class StoreBookingRequest extends FormRequest
             // 20 = 20% deposit, 50 = 50% deposit, 100 = full payment.
             'payment_tier' => ['required', 'integer', 'in:20,50,100'],
             // Guest preference fields (optional, used as hints for reception).
-            'bed_type'         => ['nullable', 'string', 'in:twin,double'],
-            'floor_preference' => ['nullable', 'string', 'in:2,3,4,5'],
-            'view_preference'  => ['nullable', 'string', 'in:balcony,window'],
+            'bed_type'         => ['nullable', 'string', 'max:50'],
+            'floor_preference' => ['nullable', 'string', 'max:50'],
+            'view_preference'  => ['nullable', 'string', 'max:50'],
         ];
     }
 

@@ -60,6 +60,9 @@ class Transaction extends Model
         'khqr_string',
         'md5_hash',
         'tracking_status',
+        // Payment Lock
+        'payment_locked_at',
+        'payment_lock_expires_at',
         // ABA PayWay fields
         'apv',
         // Payment fields
@@ -67,12 +70,18 @@ class Transaction extends Model
         'payment_for',
         'payment_method',
         'payment_status',
+        // Stay extension metadata (applied to booking after payment confirmed)
+        'extension_nights',
+        'extension_new_checkout',
     ];
 
     protected function casts(): array
     {
         return [
-            'amount_paid' => 'decimal:2',
+            'amount_paid'             => 'decimal:2',
+            'payment_locked_at'       => 'datetime',
+            'payment_lock_expires_at' => 'datetime',
+            'extension_new_checkout'  => 'date',
         ];
     }
 
@@ -179,8 +188,65 @@ class Transaction extends Model
             self::STATUS_PENDING  => 'bg-yellow-100 text-yellow-800',
             self::STATUS_PARTIAL  => 'bg-orange-100 text-orange-800',
             self::STATUS_FULL     => 'bg-green-100 text-green-800',
+            self::STATUS_REFUND_PENDING => 'bg-purple-100 text-purple-800',
             self::STATUS_REFUNDED => 'bg-red-100 text-red-800',
             default               => 'bg-gray-100 text-gray-600',
         };
+    }
+
+    // ── Global Payment Lock ────────────────────────────────────────────────
+    // Only one guest may be on the payment page at a time to prevent the
+    // Telegram bot's amount-based FIFO fallback from crediting the wrong booking.
+
+    /** Lock duration in minutes — kept very short to detect abandoned sessions quickly. */
+    const LOCK_MINUTES = 1;
+
+    /**
+     * Returns the active lock transaction (if any non-expired lock exists
+     * on a transaction that is NOT the given $ownTransactionId).
+     */
+    public static function getActiveLockFor(int $ownTransactionId): ?self
+    {
+        return self::where('payment_lock_expires_at', '>', now())
+            ->where('id', '!=', $ownTransactionId)
+            ->first();
+    }
+
+    /**
+     * Acquires the global payment lock for the given transaction.
+     * If the transaction already holds the lock, the expiry is renewed.
+     */
+    public static function acquireLock(int $transactionId): void
+    {
+        self::where('id', $transactionId)->update([
+            'payment_locked_at'       => now(),
+            'payment_lock_expires_at' => now()->addMinutes(self::LOCK_MINUTES),
+        ]);
+    }
+
+    /**
+     * Releases the payment lock held by this transaction.
+     * Called immediately after payment confirmation so the next guest
+     * doesn't wait the full 15 minutes unnecessarily.
+     */
+    public static function releaseLock(int $transactionId): void
+    {
+        self::where('id', $transactionId)->update([
+            'payment_locked_at'       => null,
+            'payment_lock_expires_at' => null,
+        ]);
+    }
+
+    /**
+     * Clears any stale (expired) locks — called by the cleanup cron job.
+     */
+    public static function clearExpiredLocks(): int
+    {
+        return self::whereNotNull('payment_lock_expires_at')
+            ->where('payment_lock_expires_at', '<=', now())
+            ->update([
+                'payment_locked_at'       => null,
+                'payment_lock_expires_at' => null,
+            ]);
     }
 }

@@ -150,14 +150,17 @@ class RoomController extends Controller
                 // This is the core fix: concurrent requests will queue here.
                 $lockedRoomType = \App\Models\RoomType::where('id', $roomType->id)->lockForUpdate()->first();
 
-                // Check if there's already a pending booking for this guest, same type,
-                // dates, AND the same tier (i.e. they hit back and re-submitted).
+                // Check if there's already a pending booking for this guest and room type.
+                // We intentionally do NOT filter on dates or payment_tier here: a guest who
+                // goes back from the payment page and changes their check-in date, check-out
+                // date, or payment tier should update their existing pending booking rather
+                // than create a second one. Creating a second one would cause their own
+                // pending slot to be counted against them, triggering a false
+                // CAPACITY_EXHAUSTED error.
                 $existingBooking = Booking::where('guest_id', $guestId)
                     ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
-                    ->where('check_in_date', $validated['check_in_date'])
-                    ->where('check_out_date', $validated['check_out_date'])
-                    ->where('payment_tier', $requestedTier)
                     ->where('booking_status', Booking::STATUS_PENDING)
+                    ->latest()
                     ->first();
 
                 // ── Step 1: Predictive overbooking check (Thread-Safe) ────────────────────────────
@@ -186,92 +189,103 @@ class RoomController extends Controller
 
                 $total = $nights * (float) $lockedRoomType->price_per_night;
 
-            // Deposit = total × (tier / 100). For 100% tier this equals total.
-            $depositAmount = round($total * ($requestedTier / 100), 2);
+                // Deposit = total × (tier / 100). For 100% tier this equals total.
+                $depositAmount = round($total * ($requestedTier / 100), 2);
 
-            // ── Step 2b: Payment Amount Lock (Thread-Safe) ────────────────────
-            // ABA PayWay Telegram bot does not include the BK- booking reference in
-            // its notifications, so we match payments by exact dollar amount.
-            // To guarantee that match is always 1-to-1, we disallow two KHQR/Telegram
-            // pending transactions from sharing the same deposit amount at the same time.
-            // Using lockForUpdate() inside the existing DB transaction makes this check
-            // itself race-condition-proof (concurrent requests will queue here).
-            $automatedMethods = [Transaction::METHOD_KHQR_ABA, Transaction::METHOD_KHQR, Transaction::METHOD_TELEGRAM];
-            if (in_array($validated['payment_method'], $automatedMethods)) {
-                $conflictingTransaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
-                    ->whereIn('payment_method', $automatedMethods)
-                    ->where('amount_paid', $depositAmount)
-                    ->where('updated_at', '>=', now()->subMinutes(1)) // 1-minute expiry for the amount lock
-                    ->whereHas('booking', fn ($q) => $q->where('booking_status', Booking::STATUS_PENDING))
-                    ->where('booking_id', '!=', $existingBooking?->id ?? 0) // Don't block re-submissions of the same booking
-                    ->lockForUpdate()
-                    ->first();
+                // ── Step 2b: Payment Amount Lock (Thread-Safe) ────────────────────
+                // ABA PayWay Telegram bot does not include the BK- booking reference in
+                // its notifications, so we match payments by exact dollar amount.
+                // To guarantee that match is always 1-to-1, we disallow two KHQR/Telegram
+                // pending transactions from sharing the same deposit amount at the same time.
+                // Using lockForUpdate() inside the existing DB transaction makes this check
+                // itself race-condition-proof (concurrent requests will queue here).
+                $automatedMethods = [Transaction::METHOD_KHQR_ABA, Transaction::METHOD_KHQR, Transaction::METHOD_TELEGRAM];
+                if (in_array($validated['payment_method'], $automatedMethods)) {
+                    $conflictingTransaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
+                        ->whereIn('payment_method', $automatedMethods)
+                        ->where('amount_paid', $depositAmount)
+                        ->where('updated_at', '>=', now()->subMinutes(1)) // 1-minute expiry for the amount lock
+                        ->whereHas('booking', fn ($q) => $q->where('booking_status', Booking::STATUS_PENDING))
+                        ->where('booking_id', '!=', $existingBooking?->id ?? 0) // Don't block re-submissions of the same booking
+                        ->lockForUpdate()
+                        ->first();
 
-                if ($conflictingTransaction) {
-                    throw new \Exception('AMOUNT_COLLISION:' . $depositAmount);
+                    if ($conflictingTransaction) {
+                        throw new \Exception('AMOUNT_COLLISION:' . $depositAmount);
+                    }
                 }
-            }
 
-            if ($existingBooking) {
-                // Update total price and special requests if needed
-                $existingBooking->update([
+                if ($existingBooking) {
+                    // The guest is changing their mind (different dates, tier, or preferences).
+                    // Update everything on the existing pending booking so it reflects their
+                    // new intent. This is safe: the capacity check above already excluded this
+                    // booking via $existingBooking->id, so no double-counting occurs.
+                    $existingBooking->update([
+                        'room_id'          => $assignedRoom->id,
+                        'check_in_date'    => $validated['check_in_date'],
+                        'check_out_date'   => $validated['check_out_date'],
+                        'total_price'      => $total,
+                        'payment_tier'     => $requestedTier,
+                        'special_requests' => $validated['special_requests'] ?? $existingBooking->special_requests,
+                        'bed_type'         => $validated['bed_type'] ?? null,
+                        'floor_preference' => $validated['floor_preference'] ?? null,
+                        'view_preference'  => $validated['view_preference'] ?? null,
+                    ]);
+
+                    // Check for existing pending transaction
+                    $transaction = $existingBooking->transactions()
+                        ->where('payment_status', Transaction::STATUS_PENDING)
+                        ->latest()
+                        ->first();
+
+                    if ($transaction) {
+                        // Clear any stale payment lock from a prior page visit
+                        // (e.g. guest visited the QR page, went back within 1 min, and changed tier)
+                        $transaction->update([
+                            'amount_paid'             => $depositAmount,
+                            'payment_method'          => $validated['payment_method'],
+                            'payment_locked_at'       => null,
+                            'payment_lock_expires_at' => null,
+                        ]);
+                    } else {
+                        Transaction::create([
+                            'booking_id'     => $existingBooking->id,
+                            'amount_paid'    => $depositAmount,
+                            'payment_for'    => Transaction::FOR_BOOKING,
+                            'payment_method' => $validated['payment_method'],
+                            'payment_status' => Transaction::STATUS_PENDING,
+                        ]);
+                    }
+
+                    return $existingBooking;
+                }
+
+                // Create the booking in 'pending' status — confirmed after payment.
+                $booking = Booking::create([
+                    'guest_id'         => $guestId,
+                    'room_id'          => $assignedRoom->id,
+                    'check_in_date'    => $validated['check_in_date'],
+                    'check_out_date'   => $validated['check_out_date'],
                     'total_price'      => $total,
-                    'special_requests' => $validated['special_requests'] ?? $existingBooking->special_requests,
-                    'bed_type'         => $validated['bed_type'] ?? $existingBooking->bed_type,
-                    'floor_preference' => $validated['floor_preference'] ?? $existingBooking->floor_preference,
-                    'view_preference'  => $validated['view_preference'] ?? $existingBooking->view_preference,
+                    'payment_tier'     => $requestedTier,
+                    'booking_status'   => Booking::STATUS_PENDING,
+                    'guest_type'       => Booking::GUEST_TYPE_USER,
+                    'special_requests' => $validated['special_requests'] ?? null,
+                    'bed_type'         => $validated['bed_type'] ?? null,
+                    'floor_preference' => $validated['floor_preference'] ?? null,
+                    'view_preference'  => $validated['view_preference'] ?? null,
                 ]);
 
-                // Check for existing pending transaction
-                $transaction = $existingBooking->transactions()
-                    ->where('payment_status', Transaction::STATUS_PENDING)
-                    ->latest()
-                    ->first();
+                // Create a pending transaction with the deposit amount.
+                Transaction::create([
+                    'booking_id'     => $booking->id,
+                    'amount_paid'    => $depositAmount,
+                    'payment_for'    => Transaction::FOR_BOOKING,
+                    'payment_method' => $validated['payment_method'],
+                    'payment_status' => Transaction::STATUS_PENDING,
+                ]);
 
-                if ($transaction) {
-                    $transaction->update([
-                        'amount_paid'    => $depositAmount,
-                        'payment_method' => $validated['payment_method'],
-                    ]);
-                } else {
-                    Transaction::create([
-                        'booking_id'     => $existingBooking->id,
-                        'amount_paid'    => $depositAmount,
-                        'payment_for'    => Transaction::FOR_BOOKING,
-                        'payment_method' => $validated['payment_method'],
-                        'payment_status' => Transaction::STATUS_PENDING,
-                    ]);
-                }
-
-                return $existingBooking;
-            }
-
-            // Create the booking in 'pending' status — confirmed after payment.
-            $booking = Booking::create([
-                'guest_id'         => $guestId,
-                'room_id'          => $assignedRoom->id,
-                'check_in_date'    => $validated['check_in_date'],
-                'check_out_date'   => $validated['check_out_date'],
-                'total_price'      => $total,
-                'payment_tier'     => $requestedTier,
-                'booking_status'   => Booking::STATUS_PENDING,
-                'guest_type'       => Booking::GUEST_TYPE_USER,
-                'special_requests' => $validated['special_requests'] ?? null,
-                'bed_type'         => $validated['bed_type'] ?? null,
-                'floor_preference' => $validated['floor_preference'] ?? null,
-                'view_preference'  => $validated['view_preference'] ?? null,
-            ]);
-
-            // Create a pending transaction with the deposit amount.
-            Transaction::create([
-                'booking_id'     => $booking->id,
-                'amount_paid'    => $depositAmount,
-                'payment_for'    => Transaction::FOR_BOOKING,
-                'payment_method' => $validated['payment_method'],
-                'payment_status' => Transaction::STATUS_PENDING,
-            ]);
-
-            return $booking;
+                return $booking;
             });
         } catch (\Exception $e) {
             if ($e->getMessage() === 'CAPACITY_EXHAUSTED') {
@@ -320,7 +334,7 @@ class RoomController extends Controller
      * Cancel a booking (guest-initiated).
      * Policy: only allowed for pending or booked bookings.
      */
-    public function cancel(Request $request, Booking $booking, \App\Services\KhqrValidatorService $validator): RedirectResponse
+    public function cancel(Request $request, Booking $booking): RedirectResponse
     {
         $guestId = Auth::user()->guest_id;
 
@@ -330,49 +344,17 @@ class RoomController extends Controller
             return back()->with('error', 'This booking cannot be cancelled at this stage.');
         }
 
-        $isRefundable = $booking->isRefundable();
-        $hasPaid = $booking->transactions()->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])->exists();
-
-        $refundQrPath = null;
-        if ($isRefundable && $hasPaid) {
-            $request->validate([
-                'refund_qr' => 'required|image|max:5120',
-            ]);
-
-            $path = $request->file('refund_qr')->store('refund_qrs', 'public');
-            $fullPath = storage_path('app/public/' . $path);
-
-            try {
-                $validator->validateRefundQr($fullPath);
-                $refundQrPath = $path;
-            } catch (\Exception $e) {
-                // Delete the invalid file
-                @unlink($fullPath);
-                return back()->with('error', $e->getMessage());
-            }
-        }
-
-        DB::transaction(function () use ($booking, $isRefundable, $hasPaid, $refundQrPath) {
+        DB::transaction(function () use ($booking) {
             $booking->update([
                 'booking_status' => Booking::STATUS_CANCELLED,
-                'refund_qr_path' => $refundQrPath,
             ]);
-
-            if ($isRefundable && $hasPaid) {
-                $booking->transactions()
-                    ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
-                    ->update(['payment_status' => Transaction::STATUS_REFUND_PENDING]);
-            }
         });
 
         $message = "Booking {$booking->referenceNumber()} has been cancelled.";
         
+        $hasPaid = $booking->transactions()->whereIn('payment_status', [\App\Models\Transaction::STATUS_FULL, \App\Models\Transaction::STATUS_PARTIAL])->exists();
         if ($hasPaid) {
-            if ($isRefundable) {
-                $message .= " Your refund is now pending review by our reception team.";
-            } else {
-                $message .= " As this is within 24 hours of check-in, the payment is non-refundable.";
-            }
+            $message .= " Your payment is non-refundable per our cancellation policy.";
         }
 
         return back()->with('success', $message);
@@ -437,17 +419,8 @@ class RoomController extends Controller
             return back()->with('error', 'You can only extend a stay while checked in.');
         }
 
-        // Collect the slugs of currently active gateways for validation.
-        $gatewayManager   = app(PaymentGatewayManager::class);
-        $activeGateways   = $gatewayManager->getVisibleGateways()
-            ->filter(fn ($item) => $item['state'] === 'active')
-            ->map(fn ($item) => $item['gateway']->slug)
-            ->values()
-            ->toArray();
-
         $validated = $request->validate([
-            'extra_nights'   => ['required', 'integer', 'min:1', 'max:30'],
-            'payment_method' => ['required', 'string', 'in:' . implode(',', $activeGateways ?: ['khqr', 'aba_payway'])],
+            'extra_nights' => ['required', 'integer', 'min:1', 'max:30'],
         ]);
 
         $extraNights = (int) $validated['extra_nights'];
@@ -457,46 +430,74 @@ class RoomController extends Controller
             return back()->with('error', 'No room is assigned to this booking.');
         }
 
-        // Conflict check — query overlapping active bookings on the same room.
-        $newCheckout = $booking->check_out_date->addDays($extraNights);
+        // Use the CURRENT checkout date as the baseline (not an already-extended one)
+        // in case a previous extension is still pending payment.
+        $baseline    = $booking->check_out_date;
+        $newCheckout = $baseline->copy()->addDays($extraNights);
 
+        // Conflict check — overlapping active bookings on the same room.
         $conflict = Booking::where('room_id', $room->id)
             ->where('id', '!=', $booking->id)
             ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
             ->where('check_in_date', '<', $newCheckout->toDateString())
-            ->where('check_out_date', '>', $booking->check_out_date->toDateString())
+            ->where('check_out_date', '>', $baseline->toDateString())
             ->exists();
 
         if ($conflict) {
             return back()->with('error',
-                'Sorry — your room is already reserved by another guest during that period. To extend your stay by moving to an available room, please contact the front desk.'
+                'Sorry — your room is already reserved by another guest during that period. Please contact the front desk to extend your stay.'
             );
         }
 
         $extraCost = $extraNights * (float) $room->roomType->price_per_night;
 
-        $extensionTransaction = DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost, $validated) {
-            $booking->update([
-                'check_out_date'           => $newCheckout->toDateString(),
-                'total_price'              => $booking->total_price + $extraCost,
-                'number_of_stay_extension' => $booking->number_of_stay_extension + 1,
+        // Auto-pick the first active payment gateway (same as regular booking flow).
+        $gatewayManager = app(PaymentGatewayManager::class);
+        $defaultGateway = $gatewayManager->getVisibleGateways()
+            ->first(fn ($item) => $item['state'] === 'active');
+
+        $paymentMethod = $defaultGateway
+            ? $defaultGateway['gateway']->slug
+            : Transaction::METHOD_KHQR_ABA;
+
+        // ── Idempotency guard ─────────────────────────────────────────────────
+        // If the guest already has a pending stay_extension transaction (e.g. they
+        // hit the button twice), reuse it instead of creating a duplicate.
+        $existingPending = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_PENDING)
+            ->where('payment_for', Transaction::FOR_STAY_EXTENSION)
+            ->latest()
+            ->first();
+
+        if ($existingPending) {
+            // Update the extension intent in case they changed the nights.
+            $existingPending->update([
+                'amount_paid'             => $extraCost,
+                'extension_nights'        => $extraNights,
+                'extension_new_checkout'  => $newCheckout->toDateString(),
             ]);
 
-            // Create a pending transaction — guest pays online via KHQR/PayWay.
-            // amount_paid is pre-set to the extension cost so PaymentController
-            // knows the correct amount to record when confirming payment.
-            return Transaction::create([
-                'booking_id'     => $booking->id,
-                'amount_paid'    => $extraCost,
-                'payment_for'    => Transaction::FOR_STAY_EXTENSION,
-                'payment_method' => $validated['payment_method'],
-                'payment_status' => Transaction::STATUS_PENDING,
-            ]);
-        });
+            return redirect()
+                ->route('payment.show', $booking->id)
+                ->with('info', "Extension updated: {$extraNights} night(s) until {$newCheckout->format('M d, Y')}. Complete payment of \${$extraCost} to confirm.");
+        }
+
+        // ── Create a new pending extension transaction ─────────────────────────
+        // IMPORTANT: The booking's check_out_date and total_price are NOT updated
+        // here. They will be applied by AbaTelegramService after payment confirmation.
+        Transaction::create([
+            'booking_id'             => $booking->id,
+            'amount_paid'            => $extraCost,
+            'payment_for'            => Transaction::FOR_STAY_EXTENSION,
+            'payment_method'         => $paymentMethod,
+            'payment_status'         => Transaction::STATUS_PENDING,
+            'extension_nights'       => $extraNights,
+            'extension_new_checkout' => $newCheckout->toDateString(),
+        ]);
 
         return redirect()
             ->route('payment.show', $booking->id)
-            ->with('success', "Stay extended by {$extraNights} night(s) until {$newCheckout->format('M d, Y')}. Please complete payment of \${$extraCost} to confirm.");
+            ->with('success', "Stay extension of {$extraNights} night(s) until {$newCheckout->format('M d, Y')} initiated. Please complete payment of \${$extraCost} to confirm.");
     }
 
     /**
@@ -536,14 +537,17 @@ class RoomController extends Controller
         $guestId = Auth::check() ? Auth::user()->guest_id : null;
         $existingBooking = null;
         if ($guestId) {
-             $existingBooking = Booking::where('guest_id', $guestId)
-                ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
-                ->where('check_in_date', $request->check_in_date)
-                ->where('check_out_date', $request->check_out_date)
-                ->where('payment_tier', $request->payment_tier)
-                ->where('booking_status', Booking::STATUS_PENDING)
-                ->first();
+            // Mirror the same loose lookup as store(): match on room type + pending status only.
+            // If the guest has a pending booking for this room type (regardless of the exact
+            // dates or tier they currently have in the form), it will be updated in-place by
+            // store() — so we should exclude it from the capacity count here too.
+            $existingBooking = Booking::where('guest_id', $guestId)
+               ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
+               ->where('booking_status', Booking::STATUS_PENDING)
+               ->latest()
+               ->first();
         }
+
 
         // 1. Is there ANY room available? If not, even without preferences it fails.
         // We do this to ensure we don't say "preferences available" when the hotel is full.

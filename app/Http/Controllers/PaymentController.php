@@ -12,6 +12,7 @@ use App\Services\KhqrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -49,7 +50,7 @@ class PaymentController extends Controller
      * Inspect the pending transaction's payment_method and route to the
      * correct payment page.
      */
-    public function show(Booking $booking): View
+    public function show(Booking $booking): View|RedirectResponse|Response
     {
         $this->authorizeBookingAccess($booking);
 
@@ -59,6 +60,22 @@ class PaymentController extends Controller
             ->where('payment_status', Transaction::STATUS_PENDING)
             ->latest()
             ->firstOrFail();
+
+        // -- Global Payment Lock -----------------------------------------
+        // Only one guest may be on the payment page at a time to prevent
+        // the Telegram bot's amount fallback from crediting the wrong booking.
+        $blocker = Transaction::getActiveLockFor($transaction->id);
+        if ($blocker) {
+            // Another guest currently holds the lock — show the busy screen.
+            $expiresAt = $blocker->payment_lock_expires_at;
+            return response()->make(
+                view('payment.busy', compact('expiresAt'))
+            );
+        }
+
+        // Acquire (or renew) the lock for this transaction.
+        Transaction::acquireLock($transaction->id);
+        // ----------------------------------------------------------------
 
         if ($booking->room->roomType->use_mam_sanora_qr) {
             return $this->showMamSanoraStatic($booking, $transaction);
@@ -229,8 +246,15 @@ class PaymentController extends Controller
         // Refresh the booking from DB so we get the latest status set by the webhook.
         $booking->refresh();
 
-        // Still waiting for payment.
-        if ($booking->booking_status === Booking::STATUS_PENDING) {
+        // If there is still a pending transaction, payment has not been received yet.
+        // This covers both regular bookings AND stay extensions (which don't change
+        // booking_status — the booking stays as 'checked-in' while payment is pending).
+        $pendingTransaction = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_PENDING)
+            ->latest()
+            ->first();
+
+        if ($pendingTransaction) {
             return response()->json(['paid' => false]);
         }
 
@@ -242,11 +266,33 @@ class PaymentController extends Controller
             ]);
         }
 
-        // All other statuses (booked, checked-in, etc.) mean payment succeeded.
+        // No pending transaction and not snatched — payment was confirmed.
         return response()->json([
             'paid'     => true,
             'redirect' => route('payment.success', $booking->id),
         ]);
+    }
+
+    /**
+     * Unlock the payment transaction when the guest explicitly exits the page.
+     * This receives a beacon request from the frontend when the tab is closed
+     * or the user navigates away.
+     */
+    public function unlock(Request $request, Booking $booking): JsonResponse
+    {
+        $this->authorizeBookingAccess($booking);
+
+        $pendingTransaction = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_PENDING)
+            ->latest()
+            ->first();
+
+        if ($pendingTransaction) {
+            Transaction::releaseLock($pendingTransaction->id);
+            return response()->json(['unlocked' => true]);
+        }
+
+        return response()->json(['unlocked' => false]);
     }
 
     // ── Dev / Demo Helper ──────────────────────────────────────────────────
@@ -282,7 +328,9 @@ class PaymentController extends Controller
         }
 
         // Use the same promotion logic as the real webhook for dev parity.
-        if ($booking->booking_status === Booking::STATUS_PENDING) {
+        if ($transaction && $transaction->payment_for === Transaction::FOR_STAY_EXTENSION) {
+            $this->abaTelegramService->applyStayExtension($booking, $transaction);
+        } elseif ($booking->booking_status === Booking::STATUS_PENDING) {
             $this->abaTelegramService->promoteBookingAfterPayment($booking);
         }
 

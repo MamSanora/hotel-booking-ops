@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminGuestController;
+use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminRoomController;
 use App\Http\Controllers\Admin\AdminRoomTypeController;
 use App\Http\Controllers\Admin\BackupController;
@@ -10,7 +13,7 @@ use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\ExchangeRateController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\StaffController;
-use App\Http\Controllers\Admin\RefundController;
+
 use App\Http\Controllers\Auth\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Auth\Guest\ForgotPasswordController as GuestForgotPasswordController;
 use App\Http\Controllers\Auth\Guest\LoginController as GuestLoginController;
@@ -25,7 +28,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Webhook\TelegramWebhookController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Reception\ReceptionDashboardController;
-use App\Http\Controllers\Reception\ReceptionRelocationController;
+use App\Http\Controllers\Reception\ReceptionProfileController;
 use App\Http\Controllers\Reception\WalkInBookingController;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Route;
@@ -146,6 +149,9 @@ Route::middleware('auth')->prefix('payment')->name('payment.')->group(function (
     // AJAX polling endpoint — frontend calls this every few seconds to check payment status.
     Route::get('/{booking}/check-status', [PaymentController::class, 'checkStatus'])->name('check-status')->whereNumber('booking');
 
+    // Unlock endpoint — frontend beacons this when navigating away.
+    Route::post('/{booking}/unlock', [PaymentController::class, 'unlock'])->name('unlock')->whereNumber('booking');
+
     // Dev / demo payment simulation — disabled in production.
     Route::post('/{booking}/simulate', [PaymentController::class, 'simulatePay'])->name('simulate')->whereNumber('booking');
 
@@ -233,10 +239,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payment-gateways',           [PaymentGatewayController::class, 'index'])->name('payment-gateways.index');
         Route::patch('/payment-gateways/{gateway}', [PaymentGatewayController::class, 'update'])->name('payment-gateways.update');
 
+        // Admin Accounts & Profile Management
+        Route::resource('admins',                 AdminAccountController::class)->except(['show']);
+        Route::get('/profile',                    [AdminProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile',                  [AdminProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/password',         [AdminProfileController::class, 'updatePassword'])->name('profile.password');
+
+        // Guest Accounts Management
+        Route::resource('guests',                 AdminGuestController::class)->only(['index', 'show']);
+
         // Maker-Checker Refund Workflow
-        Route::get('/refunds', [RefundController::class, 'pendingRefunds'])->name('refunds.index');
-        Route::get('/refunds/{transaction}', [RefundController::class, 'showRefund'])->name('refunds.show');
-        Route::post('/refunds/{transaction}/complete', [RefundController::class, 'completeRefund'])->name('refunds.complete');
+
     });
 });
 
@@ -273,8 +286,10 @@ Route::prefix('reception')->name('reception.')->group(function () {
         // Stay Extension (for walk-in / phone guests without an account)
         Route::post('/extend-stay/{booking}', [ReceptionDashboardController::class, 'extendStay'])->name('extend-stay');
 
-        // Room Relocation — when extension is blocked by an incoming guest
-        Route::get('/relocate/{booking}',          [ReceptionRelocationController::class, 'show'])->name('relocate.show');
-        Route::post('/relocate/{booking}/confirm', [ReceptionRelocationController::class, 'confirm'])->name('relocate.confirm');
+        // Profile Management
+        Route::get('/profile',                    [ReceptionProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile',                  [ReceptionProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/password',         [ReceptionProfileController::class, 'updatePassword'])->name('profile.password');
+
     });
 });

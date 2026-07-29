@@ -38,6 +38,7 @@ class GuestDashboardController extends Controller
                 Booking::STATUS_NO_SHOW,
                 Booking::STATUS_RELOCATED,
                 Booking::STATUS_SNATCHED,
+                Booking::STATUS_ABANDONED,
             ])
             ->whereDate('check_out_date', '>=', today())
             ->orderBy('check_in_date')
@@ -55,6 +56,7 @@ class GuestDashboardController extends Controller
                     Booking::STATUS_NO_SHOW,
                     Booking::STATUS_RELOCATED,
                     Booking::STATUS_SNATCHED,
+                    Booking::STATUS_ABANDONED,
                 ])->orWhereDate('check_out_date', '<', today());
             })
             ->orderByDesc('check_out_date')

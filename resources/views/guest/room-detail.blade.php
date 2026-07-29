@@ -193,7 +193,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[0.88rem] text-gray-600">
                     <div><strong class="text-gray-800 font-semibold">Check-In:</strong> From 14:00 (2:00 PM)</div>
                     <div><strong class="text-gray-800 font-semibold">Check-Out:</strong> Before 12:00 (Noon)</div>
-                    <div><strong class="text-gray-800 font-semibold">Cancellation:</strong> Free up to 24 hours before check-in</div>
+
                     <div><strong class="text-gray-800 font-semibold">Payment:</strong> ABA PayWay QR Code</div>
                 </div>
             </div>

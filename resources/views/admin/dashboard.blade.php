@@ -153,18 +153,7 @@
             </div>
         </button>
 
-        {{-- Pending Refunds --}}
-        <a href="{{ route('admin.refunds.index') }}"
-                class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] text-left w-full group cursor-pointer flex flex-col">
-            <div class="w-12 h-12 rounded-xl {{ $pendingRefundCount > 0 ? 'bg-amber-50 text-amber-500 group-hover:bg-amber-100' : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100' }} flex items-center justify-center text-[1.4rem] mb-4 transition-colors">
-                <i class="bi bi-arrow-return-left"></i>
-            </div>
-            <div class="font-playfair text-3xl font-bold {{ $pendingRefundCount > 0 ? 'text-amber-600' : 'text-hotel-dark' }} leading-none mb-1">{{ $pendingRefundCount }}</div>
-            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Pending Refunds</div>
-            <div class="text-[0.7rem] text-gray-400 font-medium mt-2 flex items-center gap-1 group-hover:text-gray-600 transition-colors">
-                <i class="bi bi-link-45deg"></i> Process refunds
-            </div>
-        </a>
+
 
         {{-- System Backup --}}
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] flex flex-col">

@@ -1,12 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'Staff Management - Admin')
+@section('title', 'Staff Accounts - Admin')
 
 @section('content')
 
 <div class="bg-gradient-to-br from-hotel-dark to-hotel-accent py-12 mb-10 text-white">
     <div class="container mx-auto px-4 md:px-6">
-        <h1 class="font-playfair text-3xl md:text-[2.2rem] font-bold mb-2">Staff Management</h1>
+        <h1 class="font-playfair text-3xl md:text-[2.2rem] font-bold mb-2">Staff Accounts</h1>
         <p class="text-white/70 text-[0.95rem]">Add or remove staff accounts for front desk operations.</p>
     </div>
 </div>

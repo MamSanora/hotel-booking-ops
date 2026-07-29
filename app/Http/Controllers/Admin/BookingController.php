@@ -27,17 +27,52 @@ class BookingController extends Controller
      * Display a paginated list of all bookings, newest first.
      * Also passes a count of bookings that need a refund for the alert banner.
      */
-    public function index(): View
+    public function index(\Illuminate\Http\Request $request): View
     {
-        $bookings = Booking::with(['guest', 'room', 'handledBy', 'transactions'])
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $query = Booking::with(['guest', 'room', 'handledBy', 'transactions']);
 
-        // Count cancelled bookings that have a full (paid) transaction but no refunded one yet.
-        // These represent real money the hotel owes back to a guest.
+        // 1. Search by Booking Reference or Guest Name/Email/Phone
+        if ($search = $request->input('search')) {
+            $query->where(function($q) use ($search) {
+                // Since referenceNumber is a method that formats the ID, we search by ID for reference
+                $numericSearch = preg_replace('/[^0-9]/', '', $search);
+                if (!empty($numericSearch)) {
+                    $q->where('id', 'like', "%{$numericSearch}%");
+                }
+                
+                $q->orWhereHas('guest', function($g) use ($search) {
+                    $g->where('full_name', 'like', "%{$search}%")
+                      ->orWhereHas('guestAuth', function($ga) use ($search) {
+                          $ga->where('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('phones', function($p) use ($search) {
+                          $p->where('phone_number', 'like', "%{$search}%");
+                      });
+                });
+            });
+        }
+
+        // 2. Filter by Status
+        if ($status = $request->input('status')) {
+            $query->where('booking_status', $status);
+        }
+
+        // 3. Filter by Date Range (Check-in Dates)
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('check_in_date', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('check_in_date', '<=', $dateTo);
+        }
+
+        $bookings = $query->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        // Count cancelled bookings whose transactions were explicitly flagged
+        // as refund_pending by the cancel() controller
         $pendingRefundCount = Booking::where('booking_status', Booking::STATUS_CANCELLED)
-            ->whereHas('transactions', fn ($q) => $q->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL]))
-            ->whereDoesntHave('transactions', fn ($q) => $q->where('payment_status', Transaction::STATUS_REFUNDED))
+            ->whereHas('transactions', fn ($q) => $q->where('payment_status', Transaction::STATUS_REFUND_PENDING))
             ->count();
 
         return view('admin.bookings.index', compact('bookings', 'pendingRefundCount'));
@@ -155,12 +190,14 @@ class BookingController extends Controller
             return back()->with('error', 'Only cancelled bookings can be marked as refunded.');
         }
 
-        $fullTransactions = $booking->transactions()
-            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
+        // Only transactions that were explicitly flagged as refund_pending are eligible.
+        // Non-refundable cancellations leave transactions as 'partial' and must not be touched here.
+        $pendingTransactions = $booking->transactions()
+            ->where('payment_status', Transaction::STATUS_REFUND_PENDING)
             ->get();
 
-        if ($fullTransactions->isEmpty()) {
-            return back()->with('error', 'No completed payment found on this booking — nothing to refund.');
+        if ($pendingTransactions->isEmpty()) {
+            return back()->with('error', 'No refund-pending payment found on this booking — either this was a non-refundable cancellation, or it has already been refunded.');
         }
 
         $alreadyRefunded = $booking->transactions()
@@ -171,8 +208,8 @@ class BookingController extends Controller
             return back()->with('error', "Booking {$booking->referenceNumber()} has already been marked as refunded.");
         }
 
-        DB::transaction(function () use ($fullTransactions) {
-            foreach ($fullTransactions as $transaction) {
+        DB::transaction(function () use ($pendingTransactions) {
+            foreach ($pendingTransactions as $transaction) {
                 $transaction->update(['payment_status' => Transaction::STATUS_REFUNDED]);
             }
         });

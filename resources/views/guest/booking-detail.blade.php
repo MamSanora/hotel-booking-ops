@@ -45,7 +45,7 @@
                                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
                                  class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                                 
-                                <form method="POST" action="{{ route('guest.booking.cancel', $booking) }}" enctype="multipart/form-data">
+                                <form method="POST" action="{{ route('guest.booking.cancel', $booking) }}">
                                     @csrf
                                     @method('PATCH')
                                     
@@ -63,27 +63,14 @@
                                                         Are you sure you want to cancel booking <strong>{{ $booking->referenceNumber() }}</strong>?
                                                     </p>
                                                     
-                                                    @if($needsQrUpload)
-                                                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 mb-4">
-                                                        <p class="font-semibold mb-1"><i class="bi bi-info-circle mr-1"></i> Refund Eligible</p>
-                                                        <p>Your booking is eligible for a full refund! Please upload your ABA or KHQR receiving code image. For your security, ensure the QR code does not have a specific amount attached (must be $0).</p>
-                                                    </div>
-                                                    
-                                                    <div class="mb-2">
-                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Upload KHQR Code for Refund</label>
-                                                        <input type="file" name="refund_qr" accept="image/*" required
-                                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
-                                                    </div>
-                                                    @else
                                                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-2">
                                                         @if($hasPaid)
                                                         <p class="font-semibold mb-1"><i class="bi bi-shield-exclamation mr-1"></i> Non-Refundable</p>
-                                                        <p>Because you are cancelling within 24 hours of check-in, your payment is non-refundable per our cancellation policy.</p>
+                                                        <p>Because you have already paid for this booking, your payment is non-refundable per our cancellation policy.</p>
                                                         @else
                                                         <p>This booking has not been paid yet. It will be cancelled immediately.</p>
                                                         @endif
                                                     </div>
-                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -124,6 +111,10 @@
                 'checked-in'  => 'Checked In',
                 'checked-out' => 'Checked Out',
                 'cancelled'   => 'Cancelled',
+                'abandoned'   => 'Abandoned',
+                'snatched'    => 'Snatched',
+                'relocated'   => 'Relocated',
+                'no_show'     => 'No Show',
             ];
             $statusColors = [
                 'pending'     => 'bg-amber-50 border-amber-200 text-amber-700',
@@ -131,6 +122,10 @@
                 'checked-in'  => 'bg-emerald-50 border-emerald-200 text-emerald-700',
                 'checked-out' => 'bg-gray-100 border-gray-200 text-gray-600',
                 'cancelled'   => 'bg-red-50 border-red-200 text-red-600',
+                'abandoned'   => 'bg-gray-100 border-gray-200 text-gray-500',
+                'snatched'    => 'bg-red-50 border-red-200 text-red-600',
+                'relocated'   => 'bg-purple-50 border-purple-200 text-purple-700',
+                'no_show'     => 'bg-orange-50 border-orange-200 text-orange-700',
             ];
             $statusIcons = [
                 'pending'     => 'bi-clock',
@@ -138,12 +133,17 @@
                 'checked-in'  => 'bi-door-open',
                 'checked-out' => 'bi-door-closed',
                 'cancelled'   => 'bi-x-circle',
+                'abandoned'   => 'bi-hourglass-split',
+                'snatched'    => 'bi-exclamation-octagon',
+                'relocated'   => 'bi-arrow-left-right',
+                'no_show'     => 'bi-person-x',
             ];
             $status      = $booking->booking_status;
             $statusClass = $statusColors[$status] ?? 'bg-gray-100 border-gray-200 text-gray-600';
             $statusLabel = $statusLabels[$status] ?? ucfirst($status);
             $statusIcon  = $statusIcons[$status]  ?? 'bi-question-circle';
         @endphp
+
         <div class="mb-6 rounded-xl border px-5 py-4 flex items-center gap-3 {{ $statusClass }}">
             <i class="bi {{ $statusIcon }} text-2xl"></i>
             <div>
@@ -158,15 +158,17 @@
                     @elseif($status === 'checked-out')
                         This stay has been completed.
                     @elseif($status === 'cancelled')
-                        @php
-                            $refundPending = $booking->transactions->where('payment_status', \App\Models\Transaction::STATUS_REFUND_PENDING)->isNotEmpty();
-                        @endphp
-                        @if($refundPending)
-                            This booking has been cancelled. Your refund is pending review by our reception team.
-                        @else
-                            This booking has been cancelled.
-                        @endif
+                        This booking has been cancelled.
+                    @elseif($status === 'abandoned')
+                        Payment was not completed in time and this booking was automatically released. If you'd like to book again, please start a new reservation.
+                    @elseif($status === 'snatched')
+                        Another guest completed payment for the same room at the same time. Please contact us if a refund is needed.
+                    @elseif($status === 'relocated')
+                        This booking was moved to a different room. Please see the front desk for details.
+                    @elseif($status === 'no_show')
+                        This booking was marked as a no-show.
                     @endif
+
                 </div>
             </div>
         </div>
@@ -188,6 +190,27 @@
                             <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->capacity ?? '—' }} guests</span>
                             <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>
                         </div>
+
+                        @if($booking->booking_status === 'checked-in' && $booking->room)
+                        <div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Room No.</div>
+                                <div class="font-bold text-hotel-dark">{{ $booking->room->room_number }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Floor</div>
+                                <div class="font-bold text-hotel-dark">{{ is_numeric(substr($booking->room->room_number, 0, 1)) ? substr($booking->room->room_number, 0, 1) : '—' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Bed Type</div>
+                                <div class="font-bold text-hotel-dark">{{ $booking->room->displayBedConfiguration() }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">View</div>
+                                <div class="font-bold text-hotel-dark">{{ $booking->room->displayViewType() }}</div>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -257,15 +280,21 @@
             </div>
 
             {{-- Payment Transactions --}}
-            @if($booking->transactions && $booking->transactions->isNotEmpty())
+            @php
+                // Only show stay_extension if it was successful. Pending/failed extensions are hidden from the guest.
+                $displayTxns = $booking->transactions ? $booking->transactions->reject(function($t) {
+                    return $t->payment_for === 'stay_extension' && in_array($t->payment_status, ['pending', 'failed']);
+                }) : collect();
+            @endphp
+            @if($displayTxns->isNotEmpty())
             <div class="p-6">
                 <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Transactions</h2>
                 <div class="space-y-3">
-                    @foreach($booking->transactions as $txn)
+                    @foreach($displayTxns as $txn)
                     <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 text-sm">
                         <div>
                             <div class="font-semibold text-hotel-dark">
-                                {{ $txn->displayPaymentMethod() }} &mdash; {{ ucfirst($txn->payment_for ?? '—') }}
+                                {{ $txn->displayPaymentMethod() }} &mdash; {{ Str::title(str_replace('_', ' ', $txn->payment_for ?? '—')) }}
                             </div>
                             @if($txn->created_at)
                             <div class="text-gray-400 text-xs mt-0.5">{{ $txn->created_at->format('d M Y, H:i') }}</div>
@@ -398,15 +427,13 @@
                 <i class="bi bi-calendar-plus text-3xl opacity-50"></i>
             </div>
             <div class="p-6">
-                @php $visibleGateways = $gatewayManager->getVisibleGateways(); @endphp
-
-                @if($visibleGateways->isEmpty())
+                @if(! $gatewayManager->getVisibleGateways()->where('state', 'active')->count())
                     <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-start gap-3">
                         <i class="bi bi-exclamation-triangle-fill text-red-500 mt-0.5"></i>
                         <span>No payment methods are currently available. Please contact the front desk to extend your stay.</span>
                     </div>
                 @else
-                <form method="POST" action="{{ route('guest.booking.extend', $booking) }}" onsubmit="return confirm('Extend your stay? You will be redirected to complete payment.')">
+                <form method="POST" action="{{ route('guest.booking.extend', $booking) }}">
                     @csrf
                     <div class="space-y-5">
                         {{-- Extra Nights --}}
@@ -422,47 +449,9 @@
                             <p class="text-xs text-gray-400 mt-1.5">At ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night. Maximum 30 extra nights.</p>
                         </div>
 
-                        {{-- Payment Method --}}
-                        <div>
-                            <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-3">Payment Method</label>
-                            <div class="space-y-2">
-                                @foreach($visibleGateways as $index => $item)
-                                    @php
-                                        $gw = $item['gateway'];
-                                        $gwState = $item['state'];
-                                        $gwDisabled = ($gwState === 'disabled');
-                                        $gwIcon = match($gw->slug) {
-                                            'bakong'       => 'bi-qr-code-scan',
-                                            'aba_payway'   => 'bi-credit-card-2-front',
-                                            'aba_telegram' => 'bi-telegram',
-                                            default        => 'bi-cash-coin',
-                                        };
-                                    @endphp
-                                    <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3 cursor-pointer transition-all
-                                        {{ $gwDisabled ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]' }}">
-                                        <input type="radio"
-                                               name="payment_method"
-                                               value="{{ $gw->slug }}"
-                                               {{ $index === 0 && ! $gwDisabled ? 'checked' : '' }}
-                                               {{ $gwDisabled ? 'disabled' : '' }}
-                                               class="mt-0.5 accent-hotel-gold shrink-0">
-                                        <div>
-                                            <div class="flex items-center gap-2">
-                                                <i class="bi {{ $gwIcon }} text-hotel-gold"></i>
-                                                <span class="font-semibold text-hotel-dark text-sm">{{ $gw->name }}</span>
-                                                @if($gwDisabled)
-                                                    <span class="text-xs text-red-500">(Currently offline)</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <div class="bg-red-50 text-red-600 text-xs p-3 rounded-lg border border-red-100 flex gap-2">
+                        <div class="bg-amber-50 text-amber-700 text-xs p-3 rounded-lg border border-amber-100 flex gap-2">
                             <i class="bi bi-info-circle-fill mt-0.5"></i>
-                            <p><strong>Note:</strong> Stay extensions are final. Once payment is completed, the extension cannot be refunded.</p>
+                            <p><strong>Note:</strong> Stay extensions are final. Once payment is completed, the extension cannot be refunded. Payment will be processed automatically.</p>
                         </div>
 
                         <button type="submit" class="inline-flex items-center bg-hotel-gold hover:bg-[#b8935a] text-hotel-dark font-bold px-6 py-2.5 rounded-xl transition-colors">

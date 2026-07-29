@@ -380,32 +380,47 @@
                             <span class="text-gray-400 font-medium">Check-in</span>
                             <span class="font-bold text-gray-800">{{ $booking->check_in_date?->format('D, d M Y') }}</span>
                         </div>
-                        <div class="flex justify-between py-2.5">
-                            <span class="text-gray-400 font-medium">Check-out</span>
-                            <span class="font-bold text-gray-800">{{ $booking->check_out_date?->format('D, d M Y') }}</span>
-                        </div>
-                        @if($booking->payment_tier < 100)
-                        <div class="flex justify-between py-2.5">
-                            <span class="text-gray-400 font-medium">Total Room Price</span>
-                            <span class="font-bold text-gray-800">${{ number_format($booking->total_price, 2) }} USD</span>
-                        </div>
-                        <div class="flex justify-between py-2.5">
-                            <span class="text-gray-400 font-medium">Payment Option</span>
-                            <span class="font-bold text-gray-800">{{ $booking->payment_tier }}% Deposit</span>
-                        </div>
-                        <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
-                            <span class="font-extrabold text-gray-800 text-[13px]">Deposit Payable Now</span>
-                            <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
-                        </div>
-                        <div class="flex justify-between py-2.5 bg-gray-50 px-2.5 rounded-lg mt-1 text-xs">
-                            <span class="text-gray-500 font-medium">Balance Due at Check-in</span>
-                            <span class="font-bold text-gray-800">${{ number_format($booking->remainingBalance(), 2) }} USD</span>
-                        </div>
+                        @if($transaction->payment_for === \App\Models\Transaction::FOR_STAY_EXTENSION)
+                            <div class="flex justify-between py-2.5">
+                                <span class="text-gray-400 font-medium">New Check-out</span>
+                                <span class="font-bold text-gray-800">{{ \Carbon\Carbon::parse($transaction->extension_new_checkout)->format('D, d M Y') }}</span>
+                            </div>
+                            <div class="flex justify-between py-2.5">
+                                <span class="text-gray-400 font-medium">Extension</span>
+                                <span class="font-bold text-gray-800">{{ $transaction->extension_nights }} Night(s)</span>
+                            </div>
+                            <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
+                                <span class="font-extrabold text-gray-800 text-[13px]">Extension Cost</span>
+                                <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                            </div>
                         @else
-                        <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
-                            <span class="font-extrabold text-gray-800 text-[13px]">Total Payable (100% Full)</span>
-                            <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
-                        </div>
+                            <div class="flex justify-between py-2.5">
+                                <span class="text-gray-400 font-medium">Check-out</span>
+                                <span class="font-bold text-gray-800">{{ $booking->check_out_date?->format('D, d M Y') }}</span>
+                            </div>
+                            @if($booking->payment_tier < 100)
+                            <div class="flex justify-between py-2.5">
+                                <span class="text-gray-400 font-medium">Total Room Price</span>
+                                <span class="font-bold text-gray-800">${{ number_format($booking->total_price, 2) }} USD</span>
+                            </div>
+                            <div class="flex justify-between py-2.5">
+                                <span class="text-gray-400 font-medium">Payment Option</span>
+                                <span class="font-bold text-gray-800">{{ $booking->payment_tier }}% Deposit</span>
+                            </div>
+                            <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
+                                <span class="font-extrabold text-gray-800 text-[13px]">Deposit Payable Now</span>
+                                <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                            </div>
+                            <div class="flex justify-between py-2.5 bg-gray-50 px-2.5 rounded-lg mt-1 text-xs">
+                                <span class="text-gray-500 font-medium">Balance Due at Check-in</span>
+                                <span class="font-bold text-gray-800">${{ number_format($booking->remainingBalance(), 2) }} USD</span>
+                            </div>
+                            @else
+                            <div class="flex justify-between py-3 mt-1 border-t border-gray-100">
+                                <span class="font-extrabold text-gray-800 text-[13px]">Total Payable (100% Full)</span>
+                                <span class="font-extrabold text-[13px]" style="color:#D0021B;">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                            </div>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -440,27 +455,6 @@
         correctLevel: QRCode.CorrectLevel.H,
     });
 
-    // ── 1-min Countdown (Matches Backend Lock Expiry) ────────────────────
-    let secs = 60;
-    const countEl = document.getElementById('countdown');
-    const timer = setInterval(() => {
-        secs--;
-        const m = String(Math.floor(secs / 60)).padStart(2, '0');
-        const s = String(secs % 60).padStart(2, '0');
-        if (countEl) countEl.textContent = `${m}:${s}`;
-        
-        if (secs <= 0) {
-            clearInterval(timer);
-            clearInterval(poll);
-            if (countEl) {
-                countEl.textContent = 'Session Expired';
-                countEl.style.color = '#ef4444';
-            }
-            alert('Your payment session has expired. Please start a new booking.');
-            window.location.href = '/guest/dashboard';
-        }
-    }, 1000);
-
     // ── Bakong Payment Polling (every 3.5 sec) ────────────────────────────
     const statusEl = document.getElementById('payment-status');
     const poll = setInterval(async () => {
@@ -472,7 +466,7 @@
             const d = await r.json();
             if (d.paid) {
                 clearInterval(poll);
-                clearInterval(timer);
+                if (window.paymentCountdownTimer) clearInterval(window.paymentCountdownTimer);
                 statusEl.classList.add('paid');
                 statusEl.innerHTML = `
                     <div class="flex items-center gap-2">
@@ -481,10 +475,14 @@
                     </div>
                     <i class="bi bi-arrow-repeat animate-spin text-emerald-600"></i>
                 `;
+                if (window.setRedirecting) window.setRedirecting();
                 setTimeout(() => { window.location.href = d.redirect || successUrl; }, 1200);
             }
         } catch (_) {}
     }, 3500);
 })();
 </script>
+
+@include('payment.partials.countdown-script')
+@include('payment.partials.unlock-script')
 @endpush

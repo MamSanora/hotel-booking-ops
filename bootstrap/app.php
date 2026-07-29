@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/payment/callback', // Just in case it's ever moved to API routes
             'webhooks/telegram',
         ]);
+        
+        $middleware->append(\App\Http\Middleware\CleanupAbandonedBookingsMiddleware::class);
 
         $middleware->alias([
             // ── Multi-Guard Auth Middleware ──────────────────────────────────

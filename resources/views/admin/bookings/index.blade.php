@@ -56,7 +56,7 @@
         </div>
     @endif
 
-    <div class="mb-6 flex justify-between items-center">
+    <div class="mb-6 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
         <a href="{{ route('admin.dashboard') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">
             <i class="bi bi-arrow-left mr-2"></i> Back to Dashboard
         </a>
@@ -64,6 +64,46 @@
             <i class="bi bi-file-earmark-spreadsheet"></i> Export Report (CSV)
         </a>
     </div>
+
+    {{-- Search & Filter Form --}}
+    <form action="{{ route('admin.bookings.index') }}" method="GET" class="bg-white p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] mb-6 flex flex-col lg:flex-row gap-4 items-end">
+        <div class="flex-1 w-full">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Search</label>
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Guest Name, Ref #..." class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+        </div>
+        <div class="w-full lg:w-48">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+            <select name="status" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                <option value="">All Statuses</option>
+                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="booked" {{ request('status') == 'booked' ? 'selected' : '' }}>Booked</option>
+                <option value="checked-in" {{ request('status') == 'checked-in' ? 'selected' : '' }}>Checked In</option>
+                <option value="checked-out" {{ request('status') == 'checked-out' ? 'selected' : '' }}>Checked Out</option>
+                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                <option value="no_show" {{ request('status') == 'no_show' ? 'selected' : '' }}>No Show</option>
+            </select>
+        </div>
+        <div class="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-3">
+            <div class="w-full sm:w-auto">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check-In From</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+            </div>
+            <div class="w-full sm:w-auto">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check-In To</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+            </div>
+        </div>
+        <div class="flex gap-2 w-full lg:w-auto mt-2 lg:mt-0">
+            <button type="submit" class="bg-hotel-gold hover:bg-hotel-gold-hover text-white px-5 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors shadow-sm shadow-hotel-gold/20 flex-1 lg:flex-none flex items-center justify-center gap-2">
+                <i class="bi bi-funnel"></i> <span>Filter</span>
+            </button>
+            @if(request()->anyFilled(['search', 'status', 'date_from', 'date_to']))
+                <a href="{{ route('admin.bookings.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors flex items-center justify-center shrink-0" title="Clear Filters">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            @endif
+        </div>
+    </form>
 
     <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
         <div class="overflow-x-auto">
@@ -82,27 +122,11 @@
                 <tbody class="divide-y divide-gray-100">
                     @forelse($bookings as $booking)
                     @php
-                        // Determine the transaction state once per row.
-                        $latestTxn        = $booking->transactions->sortByDesc('created_at')->first();
-                        $hasFullTxn       = $booking->transactions->whereIn('payment_status', [\App\Models\Transaction::STATUS_FULL, \App\Models\Transaction::STATUS_PARTIAL])->isNotEmpty();
-                        $hasRefundedTxn   = $booking->transactions->where('payment_status', \App\Models\Transaction::STATUS_REFUNDED)->isNotEmpty();
-                        $needsRefund      = $booking->booking_status === 'cancelled' && $hasFullTxn && !$hasRefundedTxn;
+                        $latestTxn    = $booking->transactions->sortByDesc('created_at')->first();
                     @endphp
-                    <tr class="hover:bg-gray-50/50 transition-colors {{ $needsRefund ? 'bg-amber-50/40' : '' }}">
+                    <tr class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-5 py-4 whitespace-nowrap">
                             <strong class="font-playfair text-hotel-gold text-lg">{{ $booking->referenceNumber() }}</strong>
-                            @if($needsRefund)
-                                <div class="mt-1">
-                                    <span class="inline-flex items-center gap-1 text-[0.7rem] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                                        <i class="bi bi-arrow-return-left"></i> Refund Due
-                                    </span>
-                                    @if($booking->refund_qr_path)
-                                        <a href="{{ Storage::url($booking->refund_qr_path) }}" target="_blank" class="block mt-1.5 text-[0.75rem] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-                                            <i class="bi bi-qr-code-scan"></i> View Guest KHQR
-                                        </a>
-                                    @endif
-                                </div>
-                            @endif
                         </td>
                         <td class="px-5 py-4">
                             <div class="font-semibold text-gray-800 text-[0.95rem]">
@@ -194,19 +218,7 @@
                                     </form>
                                 @endif
 
-                                {{-- Mark as Refunded (cancelled + unpaid refund only) --}}
-                                @if($needsRefund)
-                                    <form action="{{ route('admin.bookings.refund', $booking->id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <button type="submit"
-                                            onclick="return confirm('Confirm that you have already sent the money back to this guest via ABA or Bakong. Mark as Refunded?')"
-                                            class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors flex items-center gap-1.5"
-                                            title="Mark as refunded">
-                                            <i class="bi bi-arrow-return-left"></i>
-                                            <span class="text-xs">Refunded</span>
-                                        </button>
-                                    </form>
-                                @endif
+
 
                                 {{-- Print Receipt (always available) --}}
                                 <a href="{{ route('admin.bookings.receipt', $booking->id) }}" target="_blank"

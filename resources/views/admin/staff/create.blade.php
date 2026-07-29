@@ -15,7 +15,7 @@
 
     <div class="mb-6 flex justify-between items-center">
         <a href="{{ route('admin.staff.index') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">
-            <i class="bi bi-arrow-left mr-2"></i> Back to Staff List
+            <i class="bi bi-arrow-left mr-2"></i> Back to Staff Accounts
         </a>
     </div>
 

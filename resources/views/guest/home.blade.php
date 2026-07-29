@@ -139,7 +139,7 @@
                     <i class="bi bi-qr-code"></i>
                 </div>
                 <div>
-                    <h5 class="font-bold text-white text-sm">ABA PayWay & KHQR</h5>
+                    <h5 class="font-bold text-white text-sm">ABA KHQR</h5>
                     <p class="text-white/60 text-[0.75rem] mt-0.5">Instant Bakong & KHQR scan accepted at check-in & online.</p>
                 </div>
             </div>
@@ -280,7 +280,7 @@
             @foreach([
                 ['bi-wifi',         'Free Wi-Fi',       'High-speed internet in all rooms and public areas.',   'Wi-Fi ឥតគិតថ្លៃ',    'អ៊ីនធឺណិតល្បឿនលឿន គ្រប់ជួរ។'],
                 ['bi-shield-check', 'Safe & Secure',    '24-hour security and reception, always at your service.','សុវត្ថិភាព ២៤ ម៉ោង', 'សន្តិសុខ ២៤ ម៉ោង ការទទួលភ្ញៀវ គ្រប់ពេល។'],
-                ['bi-qr-code-scan', 'Easy Payment',     'Convenient ABA PayWay QR code payments accepted.',    'ការទូទាត់ ងាយស្រួល', 'ទទួលយក ABA PayWay QR ។'],
+                ['bi-qr-code-scan', 'Easy Payment',     'Convenient ABA QR code payments accepted.',    'ការទូទាត់ ងាយស្រួល', 'ទទួលយក ABA PayWay QR ។'],
                 ['bi-clock',        '24/7 Check-In',    'Flexible check-in times to match your schedule.',      'ចូលសណ្ឋាគារ ២៤/៧',  'ម៉ោងចូល ងាយបត់បែន។'],
             ] as [$icon, $title, $desc, $titleKm, $descKm])
             <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-[#f0ebe2]">

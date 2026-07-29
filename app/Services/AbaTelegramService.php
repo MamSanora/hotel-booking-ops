@@ -66,7 +66,7 @@ class AbaTelegramService implements PaymentGatewayInterface
         }
 
         try {
-            $response = Http::timeout(5)
+            $response = Http::connectTimeout(2)->timeout(3)
                 ->get(self::TELEGRAM_API . "/bot{$this->botToken}/getMe");
 
             return $response->successful() && ($response->json('ok') === true);
@@ -165,11 +165,19 @@ class AbaTelegramService implements PaymentGatewayInterface
             // In this case, we find the pending transaction matching the exact amount.
             if ($amount) {
                 Log::info('AbaTelegramService: No BK- reference found. Attempting fallback match by exact amount: $' . $amount);
-                
+
+                // FIFO: Credit the person who has been waiting the longest first.
+                // Restrict to active bookings only (pending/booked/checked-in) so
+                // stale pending txns from abandoned/cancelled bookings don't match.
                 $transaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
                     ->whereIn('payment_method', [Transaction::METHOD_TELEGRAM, Transaction::METHOD_KHQR, Transaction::METHOD_KHQR_ABA])
                     ->where('amount_paid', $amount)
-                    ->oldest() // FIFO: Credit the person who has been waiting the longest first
+                    ->whereHas('booking', fn ($q) => $q->whereIn('booking_status', [
+                        \App\Models\Booking::STATUS_PENDING,
+                        \App\Models\Booking::STATUS_BOOKED,
+                        \App\Models\Booking::STATUS_CHECKED_IN,
+                    ]))
+                    ->oldest()
                     ->first();
 
                 if ($transaction) {
@@ -221,12 +229,20 @@ class AbaTelegramService implements PaymentGatewayInterface
             'transaction_id' => $transaction->id,
             'amount'         => $confirmedAmount,
             'new_status'     => $newStatus,
+            'payment_for'    => $transaction->payment_for,
         ]);
 
-        // -- Promote booking (handles browser-closed scenario) ---------------
-        // This runs on the server, so it fires even if the guest closes the
-        // payment page before the JS polling detects the confirmation.
-        if ($booking->booking_status === \App\Models\Booking::STATUS_PENDING) {
+        // -- Release global payment lock ------------------------------------
+        // Frees the queue for the next guest immediately rather than waiting
+        // for the 1-minute heartbeat expiry.
+        \App\Models\Transaction::releaseLock($transaction->id);
+
+        // -- Post-payment actions based on what was paid for ---------------
+        if ($transaction->payment_for === Transaction::FOR_STAY_EXTENSION) {
+            // Apply the extension to the booking now that payment is confirmed.
+            $this->applyStayExtension($booking, $transaction);
+        } elseif ($booking->booking_status === \App\Models\Booking::STATUS_PENDING) {
+            // Promote a new booking from pending → booked (or snatched).
             $this->promoteBookingAfterPayment($booking);
         }
 
@@ -316,7 +332,45 @@ class AbaTelegramService implements PaymentGatewayInterface
         }
     }
 
+    // -- Stay Extension Application -----------------------------------------
+
+    /**
+     * Apply a confirmed stay extension to the booking.
+     *
+     * Called after the webhook confirms a stay_extension transaction.
+     * The extension_nights and extension_new_checkout were stored on the
+     * transaction by extendStay() so we don't have to recalculate here.
+     *
+     * @param  \App\Models\Booking     $booking
+     * @param  \App\Models\Transaction $transaction
+     */
+    public function applyStayExtension(\App\Models\Booking $booking, Transaction $transaction): void
+    {
+        if (! $transaction->extension_new_checkout || ! $transaction->extension_nights) {
+            Log::error('AbaTelegramService: stay_extension transaction missing metadata', [
+                'transaction_id' => $transaction->id,
+            ]);
+            return;
+        }
+
+        $extraCost = (float) $transaction->amount_paid;
+
+        $booking->update([
+            'check_out_date'           => $transaction->extension_new_checkout,
+            'total_price'              => (float) $booking->total_price + $extraCost,
+            'number_of_stay_extension' => $booking->number_of_stay_extension + 1,
+        ]);
+
+        Log::info('AbaTelegramService: stay extension applied to booking', [
+            'booking_id'      => $booking->id,
+            'extra_nights'    => $transaction->extension_nights,
+            'new_checkout'    => $transaction->extension_new_checkout,
+            'extra_cost'      => $extraCost,
+        ]);
+    }
+
     // -- Overpayment Handling -----------------------------------------------
+
 
     /**
      * Handle a duplicate / second payment for an already-confirmed booking.

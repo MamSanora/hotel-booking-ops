@@ -55,7 +55,7 @@ class AbaPayWayService implements PaymentGatewayInterface
         try {
             // A lightweight GET to the base checkout domain (no auth needed for a ping)
             $baseUrl = 'https://checkout-sandbox.payway.com.kh';
-            $response = Http::timeout(5)->get($baseUrl);
+            $response = Http::connectTimeout(2)->timeout(3)->get($baseUrl);
 
             // Any HTTP response (even 4xx) means the server is up
             return $response->status() > 0;

@@ -64,15 +64,7 @@ class AdminDashboardController extends Controller
             ->orderBy('check_out_date')
             ->get();
 
-        // ── Pending Refunds ───────────────────────────────────────────────
-        $pendingRefundCount = Booking::where('booking_status', 'cancelled')
-            ->whereHas('transactions', function ($query) {
-                $query->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL]);
-            })
-            ->whereDoesntHave('transactions', function ($query) {
-                $query->where('payment_status', Transaction::STATUS_REFUNDED);
-            })
-            ->count();
+
 
         // ── Revenue ───────────────────────────────────────────────────────
         // Sum of all fully-paid transactions this calendar month (for the KPI card)
@@ -122,7 +114,7 @@ class AdminDashboardController extends Controller
             'backupStatus',
             'lastBackupTime',
             'allRooms',
-            'pendingRefundCount',
+
         ));
     }
 

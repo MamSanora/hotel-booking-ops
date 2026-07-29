@@ -133,12 +133,6 @@
                     <span>Bookings</span>
                 </a>
 
-                <a href="{{ route('admin.refunds.index') }}"
-                   class="admin-nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
-                    <i class="bi bi-arrow-counterclockwise text-base w-5 text-center"></i>
-                    <span>Pending Refunds</span>
-                </a>
-
                 <a href="{{ route('admin.rooms.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.rooms.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-door-closed text-base w-5 text-center"></i>
@@ -155,12 +149,6 @@
             <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Operations</p>
 
-                <a href="{{ route('admin.staff.index') }}"
-                   class="admin-nav-link {{ request()->routeIs('admin.staff.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
-                    <i class="bi bi-people text-base w-5 text-center"></i>
-                    <span>Staff Directory</span>
-                </a>
-
                 <a href="{{ route('admin.messages.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-chat-left-dots text-base w-5 text-center"></i>
@@ -175,15 +163,42 @@
             </div>
 
             <div class="pt-4">
+                <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Account Management</p>
+
+                <a href="{{ route('admin.guests.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.guests.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-person-lines-fill text-base w-5 text-center"></i>
+                    <span>Guest Accounts</span>
+                </a>
+
+                <a href="{{ route('admin.staff.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.staff.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-people text-base w-5 text-center"></i>
+                    <span>Staff Accounts</span>
+                </a>
+
+                <a href="{{ route('admin.admins.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-shield-lock text-base w-5 text-center"></i>
+                    <span>Admin Accounts</span>
+                </a>
+            </div>
+
+            <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Settings</p>
 
                 {{-- Payment Gateways nav hidden for production deployment (Point 13) --}}
-                {{-- Uncomment to restore: --}}
                 {{-- <a href="{{ route('admin.payment-gateways.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.payment-gateways.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-credit-card text-base w-5 text-center"></i>
                     <span>Payment Gateways</span>
                 </a> --}}
+
+                <a href="{{ route('admin.profile.edit') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.profile.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-person-gear text-base w-5 text-center"></i>
+                    <span>Profile Settings</span>
+                </a>
 
 
                 <form method="POST" action="{{ route('admin.logout') }}" class="mt-4 border-t border-white/5 pt-2">

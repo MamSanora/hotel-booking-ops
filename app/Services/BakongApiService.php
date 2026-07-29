@@ -140,7 +140,7 @@ class BakongApiService implements PaymentGatewayInterface
     {
         try {
             $response = Http::withToken($this->apiToken)
-                ->timeout(5)
+                ->connectTimeout(2)->timeout(3)
                 ->get("{$this->apiUrl}/v1/me");
 
             return $response->successful();

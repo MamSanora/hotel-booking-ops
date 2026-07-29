@@ -75,7 +75,10 @@
                         </span>
                         Awaiting payment confirmation&hellip;
                     </div>
-                    <i class="bi bi-bell text-hotel-gold text-sm"></i>
+                    <div class="flex items-center gap-1 text-gray-500 font-semibold">
+                        <i class="bi bi-clock text-[11px]"></i>
+                        <span id="countdown">01:00</span>
+                    </div>
                 </div>
 
                 {{-- Simulate Button (Hidden) --}}
@@ -113,32 +116,47 @@
                             <span class="text-gray-500">Check-in</span>
                             <span class="font-semibold text-gray-900">{{ $booking->check_in_date?->format('D, M d, Y') }} (2:00 PM)</span>
                         </div>
-                        <div class="py-2.5 flex justify-between items-center">
-                            <span class="text-gray-500">Check-out</span>
-                            <span class="font-semibold text-gray-900">{{ $booking->check_out_date?->format('D, M d, Y') }} (12:00 PM)</span>
-                        </div>
-                        @if($booking->payment_tier < 100)
-                        <div class="py-2.5 flex justify-between items-center">
-                            <span class="text-gray-500">Total Room Price</span>
-                            <span class="font-semibold text-gray-900">${{ number_format($booking->total_price, 2) }} USD</span>
-                        </div>
-                        <div class="py-2.5 flex justify-between items-center">
-                            <span class="text-gray-500">Payment Option</span>
-                            <span class="font-semibold text-gray-900">{{ $booking->payment_tier }}% Deposit</span>
-                        </div>
-                        <div class="pt-3 pb-1 flex justify-between items-center border-t border-gray-100">
-                            <span class="text-sm font-bold text-gray-800">Deposit Payable Now</span>
-                            <span class="text-sm font-bold text-[#D62B2B]">${{ number_format($transaction->amount_paid, 2) }} USD</span>
-                        </div>
-                        <div class="py-2.5 flex justify-between items-center bg-gray-50 px-2.5 rounded-lg mt-1 text-xs">
-                            <span class="text-gray-500 font-medium">Balance Due at Check-in</span>
-                            <span class="font-bold text-gray-800">${{ number_format($booking->remainingBalance(), 2) }} USD</span>
-                        </div>
+                        @if($transaction->payment_for === \App\Models\Transaction::FOR_STAY_EXTENSION)
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-gray-500">New Check-out</span>
+                                <span class="font-semibold text-gray-900">{{ \Carbon\Carbon::parse($transaction->extension_new_checkout)->format('D, M d, Y') }} (12:00 PM)</span>
+                            </div>
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-gray-500">Extension</span>
+                                <span class="font-semibold text-gray-900">{{ $transaction->extension_nights }} Night(s)</span>
+                            </div>
+                            <div class="pt-3 pb-1 flex justify-between items-center border-t border-gray-100">
+                                <span class="text-sm font-bold text-gray-800">Extension Cost</span>
+                                <span class="text-sm font-bold text-[#D62B2B]">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                            </div>
                         @else
-                        <div class="pt-3 pb-1 flex justify-between items-center border-t border-gray-100">
-                            <span class="text-sm font-bold text-gray-800">Total Payable (Full)</span>
-                            <span class="text-sm font-bold text-[#D62B2B]">${{ number_format($transaction->amount_paid, 2) }} USD</span>
-                        </div>
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-gray-500">Check-out</span>
+                                <span class="font-semibold text-gray-900">{{ $booking->check_out_date?->format('D, M d, Y') }} (12:00 PM)</span>
+                            </div>
+                            @if($booking->payment_tier < 100)
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-gray-500">Total Room Price</span>
+                                <span class="font-semibold text-gray-900">${{ number_format($booking->total_price, 2) }} USD</span>
+                            </div>
+                            <div class="py-2.5 flex justify-between items-center">
+                                <span class="text-gray-500">Payment Option</span>
+                                <span class="font-semibold text-gray-900">{{ $booking->payment_tier }}% Deposit</span>
+                            </div>
+                            <div class="pt-3 pb-1 flex justify-between items-center border-t border-gray-100">
+                                <span class="text-sm font-bold text-gray-800">Deposit Payable Now</span>
+                                <span class="text-sm font-bold text-[#D62B2B]">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                            </div>
+                            <div class="py-2.5 flex justify-between items-center bg-gray-50 px-2.5 rounded-lg mt-1 text-xs">
+                                <span class="text-gray-500 font-medium">Balance Due at Check-in</span>
+                                <span class="font-bold text-gray-800">${{ number_format($booking->remainingBalance(), 2) }} USD</span>
+                            </div>
+                            @else
+                            <div class="pt-3 pb-1 flex justify-between items-center border-t border-gray-100">
+                                <span class="text-sm font-bold text-gray-800">Total Payable (Full)</span>
+                                <span class="text-sm font-bold text-[#D62B2B]">${{ number_format($transaction->amount_paid, 2) }} USD</span>
+                            </div>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -166,6 +184,7 @@
                 .then(data => {
                     if (data.paid && data.redirect) {
                         clearInterval(pollInterval);
+                        if (window.setRedirecting) window.setRedirecting();
                         window.location.href = data.redirect;
                     }
                 })
@@ -174,4 +193,6 @@
     });
 </script>
 
+@include('payment.partials.countdown-script')
+@include('payment.partials.unlock-script')
 @endsection

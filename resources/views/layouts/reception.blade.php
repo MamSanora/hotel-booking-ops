@@ -9,13 +9,13 @@
     <meta name="description" content="Dara Meas Hotel front-desk management portal.">
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Tailwind CSS + Alpine.js via Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Tailwind CSS (Livewire auto-injects Alpine.js and Livewire scripts) -->
+    @vite(['resources/css/app.css'])
 
     @yield('styles')
     @stack('styles')
@@ -117,7 +117,7 @@
         </div>
 
         {{-- Navigation --}}
-        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
             <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Main</p>
 
             <a href="{{ route('reception.dashboard') }}"
@@ -134,6 +134,12 @@
 
             <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">System</p>
+
+                <a href="{{ route('reception.profile.edit') }}"
+                   class="rcpt-nav-link {{ request()->routeIs('reception.profile.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-person-gear text-base w-5 text-center"></i>
+                    <span>Profile Settings</span>
+                </a>
 
                 <form method="POST" action="{{ route('reception.logout') }}">
                     @csrf
