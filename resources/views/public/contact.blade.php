@@ -83,7 +83,7 @@
             
             <hr class="border-gray-200 my-10">
             
-            <h4 class="font-bold text-hotel-dark text-lg mb-4">Follow Us</h4>
+            <!-- <h4 class="font-bold text-hotel-dark text-lg mb-4">Follow Us</h4>
             <div class="flex space-x-3">
                 <a href="#" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-hotel-gold hover:text-white transition-all duration-300">
                     <i class="bi bi-facebook"></i>
@@ -94,7 +94,7 @@
                 <a href="#" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-hotel-gold hover:text-white transition-all duration-300">
                     <i class="bi bi-twitter-x"></i>
                 </a>
-            </div>
+            </div> -->
         </div>
 
         {{-- ==========================================
@@ -148,11 +148,11 @@
     </div>
 </div>
 
-{{-- ==========================================
+<!-- {{-- ==========================================
      MAP SECTION
      ========================================== --}}
 <div class="w-full h-[400px] lg:h-[500px]">
     <iframe src="https://maps.google.com/maps?q=Phnom%20Penh,%20Cambodia&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-</div>
+</div> -->
 
 @endsection

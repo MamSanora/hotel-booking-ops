@@ -301,4 +301,30 @@ class ReceptionDashboardController extends Controller
             "{$guestName}'s stay extended by {$extraNights} night(s) until {$newCheckout->format('M d, Y')}. Payment of \${$extraCost} collected."
         );
     }
+
+    /**
+     * Cancel a no-show booking and release the room.
+     *
+     * A "no-show" is a booking that was never checked in and whose check-in date
+     * has already passed. Receptionists can cancel these directly so the room
+     * can be re-assigned or cleaned without admin involvement.
+     */
+    public function cancelNoShow(Booking $booking): RedirectResponse
+    {
+        // Guard: only allow cancelling bookings that are still in the booked state
+        // and whose check-in date is in the past (true no-shows).
+        if ($booking->booking_status !== Booking::STATUS_BOOKED) {
+            return back()->with('error', 'Only unprocessed (booked) reservations can be cancelled as no-shows.');
+        }
+
+        $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+
+        // Return the room to available so it can be cleaned and re-assigned.
+        $booking->room?->update([
+            'current_status'    => \App\Models\Room::STATUS_AVAILABLE,
+            'status_updated_at' => now(),
+        ]);
+
+        return back()->with('success', "Booking {$booking->referenceNumber()} marked as no-show and room released.");
+    }
 }

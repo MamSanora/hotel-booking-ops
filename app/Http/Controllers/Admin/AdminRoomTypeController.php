@@ -50,7 +50,8 @@ class AdminRoomTypeController extends Controller
     {
         $validated = $request->validate([
             'display_name'    => ['required', 'string', 'max:100', Rule::unique('room_types', 'display_name')],
-            'capacity'        => ['required', 'integer', 'min:1', 'max:20'],
+            'adult_capacity'  => ['required', 'integer', 'min:1', 'max:10'],
+            'child_capacity'  => ['required', 'integer', 'min:0', 'max:10'],
             'price_per_night' => ['required', 'numeric', 'min:0'],
             'description'     => ['nullable', 'string', 'max:2000'],
             'is_visible'      => ['nullable', 'boolean'],
@@ -58,7 +59,8 @@ class AdminRoomTypeController extends Controller
         ], [
             'display_name.unique'      => 'A room type with this name already exists.',
             'display_name.required'    => 'Please provide a room type name.',
-            'capacity.required'        => 'Please specify the guest capacity.',
+            'adult_capacity.required'  => 'Please specify the adult capacity.',
+            'child_capacity.required'  => 'Please specify the child capacity.',
             'price_per_night.required' => 'Please set a price per night.',
         ]);
 
@@ -83,7 +85,9 @@ class AdminRoomTypeController extends Controller
         RoomType::create([
             'slug'            => $slug,
             'display_name'    => $validated['display_name'],
-            'capacity'        => $validated['capacity'],
+            'adult_capacity'  => $validated['adult_capacity'],
+            'child_capacity'  => $validated['child_capacity'],
+            'capacity'        => $validated['adult_capacity'] + $validated['child_capacity'],
             'price_per_night' => $validated['price_per_night'],
             'description'     => $validated['description'] ?? null,
             'is_visible'      => $request->has('is_visible'),
@@ -115,7 +119,8 @@ class AdminRoomTypeController extends Controller
                 'required', 'string', 'max:100',
                 Rule::unique('room_types', 'display_name')->ignore($roomType->id),
             ],
-            'capacity'        => ['required', 'integer', 'min:1', 'max:20'],
+            'adult_capacity'  => ['required', 'integer', 'min:1', 'max:10'],
+            'child_capacity'  => ['required', 'integer', 'min:0', 'max:10'],
             'price_per_night' => ['required', 'numeric', 'min:0'],
             'description'     => ['nullable', 'string', 'max:2000'],
             'is_visible'      => ['nullable', 'boolean'],
@@ -123,7 +128,8 @@ class AdminRoomTypeController extends Controller
         ], [
             'display_name.unique'      => 'A room type with this name already exists.',
             'display_name.required'    => 'Please provide a room type name.',
-            'capacity.required'        => 'Please specify the guest capacity.',
+            'adult_capacity.required'  => 'Please specify the adult capacity.',
+            'child_capacity.required'  => 'Please specify the child capacity.',
             'price_per_night.required' => 'Please set a price per night.',
         ]);
 
@@ -162,7 +168,9 @@ class AdminRoomTypeController extends Controller
         $roomType->update([
             'slug'            => $slug,
             'display_name'    => $validated['display_name'],
-            'capacity'        => $validated['capacity'],
+            'adult_capacity'  => $validated['adult_capacity'],
+            'child_capacity'  => $validated['child_capacity'],
+            'capacity'        => $validated['adult_capacity'] + $validated['child_capacity'],
             'price_per_night' => $validated['price_per_night'],
             'description'     => $validated['description'] ?? null,
             'is_visible'      => $request->has('is_visible'),

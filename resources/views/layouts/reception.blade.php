@@ -14,8 +14,8 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Tailwind CSS (Livewire auto-injects Alpine.js and Livewire scripts) -->
-    @vite(['resources/css/app.css'])
+    <!-- Tailwind CSS + Alpine.js via Vite -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @yield('styles')
     @stack('styles')
@@ -53,8 +53,10 @@
         }
 
         /* Mobile overlay */
-        /* Mobile overlay */
         #rcpt-overlay { transition: opacity 0.25s ease; }
+
+        /* Hide Alpine-cloaked elements until Alpine processes them */
+        [x-cloak] { display: none !important; }
     </style>
 
     <script>
@@ -131,6 +133,19 @@
                 <i class="bi bi-person-plus text-base w-5 text-center"></i>
                 <span>New Walk-In</span>
             </a>
+
+            <a href="{{ route('reception.room-check.index') }}"
+               class="rcpt-nav-link {{ request()->routeIs('reception.room-check.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                <i class="bi bi-check2-all text-base w-5 text-center"></i>
+                <span>Room Check</span>
+                @php
+                    $pendingClean = \App\Models\Room::whereIn('current_status', ['cleaning', 'maintenance'])->count();
+                @endphp
+                @if($pendingClean > 0)
+                    <span class="ml-auto bg-amber-500 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full leading-none">{{ $pendingClean }}</span>
+                @endif
+            </a>
+
 
             <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">System</p>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminGuestController;
+use App\Http\Controllers\Admin\AdminGuestAccountController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminRoomController;
 use App\Http\Controllers\Admin\AdminRoomTypeController;
@@ -245,8 +246,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/profile',                  [AdminProfileController::class, 'update'])->name('profile.update');
         Route::patch('/profile/password',         [AdminProfileController::class, 'updatePassword'])->name('profile.password');
 
-        // Guest Accounts Management
+        // Guest List (all guests — walk-in + registered)
         Route::resource('guests',                 AdminGuestController::class)->only(['index', 'show']);
+
+        // Registered Guest Accounts Management
+        Route::resource('guest-accounts',         AdminGuestAccountController::class)->except(['create', 'store', 'show']);
 
         // Maker-Checker Refund Workflow
 
@@ -285,6 +289,14 @@ Route::prefix('reception')->name('reception.')->group(function () {
 
         // Stay Extension (for walk-in / phone guests without an account)
         Route::post('/extend-stay/{booking}', [ReceptionDashboardController::class, 'extendStay'])->name('extend-stay');
+
+        // No-show cancellation (receptionist-level, releases the room)
+        Route::patch('/bookings/{booking}/cancel', [ReceptionDashboardController::class, 'cancelNoShow'])->name('bookings.cancel');
+
+        // Room Check — receptionist manually marks cleaned/maintenance rooms as available
+        Route::get('/room-check',                            [\App\Http\Controllers\Reception\RoomCheckController::class, 'index'])->name('room-check.index');
+        Route::patch('/room-check/{room}/mark-available',    [\App\Http\Controllers\Reception\RoomCheckController::class, 'markAvailable'])->name('room-check.mark-available');
+        Route::patch('/room-check/{room}/mark-maintenance',  [\App\Http\Controllers\Reception\RoomCheckController::class, 'markMaintenance'])->name('room-check.mark-maintenance');
 
         // Profile Management
         Route::get('/profile',                    [ReceptionProfileController::class, 'edit'])->name('profile.edit');

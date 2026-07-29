@@ -149,6 +149,12 @@
             <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Operations</p>
 
+                <a href="{{ route('admin.guests.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.guests.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-person-lines-fill text-base w-5 text-center"></i>
+                    <span>Guests List</span>
+                </a>
+
                 <a href="{{ route('admin.messages.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-chat-left-dots text-base w-5 text-center"></i>
@@ -165,9 +171,9 @@
             <div class="pt-4">
                 <p class="px-3 text-white/25 text-[0.6rem] uppercase tracking-widest font-bold mb-2">Account Management</p>
 
-                <a href="{{ route('admin.guests.index') }}"
-                   class="admin-nav-link {{ request()->routeIs('admin.guests.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
-                    <i class="bi bi-person-lines-fill text-base w-5 text-center"></i>
+                <a href="{{ route('admin.guest-accounts.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.guest-accounts.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-person-check text-base w-5 text-center"></i>
                     <span>Guest Accounts</span>
                 </a>
 

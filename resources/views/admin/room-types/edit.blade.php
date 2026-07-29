@@ -66,16 +66,28 @@
                     @error('display_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Capacity --}}
-                <div>
-                    <label for="capacity" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                        Guest Capacity <span class="text-red-400">*</span>
-                    </label>
-                    <input type="number" id="capacity" name="capacity"
-                           value="{{ old('capacity', $roomType->capacity) }}"
-                           required min="1" max="20"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
-                    @error('capacity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                {{-- Capacities --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="adult_capacity" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                            Adults <span class="text-red-400">*</span>
+                        </label>
+                        <input type="number" id="adult_capacity" name="adult_capacity"
+                               value="{{ old('adult_capacity', $roomType->adult_capacity) }}"
+                               required min="1" max="10"
+                               class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                        @error('adult_capacity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="child_capacity" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                            Children <span class="text-red-400">*</span>
+                        </label>
+                        <input type="number" id="child_capacity" name="child_capacity"
+                               value="{{ old('child_capacity', $roomType->child_capacity) }}"
+                               required min="0" max="10"
+                               class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                        @error('child_capacity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
 
                 {{-- Price Per Night --}}

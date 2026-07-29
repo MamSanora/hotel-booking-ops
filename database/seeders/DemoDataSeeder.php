@@ -69,32 +69,30 @@ class DemoDataSeeder extends Seeder
         $this->command->info('  📦  Seeding items catalog...');
 
         $items = [
-            ['Extra Towels',          'amenity'],
-            ['Toiletry Kit',          'amenity'],
-            ['Hair Dryer',            'amenity'],
-            ['Iron & Ironing Board',  'amenity'],
-            ['Baby Cot',              'amenity'],
-            ['Umbrella',              'amenity'],
-            ['Phone Charger (USB-C)', 'amenity'],
-            ['Slippers (Extra Pair)', 'amenity'],
-            ['Extra Pillow',          'bedding'],
-            ['Extra Blanket',         'bedding'],
-            ['Hypoallergenic Pillow', 'bedding'],
-            ['Foam Mattress Topper',  'bedding'],
-            ['Bottled Water (500ml)', 'beverage'],
-            ['Bottled Water (1.5L)',  'beverage'],
-            ['Hot Green Tea',         'beverage'],
-            ['Hot Coffee',            'beverage'],
-            ['Orange Juice',          'beverage'],
-            ['Coca-Cola (Can)',        'beverage'],
-            ['Local Beer (Can)',       'beverage'],
-            ['Fruit Basket',          'beverage'],
+            ['Extra Towels',          'amenity',  0],
+            ['Toiletry Kit',          'amenity',  0],
+            ['Hair Dryer',            'amenity',  0],
+            ['Iron & Ironing Board',  'amenity',  0],
+            ['Baby Cot',              'amenity',  0],
+            ['Umbrella',              'amenity',  0],
+            ['Phone Charger (USB-C)', 'amenity',  0],
+            ['Slippers (Extra Pair)', 'amenity',  0],
+            ['Extra Pillow',          'bedding',  0],
+            ['Extra Blanket',         'bedding',  0],
+            ['Foam Mattress Topper',  'bedding',  0],
+            ['Bottled Water (500ml)', 'beverage', 0.25],
+            ['Bottled Water (1.5L)',  'beverage', 0.50],
+            ['Hot Green Tea',         'beverage', 0.50],
+            ['Hot Coffee',            'beverage', 0.75],
+            ['Orange Juice',          'beverage', 1.00],
+            ['Coca-Cola (Can)',       'beverage', 0.60],
+            ['Local Beer (Can)',      'beverage', 1.50],
         ];
 
-        foreach ($items as [$name, $cat]) {
+        foreach ($items as [$name, $cat, $price]) {
             ItemsCatalog::firstOrCreate(
                 ['item_name' => $name],
-                ['category' => $cat, 'created_by_admin_id' => $this->adminId]
+                ['category' => $cat, 'price' => $price, 'created_by_admin_id' => $this->adminId]
             );
         }
         $this->command->info('     ✓ ' . ItemsCatalog::count() . ' catalog items');

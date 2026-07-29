@@ -119,217 +119,26 @@
     </div>
 
     {{-- ==========================================
-         TODAY'S GUEST MOVEMENT (mini cards)
+         2-COLUMN OPERATIONS LAYOUT
+         Left (65%): Tabbed booking operations panel
+         Right (35%): Today's movement + room service alerts (sticky sidebar)
          ========================================== --}}
-    <div>
-        <h2 class="font-playfair text-xl font-bold text-hotel-dark mb-4 flex items-center gap-2">
-            <i class="bi bi-people-fill text-teal-500"></i>
-            Today's Guest Movement
-            <span class="text-sm font-normal text-gray-400 ml-1">{{ now()->format('l, F j') }}</span>
-        </h2>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="flex flex-col xl:flex-row gap-6 items-start">
 
-            {{-- Arrivals --}}
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-emerald-50/60">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                        <i class="bi bi-box-arrow-in-right text-lg"></i>
-                    </div>
-                    <div>
-                        <div class="font-semibold text-gray-800 text-sm">Check-Ins Today</div>
-                        <div class="text-emerald-600 text-xs font-bold">{{ $arrivalsToday->count() }} guest{{ $arrivalsToday->count() !== 1 ? 's' : '' }} arriving</div>
-                    </div>
-                </div>
-                @if($arrivalsToday->count() > 0)
-                    <ul class="divide-y divide-gray-50">
-                        @foreach($arrivalsToday as $booking)
-                        <li class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
-                                    {{ strtoupper(substr($booking->guest?->full_name ?? 'G', 0, 1)) }}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-800">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
-                                    <div class="text-xs text-gray-400">{{ $booking->referenceNumber() }}</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xs font-bold text-gray-700">Room {{ $booking->room?->room_number ?? '—' }}</div>
-                                <div class="text-[0.7rem] text-gray-400">{{ $booking->room?->roomType?->display_name ?? '' }}</div>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @else
-                    <div class="px-5 py-8 text-center text-gray-400">
-                        <i class="bi bi-calendar-x text-3xl block mb-2 text-gray-300"></i>
-                        <p class="text-sm">No arrivals today.</p>
-                    </div>
-                @endif
-            </div>
+        {{-- ── LEFT COLUMN: Tabbed Operations Panel ── --}}
+        <div class="flex-1 min-w-0 space-y-5">
 
-            {{-- Departures --}}
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-red-50/60">
-                    <div class="w-9 h-9 rounded-xl bg-red-100 text-red-500 flex items-center justify-center shrink-0">
-                        <i class="bi bi-box-arrow-right text-lg"></i>
-                    </div>
-                    <div>
-                        <div class="font-semibold text-gray-800 text-sm">Check-Outs Today</div>
-                        <div class="text-red-500 text-xs font-bold">{{ $todayDepartures->count() }} guest{{ $todayDepartures->count() !== 1 ? 's' : '' }} departing</div>
-                    </div>
-                </div>
-                @if($todayDepartures->count() > 0)
-                    <ul class="divide-y divide-gray-50">
-                        @foreach($todayDepartures as $booking)
-                        <li class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
-                                    {{ strtoupper(substr($booking->guest?->full_name ?? 'G', 0, 1)) }}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-800">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
-                                    <div class="text-xs text-gray-400">{{ $booking->referenceNumber() }}</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xs font-bold text-gray-700">Room {{ $booking->room?->room_number ?? '—' }}</div>
-                                <div class="text-[0.7rem] text-gray-400">{{ $booking->room?->roomType?->display_name ?? '' }}</div>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @else
-                    <div class="px-5 py-8 text-center text-gray-400">
-                        <i class="bi bi-calendar-x text-3xl block mb-2 text-gray-300"></i>
-                        <p class="text-sm">No departures today.</p>
-                    </div>
-                @endif
-            </div>
-
-        </div>
-    </div>
-
-
-    {{-- ==========================================
-         PENDING ROOM SERVICE REQUESTS (alert panel)
-         ========================================== --}}
-    @if(isset($pendingRoomServices) && $pendingRoomServices->count() > 0)
-    <div class="bg-white rounded-2xl border-2 border-amber-200 shadow-sm overflow-hidden">
-        <div class="flex items-center gap-3 px-5 py-3 bg-amber-50 border-b border-amber-100">
-            <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                <i class="bi bi-bell-fill text-amber-500 text-sm animate-pulse"></i>
-            </div>
-            <div class="flex-1">
-                <h3 class="font-semibold text-amber-900 text-sm">Pending Room Service</h3>
-                <p class="text-amber-600 text-xs">{{ $pendingRoomServices->count() }} request{{ $pendingRoomServices->count() !== 1 ? 's' : '' }} need attention</p>
-            </div>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead>
-                    <tr class="text-amber-700 text-[0.7rem] uppercase tracking-wider bg-amber-50/50">
-                        <th class="px-4 py-2 font-semibold">Room</th>
-                        <th class="px-4 py-2 font-semibold">Guest</th>
-                        <th class="px-4 py-2 font-semibold">Request</th>
-                        <th class="px-4 py-2 font-semibold">When</th>
-                        <th class="px-4 py-2 font-semibold text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-amber-50">
-                    @foreach($pendingRoomServices as $rs)
-                    <tr class="hover:bg-amber-50/30 transition-colors" x-data="{ showReply: false }">
-                        <td class="px-4 py-2.5">
-                            <span class="font-bold text-gray-800">{{ $rs->booking->room?->room_number ?? '—' }}</span>
-                        </td>
-                        <td class="px-4 py-2.5">
-                            <div class="font-medium text-gray-800 text-xs">{{ $rs->booking->guest?->full_name ?? 'Guest' }}</div>
-                        </td>
-                        <td class="px-4 py-2.5 max-w-xs">
-                            @if($rs->requestedItems->isNotEmpty())
-                                <div class="text-xs text-gray-600">
-                                    {{ $rs->requestedItems->map(fn($i) => $i->amount_per_item . '× ' . ($i->catalog->item_name ?? 'Item'))->join(', ') }}
-                                </div>
-                            @endif
-                            @if($rs->guest_notes)
-                                <div class="text-xs text-gray-400 italic truncate max-w-[200px]" title="{{ $rs->guest_notes }}">
-                                    &ldquo;{{ $rs->guest_notes }}&rdquo;
-                                </div>
-                            @endif
-                        </td>
-                        <td class="px-4 py-2.5">
-                            <span class="text-xs text-gray-400">{{ $rs->created_at->diffForHumans() }}</span>
-                        </td>
-                        <td class="px-4 py-2.5">
-                            <div class="flex items-center justify-end gap-1.5">
-                                {{-- Reply toggle --}}
-                                <button type="button" @click="showReply = !showReply"
-                                        class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-500 flex items-center justify-center transition-colors"
-                                        title="Add reply">
-                                    <i class="bi bi-chat-left-text text-xs"></i>
-                                </button>
-
-                                {{-- Quick complete (no reply) --}}
-                                <form action="{{ route('reception.room-service.complete', $rs->id) }}" method="POST" class="inline">
-                                    @csrf @method('PATCH')
-                                    <button type="submit"
-                                            onclick="return confirm('Mark as completed?')"
-                                            class="w-7 h-7 rounded-lg bg-amber-100 hover:bg-emerald-100 hover:text-emerald-700 text-amber-600 flex items-center justify-center transition-colors"
-                                            title="Mark completed">
-                                        <i class="bi bi-check2 text-sm font-bold"></i>
-                                    </button>
-                                </form>
-
-                                {{-- Reply + complete modal --}}
-                                <div x-show="showReply" x-cloak
-                                     @click.outside="showReply = false"
-                                     :class="showReply ? 'pointer-events-auto' : 'pointer-events-none'"
-                                     class="absolute right-4 mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-72 text-left"
-                                     style="top: auto;">
-                                    <form action="{{ route('reception.room-service.complete', $rs->id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Reply to guest (optional)</label>
-                                        <input type="text" name="response" placeholder="e.g. On its way!"
-                                               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:border-amber-400 outline-none">
-                                        <div class="flex gap-2">
-                                            <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors">
-                                                <i class="bi bi-check2-circle mr-1"></i> Complete
-                                            </button>
-                                            <button type="button" @click="showReply = false" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm">
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-    @endif
+    {{-- Settle modal shared state — plain window object to avoid Alpine store timing issues.
+         app.js calls Alpine.start() in <head> so alpine:init has already fired before any
+         inline script in content runs. Using window avoids the race entirely. --}}
+    <script>
+        window.settleModal = { open: false, amount: '0.00', qrUrl: '', actionUrl: '' };
+    </script>
 
     {{-- ==========================================
          TABBED OPERATIONS PANEL
          ========================================== --}}
-    <div x-data="{ 
-        activeTab: 'arrivals',
-        showSettleModal: false, 
-        settleBookingId: null, 
-        settleAmount: 0, 
-        settleQrUrl: '', 
-        settleActionUrl: '', 
-        openSettleModal(bookingId, amount, qrUrl, actionUrl) { 
-            this.settleBookingId = bookingId; 
-            this.settleAmount = parseFloat(amount).toFixed(2); 
-            this.settleQrUrl = qrUrl; 
-            this.settleActionUrl = actionUrl; 
-            this.showSettleModal = true; 
-        } 
-    }" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+    <div x-data="{ activeTab: 'arrivals' }" class="bg-white rounded-2xl border border-gray-200 shadow-sm relative">
 
         {{-- Tab Bar --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
@@ -416,98 +225,7 @@
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 translate-y-1"
                  x-transition:enter-end="opacity-100 translate-y-0">
-                @if($upcomingArrivals->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-500 text-[0.75rem] uppercase tracking-wider">
-                                    <th class="px-4 py-3 font-semibold rounded-tl-xl rounded-bl-xl">Ref</th>
-                                    <th class="px-4 py-3 font-semibold">Guest</th>
-                                    <th class="px-4 py-3 font-semibold">Arrival</th>
-                                    <th class="px-4 py-3 font-semibold">Room</th>
-                                    <th class="px-4 py-3 font-semibold">Payment</th>
-                                    <th class="px-4 py-3 font-semibold rounded-tr-xl rounded-br-xl text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @foreach($upcomingArrivals as $booking)
-                                <tr class="hover:bg-gray-50/60 transition-colors">
-                                    <td class="px-4 py-4 whitespace-nowrap">
-                                        <span class="font-playfair text-hotel-gold font-bold text-base">{{ $booking->referenceNumber() }}</span>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <div class="font-semibold text-gray-800 text-sm">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
-                                        <div class="text-gray-400 text-xs mt-0.5">{{ $booking->guest?->phones?->first()?->phone_number ?? '—' }}</div>
-                                        @if($booking->special_requests)
-                                            <div class="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-amber-800 text-[0.75rem] flex items-start gap-1 max-w-xs">
-                                                <i class="bi bi-chat-left-text-fill text-amber-500 shrink-0 mt-0.5 text-[0.7rem]"></i>
-                                                <span>{{ $booking->special_requests }}</span>
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-4 whitespace-nowrap">
-                                        <div class="font-semibold text-gray-800 text-sm">{{ $booking->check_in_date->format('M d, Y') }}</div>
-                                        @if($booking->check_in_date->isToday())
-                                            <span class="bg-emerald-100 text-emerald-700 text-[0.65rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Today</span>
-                                        @elseif($booking->check_in_date->isTomorrow())
-                                            <span class="bg-blue-100 text-blue-700 text-[0.65rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Tomorrow</span>
-                                        @else
-                                            <span class="text-gray-400 text-xs">{{ $booking->check_in_date->diffForHumans() }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <div class="text-gray-800 font-medium text-sm">{{ $booking->room?->displayType() ?? 'N/A' }}</div>
-                                        <div class="text-gray-400 text-xs mt-0.5">Room {{ $booking->room?->room_number ?? '—' }}</div>
-                                    </td>
-                                    <td class="px-4 py-4 whitespace-nowrap">
-                                        @php $paid = $booking->totalPaid() + 0.01 >= (float) $booking->total_price; @endphp
-                                        @if($paid)
-                                            <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">
-                                                <i class="bi bi-check-circle-fill"></i> Paid
-                                            </span>
-                                        @else
-                                            <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2.5 py-1 rounded-full">Unpaid</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-4 whitespace-nowrap text-right space-x-2">
-                                        @if(!$paid)
-                                            @php
-                                                $remaining = max(0, $booking->total_price - $booking->totalPaid());
-                                                $qrString = \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
-                                                $qrPath = (new \chillerlan\QRCode\QRCode)->render($qrString);
-                                            @endphp
-                                            <button type="button" @click="openSettleModal({{ $booking->id }}, {{ $remaining }}, '{{ $qrPath }}', '{{ route('reception.payment.manual', $booking->id) }}')"
-                                                    class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
-                                                <i class="bi bi-wallet2"></i> Settle
-                                            </button>
-                                        @endif
-                                        @if($booking->check_in_date->startOfDay()->lte(now()->startOfDay()))
-                                            <form action="{{ route('reception.checkin', $booking->id) }}" method="POST" class="inline-block">
-                                                @csrf
-                                                <button type="submit" onclick="return confirm('Check in this guest?')"
-                                                        class="inline-flex items-center gap-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-emerald-200">
-                                                    <i class="bi bi-check2-square"></i> Check In
-                                                </button>
-                                            </form>
-                                        @else
-                                            <button disabled
-                                                    class="inline-flex items-center gap-1 bg-gray-100 text-gray-400 font-semibold px-3 py-1.5 rounded-lg text-xs border border-gray-200 cursor-not-allowed"
-                                                    title="Cannot check in before arrival date">
-                                                <i class="bi bi-check2-square"></i> Check In
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="text-center py-10 text-gray-400">
-                        <i class="bi bi-inbox text-4xl block mb-3 text-gray-200"></i>
-                        <p class="text-sm">No upcoming arrivals scheduled.</p>
-                    </div>
-                @endif
+                @livewire('reception.upcoming-arrivals-list')
             </div>
 
             {{-- ── TAB 2: TODAY'S DEPARTURES ── --}}
@@ -548,10 +266,22 @@
                                         @else
                                             @php
                                                 $remaining = max(0, $booking->total_price - $booking->totalPaid());
-                                                $qrString = \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
-                                                $qrPath = (new \chillerlan\QRCode\QRCode)->render($qrString);
+                                                $qrString = $booking->room?->roomType?->use_mam_sanora_qr
+                                                    ? \App\Services\KhqrGenerator::forMamSanora($remaining, $booking->referenceNumber())
+                                                    : \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
+                                                $qrDataUri = (new \chillerlan\QRCode\QRCode)->render($qrString);
                                             @endphp
-                                            <button type="button" @click="openSettleModal({{ $booking->id }}, {{ $remaining }}, '{{ $qrPath }}', '{{ route('reception.payment.manual', $booking->id) }}')"
+                                            <button type="button"
+                                                    onclick="(function(el){
+                                                        document.getElementById('settle-amount-display').textContent = el.dataset.settleAmount;
+                                                        document.getElementById('settle-amount-input').value = el.dataset.settleAmount;
+                                                        document.getElementById('settle-qr-img').src = el.dataset.settleQr;
+                                                        document.getElementById('settle-form').action = el.dataset.settleAction;
+                                                        window.dispatchEvent(new CustomEvent('settle-open'));
+                                                    })(this)"
+                                                    data-settle-amount="{{ number_format($remaining, 2, '.', '') }}"
+                                                    data-settle-qr="{{ $qrDataUri }}"
+                                                    data-settle-action="{{ route('reception.payment.manual', $booking->id) }}"
                                                     class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
                                                 <i class="bi bi-wallet2"></i> Settle
                                             </button>
@@ -852,7 +582,7 @@
                                     <div class="text-gray-700 text-sm font-medium">Room {{ $booking->room?->room_number ?? '—' }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <form action="{{ route('admin.bookings.cancel', $booking->id) }}" method="POST" class="inline">
+                                    <form action="{{ route('reception.bookings.cancel', $booking->id) }}" method="POST" class="inline">
                                         @csrf @method('PATCH')
                                         <button type="submit"
                                                 onclick="return confirm('Cancel no-show booking {{ $booking->referenceNumber() }} and release the room?')"
@@ -871,59 +601,168 @@
 
         </div>{{-- end tab content --}}
 
-        {{-- SETTLE MODAL --}}
-        <div x-show="showSettleModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm" x-cloak
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-left" @click.away="showSettleModal = false">
-                <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-                    <h3 class="text-xl font-bold font-playfair text-hotel-dark flex items-center gap-2">
-                        <i class="bi bi-wallet2 text-hotel-gold"></i> Settle Balance
-                    </h3>
-                    <button type="button" @click="showSettleModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="bi bi-x-lg text-xl"></i>
+    </div>{{-- end tabbed panel --}}
+
+        </div>{{-- end LEFT COLUMN --}}
+
+        {{-- ── RIGHT COLUMN: Today's Movement + Room Service Alerts ── --}}
+        <div class="w-full xl:w-80 shrink-0 space-y-5 xl:sticky xl:top-6">
+
+            {{-- Section header --}}
+            <h2 class="font-playfair text-lg font-bold text-hotel-dark flex items-center gap-2">
+                <i class="bi bi-people-fill text-teal-500"></i>
+                Today's Movement
+                <span class="text-xs font-normal text-gray-400 ml-1">{{ now()->format('M j') }}</span>
+            </h2>
+
+            {{-- Guest Movement Cards Wrapper --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-5">
+                {{-- Check-Ins Today --}}
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-emerald-50/60">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <i class="bi bi-box-arrow-in-right text-sm"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-800 text-sm">Check-Ins Today</div>
+                            <div class="text-emerald-600 text-xs font-bold">{{ $arrivalsToday->count() }} guest{{ $arrivalsToday->count() !== 1 ? 's' : '' }} arriving</div>
+                        </div>
+                    </div>
+                    @if($arrivalsToday->count() > 0)
+                        <ul class="divide-y divide-gray-50 max-h-56 overflow-y-auto">
+                            @foreach($arrivalsToday as $booking)
+                            <li class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
+                                        {{ strtoupper(substr($booking->guest?->full_name ?? 'G', 0, 1)) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-xs font-semibold text-gray-800 truncate">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
+                                        <div class="text-[0.65rem] text-gray-400">{{ $booking->referenceNumber() }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0 ml-2">
+                                    <div class="text-xs font-bold text-gray-700">Rm {{ $booking->room?->room_number ?? '—' }}</div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="px-4 py-6 text-center text-gray-400">
+                            <i class="bi bi-calendar-check text-2xl block mb-1 text-gray-200"></i>
+                            <p class="text-xs">No arrivals today.</p>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Check-Outs Today --}}
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-red-50/60">
+                        <div class="w-8 h-8 rounded-xl bg-red-100 text-red-500 flex items-center justify-center shrink-0">
+                            <i class="bi bi-box-arrow-right text-sm"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-800 text-sm">Check-Outs Today</div>
+                            <div class="text-red-500 text-xs font-bold">{{ $todayDepartures->count() }} guest{{ $todayDepartures->count() !== 1 ? 's' : '' }} departing</div>
+                        </div>
+                    </div>
+                    @if($todayDepartures->count() > 0)
+                        <ul class="divide-y divide-gray-50 max-h-56 overflow-y-auto">
+                            @foreach($todayDepartures as $booking)
+                            <li class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-7 h-7 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
+                                        {{ strtoupper(substr($booking->guest?->full_name ?? 'G', 0, 1)) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-xs font-semibold text-gray-800 truncate">{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
+                                        <div class="text-[0.65rem] text-gray-400">{{ $booking->referenceNumber() }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0 ml-2">
+                                    <div class="text-xs font-bold text-gray-700">Rm {{ $booking->room?->room_number ?? '—' }}</div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="px-4 py-6 text-center text-gray-400">
+                            <i class="bi bi-calendar-x text-2xl block mb-1 text-gray-200"></i>
+                            <p class="text-xs">No departures today.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Pending Housekeeping Request (right column) --}}
+            @livewire('reception.housekeeping-requests-list')
+
+        </div>{{-- end RIGHT COLUMN --}}
+
+    </div>{{-- end 2-column layout --}}
+
+
+    {{-- =====================================================
+         SETTLE BALANCE MODAL
+         Uses window.settleModal — decoupled from tabbed panel.
+         ===================================================== --}}
+    <div x-data="{ open: false }"
+         x-show="open"
+         @settle-open.window="open = true"
+         class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-left mx-4" @click.outside="open = false">
+            <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+                <h3 class="text-xl font-bold font-playfair text-hotel-dark flex items-center gap-2">
+                    <i class="bi bi-wallet2 text-hotel-gold"></i> Settle Balance
+                </h3>
+                <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="bi bi-x-lg text-xl"></i>
+                </button>
+            </div>
+
+            <p class="text-gray-500 mb-4 text-center text-sm">Scan the QR code below or collect cash for the remaining balance.</p>
+            <div class="text-center mb-5">
+                <span class="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Amount Due</span>
+                <span class="text-3xl font-bold text-red-600">$<span id="settle-amount-display"></span></span>
+            </div>
+
+            <!-- QR Code -->
+            <div class="flex justify-center mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <img id="settle-qr-img" src="" alt="QR Code" class="w-48 h-48 rounded-lg shadow-sm border border-gray-200 object-contain bg-white p-2">
+            </div>
+
+            <form id="settle-form" action="" method="POST">
+                @csrf
+                <input type="hidden" id="settle-amount-input" name="amount_paid" value="">
+                <input type="hidden" name="payment_for" value="booking">
+
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold mb-2 uppercase tracking-wide text-gray-500">Payment Method Received</label>
+                    <select name="payment_method" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white font-medium text-gray-700">
+                        <option value="khqr_aba">KHQR / ABA Static</option>
+                        <option value="cash">Cash</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" @click="open = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700 font-semibold text-sm">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] transition-all text-white rounded-lg font-semibold text-sm shadow-md flex items-center gap-2">
+                        <i class="bi bi-check2-circle"></i> Confirm Paid
                     </button>
                 </div>
-                
-                <p class="text-gray-500 mb-4 text-center text-sm">Scan the QR code below or collect cash for the remaining balance.</p>
-                <div class="text-center mb-5">
-                    <span class="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Amount Due</span>
-                    <span class="text-3xl font-bold text-red-600">$<span x-text="settleAmount"></span></span>
-                </div>
-                
-                <!-- QR Code -->
-                <div class="flex justify-center mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <img :src="settleQrUrl" alt="QR Code" class="w-48 h-48 rounded-lg shadow-sm border border-gray-200 object-contain bg-white p-2">
-                </div>
-
-                <form :action="settleActionUrl" method="POST">
-                    @csrf
-                    <input type="hidden" name="amount_paid" :value="settleAmount">
-                    <input type="hidden" name="payment_for" value="booking">
-                    
-                    <div class="mb-6">
-                        <label class="block text-xs font-semibold mb-2 uppercase tracking-wide text-gray-500">Payment Method Received</label>
-                        <select name="payment_method" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white font-medium text-gray-700">
-                            <option value="khqr_aba">KHQR / ABA Static</option>
-                            <option value="cash">Cash</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                        <button type="button" @click="showSettleModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700 font-semibold text-sm">Cancel</button>
-                        <button type="submit" class="px-5 py-2.5 bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] transition-all text-white rounded-lg font-semibold text-sm shadow-md flex items-center gap-2">
-                            <i class="bi bi-check2-circle"></i> Confirm Paid
-                        </button>
-                    </div>
-                </form>
-            </div>
+            </form>
         </div>
+    </div>
 
-    </div>{{-- end tabbed panel --}}
-</div>
+</div>{{-- end outer page wrapper --}}
 
 @endsection
+
+
