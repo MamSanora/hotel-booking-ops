@@ -145,9 +145,13 @@
                             </div>
                             <div>
                                 <label for="nationality" class="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-                                <input type="text" name="nationality" id="nationality" value="{{ old('nationality', $guest->nationality) }}"
-                                       placeholder="e.g. Cambodian"
-                                       class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all">
+                                <select name="nationality" id="nationality"
+                                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all">
+                                    <option value="">— Select —</option>
+                                    @foreach(config('countries') as $country)
+                                        <option value="{{ $country }}" {{ old('nationality', $guest->nationality) === $country ? 'selected' : '' }}>{{ $country }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 

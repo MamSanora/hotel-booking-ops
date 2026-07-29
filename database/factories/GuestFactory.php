@@ -21,7 +21,7 @@ class GuestFactory extends Factory
         return [
             'full_name'   => fake()->name(),
             'gender'      => fake()->randomElement(['male', 'female', 'other', 'prefer_not_to_say']),
-            'nationality' => fake()->country(),
+            'nationality' => fake()->randomElement(config('countries')),
         ];
     }
 

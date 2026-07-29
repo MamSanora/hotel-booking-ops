@@ -283,6 +283,8 @@
 
                                 {{-- Reply + complete modal --}}
                                 <div x-show="showReply" x-cloak
+                                     @click.outside="showReply = false"
+                                     :class="showReply ? 'pointer-events-auto' : 'pointer-events-none'"
                                      class="absolute right-4 mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-72 text-left"
                                      style="top: auto;">
                                     <form action="{{ route('reception.room-service.complete', $rs->id) }}" method="POST">

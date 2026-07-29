@@ -179,9 +179,13 @@
                         <label for="nationality" class="block text-[0.8rem] uppercase font-semibold text-gray-500 tracking-wider mb-2">
                             Nationality
                         </label>
-                        <input id="nationality" type="text" name="nationality" value="{{ old('nationality') }}"
-                               placeholder="e.g. Cambodian"
-                               class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all @error('nationality') border-red-400 @enderror">
+                        <select id="nationality" name="nationality"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all @error('nationality') border-red-400 @enderror">
+                            <option value="">— Select —</option>
+                            @foreach(config('countries') as $country)
+                                <option value="{{ $country }}" {{ old('nationality', 'Cambodia') === $country ? 'selected' : '' }}>{{ $country }}</option>
+                            @endforeach
+                        </select>
                         @error('nationality')
                             <p class="text-red-500 text-xs mt-1.5"><i class="bi bi-exclamation-circle"></i> {{ $message }}</p>
                         @enderror

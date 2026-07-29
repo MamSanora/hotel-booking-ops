@@ -153,13 +153,15 @@ class PaymentController extends Controller
         $reference        = $booking->referenceNumber();
         $khqrString       = null;
 
-        if ($booking->room->room_type_id == 4) {
+        if ($booking->room->roomType->use_mam_sanora_qr) {
             $amount = $transaction->amount_paid > 0
                 ? $transaction->amount_paid
                 : $booking->depositAmount();
             
             $merchantName = config('telegram.aba_merchant_name_2', 'MAM SANORA');
             $accountNumber = config('telegram.aba_account_number_2', '126072315150668');
+            
+            $abaAccountNumber = $accountNumber; // Override the text display
             
             // Mam Sanora credentials for Test Room
             $khqrString = \App\Services\KhqrGenerator::generate($merchantName, $accountNumber, $amount, '840', $reference);
@@ -203,9 +205,6 @@ class PaymentController extends Controller
         ));
     }
     
-    /**
-     * Display the Mam Sanora dynamic KHQR payment page.
-     */
     protected function showMamSanoraStatic(Booking $booking, Transaction $transaction): View
     {
         $amount = $transaction->amount_paid > 0
