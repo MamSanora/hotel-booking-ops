@@ -344,5 +344,6 @@
 
     <!-- Any extra JS scripts injected by views -->
     @stack('scripts')
+    <x-global-confirm />
 </body>
 </html>

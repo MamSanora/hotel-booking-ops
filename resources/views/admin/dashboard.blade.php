@@ -101,7 +101,7 @@
                 class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800 text-left w-full group cursor-pointer">
             <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-[1.4rem] mb-4 group-hover:bg-blue-100 transition-colors"><i class="bi bi-building"></i></div>
             <div class="flex items-end gap-2 mb-0.5">
-                <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none">{{ $occupiedRooms }} / {{ $totalRooms }}</div>
+                <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none">{{ number_format($occupiedRooms) }} / {{ number_format($totalRooms) }}</div>
                 <span class="text-blue-500 font-bold text-sm mb-0.5">{{ $occupancyRate }}%</span>
             </div>
             <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-3">Rooms Occupied</div>
@@ -117,28 +117,37 @@
         {{-- Active Bookings --}}
         <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-calendar-check"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $activeBookings }}</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ number_format($activeBookings) }}</div>
             <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Active Bookings</div>
         </div>
 
-        {{-- Registered Guests --}}
-        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
-            <div class="w-12 h-12 rounded-xl bg-[#fff8ee] text-hotel-gold flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-people"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $totalGuests }}</div>
-            <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Registered Guests</div>
+        {{-- Guests Split --}}
+        <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800 flex flex-col justify-between">
+            <div class="flex items-start justify-between mb-2">
+                <div class="w-12 h-12 rounded-xl bg-[#fff8ee] text-hotel-gold flex items-center justify-center text-[1.4rem]"><i class="bi bi-people"></i></div>
+                <div class="text-right">
+                    <div class="font-playfair text-2xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ number_format($totalGuests) }}</div>
+                    <div class="text-[0.7rem] text-gray-400 font-semibold uppercase tracking-wider">Registered</div>
+                </div>
+                <div class="text-right">
+                    <div class="font-playfair text-2xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ number_format($unregisteredGuests) }}</div>
+                    <div class="text-[0.7rem] text-gray-400 font-semibold uppercase tracking-wider">Walk-in/Phone</div>
+                </div>
+            </div>
+            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider mt-auto text-center border-t border-gray-100 dark:border-gray-700 pt-3">Total Guest Records: <span class="text-hotel-gold">{{ number_format($totalGuests + $unregisteredGuests) }}</span></div>
         </div>
 
         {{-- Today Arrivals --}}
         <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-500 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-box-arrow-in-right"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $todayArrivals }}</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ number_format($todayArrivals) }}</div>
             <div class="text-[0.85rem] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Today's Arrivals</div>
         </div>
 
         {{-- Today Departures --}}
         <div class="bg-white dark:bg-[#1a2534] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] dark:border-gray-800">
             <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-[1.4rem] mb-4"><i class="bi bi-box-arrow-right"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ $todayDepartures }}</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark dark:text-gray-100 leading-none mb-1">{{ number_format($todayDepartures) }}</div>
             <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Today's Departures</div>
         </div>
 
@@ -146,7 +155,7 @@
         <button type="button" onclick="document.getElementById('room-board-modal').classList.remove('hidden')"
                 class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] text-left w-full group cursor-pointer">
             <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-[1.4rem] mb-4 group-hover:bg-green-100 transition-colors"><i class="bi bi-check-circle"></i></div>
-            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ $availableRooms }}</div>
+            <div class="font-playfair text-3xl font-bold text-hotel-dark leading-none mb-1">{{ number_format($availableRooms) }}</div>
             <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider">Rooms Available</div>
             <div class="text-[0.7rem] text-green-500 font-medium mt-2 flex items-center gap-1 group-hover:text-green-700 transition-colors">
                 <i class="bi bi-grid-3x3-gap"></i> View room board
@@ -179,7 +188,7 @@
                 @if ($onCooldown)
                     <div class="w-full flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-100 rounded-lg px-3 py-2 cursor-not-allowed"><i class="bi bi-hourglass-split"></i> Next in {{ $cooldownMins }} min{{ $cooldownMins !== 1 ? 's' : '' }}</div>
                 @else
-                    <form method="POST" action="{{ route('admin.backup.run') }}" onsubmit="return confirm('Run a manual backup now?')">@csrf
+                    <form method="POST" action="{{ route('admin.backup.run') }}" x-data @submit.prevent="$dispatch('open-confirm', { message: 'Run a manual backup now?', action: () => $el.submit() })">@csrf
                         <button type="submit" class="w-full flex items-center justify-center gap-2 text-xs font-semibold bg-hotel-dark text-white rounded-lg px-3 py-2 hover:bg-hotel-accent transition-colors"><i class="bi bi-cloud-arrow-up"></i> Backup Now</button>
                     </form>
                 @endif
@@ -437,6 +446,9 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-200 pb-3 mb-6">
         <h2 class="font-playfair text-2xl font-bold text-hotel-dark flex items-center">
             <i class="bi bi-bar-chart-line text-blue-500 mr-3"></i>Financial &amp; Booking Analytics
+            <button id="clear-filters-btn" class="hidden ml-4 text-xs bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors cursor-pointer shadow-sm" onclick="clearCrossFilters()">
+                <i class="bi bi-x-circle mr-1"></i>Clear Filters
+            </button>
         </h2>
         {{-- Period Quick-Select --}}
         <div class="flex flex-wrap items-center gap-2" id="analytics-period-controls">
@@ -492,43 +504,73 @@
         <div class="ml-auto text-xs text-gray-400 self-center italic" id="analytics-period-label">Loading…</div>
     </div>
 
-    {{-- Chart Grid: 2×2 --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+    {{-- Chart Grid: Adjustable Layout --}}
+    <div class="flex flex-wrap gap-6 mb-12">
 
-        {{-- Revenue over time --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
+        {{-- Revenue over time (Spans 2 columns on large screens) --}}
+        <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
             <div class="flex items-center justify-between mb-4">
-                <h5 class="font-semibold text-base text-hotel-dark">Revenue Over Time</h5>
-                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Paid only</span>
+                <div class="flex items-center gap-2">
+                    <h5 class="font-semibold text-base text-hotel-dark">Revenue Over Time</h5>
+                    <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Paid only</span>
+                </div>
             </div>
-            <div id="chart-revenue" style="height:240px;"></div>
+            <div id="chart-revenue" class="w-full min-h-[240px]"></div>
         </div>
 
         {{-- Booking Volume over time --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
+        <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
             <div class="flex items-center justify-between mb-4">
-                <h5 class="font-semibold text-base text-hotel-dark">Booking Volume</h5>
-                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">All statuses</span>
+                <div class="flex items-center gap-2">
+                    <h5 class="font-semibold text-base text-hotel-dark">Booking Volume</h5>
+                    <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">All statuses</span>
+                </div>
             </div>
-            <div id="chart-booking-volume" style="height:240px;"></div>
+            <div id="chart-booking-volume" class="w-full min-h-[240px]"></div>
         </div>
 
-        {{-- Revenue by Room Type --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
+        {{-- Revenue by Room Type (Spans 2 columns) --}}
+        <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
             <div class="flex items-center justify-between mb-4">
-                <h5 class="font-semibold text-base text-hotel-dark">Revenue by Room Type</h5>
-                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Paid revenue</span>
+                <div class="flex items-center gap-2">
+                    <h5 class="font-semibold text-base text-hotel-dark">Revenue by Room Type</h5>
+                    <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Paid revenue</span>
+                </div>
             </div>
-            <div id="chart-revenue-by-type" style="height:240px;"></div>
+            <div id="chart-revenue-by-type" class="w-full min-h-[240px]"></div>
         </div>
 
         {{-- Booking Status Distribution --}}
-        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col">
+        <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
             <div class="flex items-center justify-between mb-4">
-                <h5 class="font-semibold text-base text-hotel-dark">Booking Status Distribution</h5>
-                <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">For period</span>
+                <div class="flex items-center gap-2">
+                    <h5 class="font-semibold text-base text-hotel-dark">Status Dist.</h5>
+                    <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">For period</span>
+                </div>
             </div>
-            <div id="chart-booking-status" style="height:240px;"></div>
+            <div id="chart-booking-status" class="w-full min-h-[240px]"></div>
+        </div>
+
+        {{-- Revenue by Nationality --}}
+        <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <h5 class="font-semibold text-base text-hotel-dark">Revenue by Nationality</h5>
+                    <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Top 10</span>
+                </div>
+            </div>
+            <div id="chart-revenue-by-nationality" class="w-full min-h-[240px]"></div>
+        </div>
+
+        {{-- Customers by Guest Type --}}
+        <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <h5 class="font-semibold text-base text-hotel-dark">Customers by Guest Type</h5>
+                    <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Volume split</span>
+                </div>
+            </div>
+            <div id="chart-volume-by-guest-type" class="w-full min-h-[240px]"></div>
         </div>
 
     </div>
@@ -718,15 +760,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const DARK  = '#1a2636';
     const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#6b7280','#14b8a6','#f97316'];
 
+    // ── Global Filter State ─────────────────────────────────────
+    window.chartFilters = { guest_type: null, nationality: null, room_type: null };
+    
+    window.clearCrossFilters = function() {
+        window.chartFilters = { guest_type: null, nationality: null, room_type: null };
+        document.getElementById('clear-filters-btn').classList.add('hidden');
+        triggerFilterUpdate();
+    };
+
+    function triggerFilterUpdate() {
+        if (window.chartFilters.guest_type || window.chartFilters.nationality || window.chartFilters.room_type) {
+            document.getElementById('clear-filters-btn').classList.remove('hidden');
+        } else {
+            document.getElementById('clear-filters-btn').classList.add('hidden');
+        }
+        
+        const activePreset = document.querySelector('.analytics-preset-btn.active');
+        if (activePreset && activePreset.id === 'preset-custom') {
+            window.applyCustomRange();
+        } else if (activePreset && activePreset.dataset.period) {
+            activePreset.click();
+        } else {
+            loadAnalytics(null, null);
+        }
+    }
+
     // ── ApexChart instances ────────────────────────────────────
     const defaultOpts = {
         chart: { toolbar: { show: false }, fontFamily: 'Inter, sans-serif', animations: { easing: 'easeinout', speed: 600 } },
         noData: { text: 'No data for this period', style: { color: '#9ca3af', fontSize: '13px' } },
+        states: { hover: { filter: { type: 'darken', value: 0.9 } } }
     };
 
     const revenueChart = new ApexCharts(document.getElementById('chart-revenue'), {
         ...defaultOpts,
-        chart: { ...defaultOpts.chart, type: 'area', height: 240 },
+        chart: { ...defaultOpts.chart, type: 'area', height: 240, group: 'timeline', id: 'revenue' },
         series: [{ name: 'Revenue ($)', data: [] }],
         xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 }, tickAmount: 8 },
         yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
@@ -741,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const volumeChart = new ApexCharts(document.getElementById('chart-booking-volume'), {
         ...defaultOpts,
-        chart: { ...defaultOpts.chart, type: 'bar', height: 240 },
+        chart: { ...defaultOpts.chart, type: 'bar', height: 240, group: 'timeline', id: 'volume' },
         series: [{ name: 'Bookings', data: [] }],
         xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 }, tickAmount: 8 },
         yaxis: { labels: { formatter: v => Math.round(v) } },
@@ -752,17 +821,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     volumeChart.render();
 
+    let rawRevenueByType = [];
     const typeChart = new ApexCharts(document.getElementById('chart-revenue-by-type'), {
         ...defaultOpts,
-        chart: { ...defaultOpts.chart, type: 'bar', height: 240 },
+        chart: { ...defaultOpts.chart, type: 'bar', height: 240, events: {
+            dataPointSelection: function(e, chart, config) {
+                const cat = config.w.config.xaxis.categories[config.dataPointIndex];
+                if(cat) { window.chartFilters.room_type = cat; triggerFilterUpdate(); }
+            }
+        }},
         series: [{ name: 'Revenue ($)', data: [] }],
         xaxis: { categories: [] },
         yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
-        colors: [GOLD, '#10b981', '#3b82f6'],
+        colors: ['#3b82f6'],
         plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
-        dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toFixed(0) },
+        dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toLocaleString(), style: { colors: ['#fff'] } },
         legend: { show: false },
-        tooltip: { y: { formatter: v => '$' + parseFloat(v).toFixed(2) } },
+        tooltip: {
+            custom: function({series, seriesIndex, dataPointIndex, w}) {
+                const item = rawRevenueByType[dataPointIndex];
+                if(!item) return '';
+                return '<div class="px-3 py-2 bg-white text-hotel-dark shadow rounded border border-gray-100">' +
+                    '<b class="block mb-1 text-[0.8rem]">' + item.label + '</b>' +
+                    '<div class="text-xs text-gray-500">Revenue: <span class="font-bold text-hotel-dark">$' + item.value.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+                    '<div class="text-xs text-gray-500">Bookings: <span class="font-bold text-hotel-dark">' + item.booking_count + '</span></div>' +
+                    '</div>';
+            }
+        },
         grid: { borderColor: '#f3f4f6' },
     });
     typeChart.render();
@@ -779,47 +864,102 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     statusChart.render();
 
+    let rawRevenueByNat = [];
+    const natChart = new ApexCharts(document.getElementById('chart-revenue-by-nationality'), {
+        ...defaultOpts,
+        chart: { ...defaultOpts.chart, type: 'bar', height: 240, events: {
+            dataPointSelection: function(e, chart, config) {
+                const cat = config.w.config.xaxis.categories[config.dataPointIndex];
+                if(cat) { window.chartFilters.nationality = cat; triggerFilterUpdate(); }
+            }
+        }},
+        series: [{ name: 'Revenue ($)', data: [] }],
+        xaxis: { categories: [] },
+        yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
+        colors: ['#8b5cf6'],
+        plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
+        dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toLocaleString(), style: { colors: ['#fff'] } },
+        legend: { show: false },
+        tooltip: {
+            custom: function({series, seriesIndex, dataPointIndex, w}) {
+                const item = rawRevenueByNat[dataPointIndex];
+                if(!item) return '';
+                return '<div class="px-3 py-2 bg-white text-hotel-dark shadow rounded border border-gray-100">' +
+                    '<b class="block mb-1 text-[0.8rem]">' + item.label + '</b>' +
+                    '<div class="text-xs text-gray-500">Revenue: <span class="font-bold text-hotel-dark">$' + item.value.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+                    '<div class="text-xs text-gray-500">Bookings: <span class="font-bold text-hotel-dark">' + item.booking_count + '</span></div>' +
+                    '</div>';
+            }
+        },
+        grid: { borderColor: '#f3f4f6' },
+    });
+    natChart.render();
+
+    const guestTypeChart = new ApexCharts(document.getElementById('chart-volume-by-guest-type'), {
+        ...defaultOpts,
+        chart: { ...defaultOpts.chart, type: 'donut', height: 240, events: {
+            dataPointSelection: function(e, chart, config) {
+                const cat = config.w.config.labels[config.dataPointIndex];
+                if(cat) { window.chartFilters.guest_type = cat.toLowerCase(); triggerFilterUpdate(); }
+            }
+        }},
+        series: [],
+        labels: [],
+        colors: ['#10b981', '#f59e0b', '#ef4444'],
+        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, total: { show: true, label: 'Total', formatter: w => w.globals.seriesTotals.reduce((a,b) => a+b,0) } } } } },
+        dataLabels: { enabled: true, formatter: (val, opts) => opts.w.globals.seriesTotals[opts.seriesIndex] },
+        legend: { position: 'right', fontSize: '12px' },
+    });
+    guestTypeChart.render();
+
+    // ── Chart Resize Logic ─────────────────────────────────────
+    const chartResizeObserver = new ResizeObserver(() => {
+        window.dispatchEvent(new Event('resize'));
+    });
+    document.querySelectorAll('.chart-container').forEach(el => chartResizeObserver.observe(el));
+
     // ── KPI updater ────────────────────────────────────────────
     function updateKPIs(summary, label) {
-        document.getElementById('kpi-revenue').textContent   = '$' + parseFloat(summary.total_revenue).toFixed(2);
-        document.getElementById('kpi-bookings').textContent  = summary.total_bookings;
-        document.getElementById('kpi-completed').textContent = summary.completed_bookings;
+        document.getElementById('kpi-revenue').textContent   = '$' + parseFloat(summary.total_revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('kpi-bookings').textContent  = parseInt(summary.total_bookings).toLocaleString();
+        document.getElementById('kpi-completed').textContent = parseInt(summary.completed_bookings).toLocaleString();
         document.getElementById('analytics-period-label').textContent = label;
     }
 
     // ── Main data fetch + chart update ─────────────────────────
     function loadAnalytics(startDate, endDate) {
-        // Show loading state
         document.getElementById('kpi-revenue').textContent   = '…';
         document.getElementById('kpi-bookings').textContent  = '…';
         document.getElementById('kpi-completed').textContent = '…';
 
-        let url = ANALYTICS_URL;
-        if (startDate) url += '?start_date=' + startDate + '&end_date=' + endDate;
+        let url = ANALYTICS_URL + '?';
+        if (startDate && endDate) url += 'start_date=' + startDate + '&end_date=' + endDate + '&';
+        
+        if (window.chartFilters.guest_type) url += 'guest_type=' + encodeURIComponent(window.chartFilters.guest_type) + '&';
+        if (window.chartFilters.nationality) url += 'nationality=' + encodeURIComponent(window.chartFilters.nationality) + '&';
+        if (window.chartFilters.room_type) url += 'room_type=' + encodeURIComponent(window.chartFilters.room_type) + '&';
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(r => r.json())
             .then(data => {
-                // Revenue area chart
                 revenueChart.updateOptions({
                     series: [{ name: 'Revenue ($)', data: data.revenue.map(d => d.value) }],
                     xaxis:  { categories: data.revenue.map(d => d.label) },
                 });
 
-                // Booking volume bar chart
                 volumeChart.updateOptions({
                     series: [{ name: 'Bookings', data: data.bookingVolume.map(d => d.value) }],
                     xaxis:  { categories: data.bookingVolume.map(d => d.label) },
                 });
 
-                // Revenue by room type horizontal bar
+                rawRevenueByType = data.revenueByType;
                 typeChart.updateOptions({
                     series: [{ name: 'Revenue ($)', data: data.revenueByType.map(d => parseFloat(d.value)) }],
                     xaxis:  { categories: data.revenueByType.map(d => d.label) },
+                    colors: data.revenueByType.map(d => d.color || '#3b82f6'),
                 });
 
-                // Status distribution donut
-                if (data.bookingStatuses.length > 0) {
+                if (data.bookingStatuses && data.bookingStatuses.length > 0) {
                     statusChart.updateOptions({
                         series: data.bookingStatuses.map(d => d.value),
                         labels: data.bookingStatuses.map(d => d.label),
@@ -828,9 +968,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusChart.updateOptions({ series: [], labels: [] });
                 }
 
+                rawRevenueByNat = data.revenueByNationality || [];
+                natChart.updateOptions({
+                    series: [{ name: 'Revenue ($)', data: rawRevenueByNat.map(d => parseFloat(d.value)) }],
+                    xaxis:  { categories: rawRevenueByNat.map(d => d.label) },
+                    colors: rawRevenueByNat.map((d, i) => COLORS[i % COLORS.length]),
+                });
+
+                if (data.volumeByGuestType && data.volumeByGuestType.length > 0) {
+                    guestTypeChart.updateOptions({
+                        series: data.volumeByGuestType.map(d => d.value),
+                        labels: data.volumeByGuestType.map(d => d.label),
+                    });
+                } else {
+                    guestTypeChart.updateOptions({ series: [], labels: [] });
+                }
+
                 updateKPIs(data.summary, data.period.label);
             })
-            .catch(() => {
+            .catch((e) => {
+                console.error(e);
                 document.getElementById('analytics-period-label').textContent = 'Error loading data';
             });
     }

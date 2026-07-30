@@ -31,88 +31,7 @@ class ReceptionDashboardController extends Controller
      */
     public function index(): View
     {
-        // All confirmed bookings arriving today or in the future — staff can see the full pipeline.
-        $upcomingArrivals = Booking::with(['guest', 'room'])
-            ->upcomingArrivals()
-            ->orderBy('check_in_date')
-            ->get();
-
-        // No-shows: bookings that were never checked in but whose check-in date is in the past.
-        $noShows = Booking::with(['guest', 'room'])
-            ->where('booking_status', Booking::STATUS_BOOKED)
-            ->whereDate('check_in_date', '<', today())
-            ->orderBy('check_in_date')
-            ->get();
-
-        // Guests arriving specifically today (for Today's Guest Movement block).
-        $arrivalsToday = Booking::with(['guest', 'room.roomType'])
-            ->arrivingToday()
-            ->orderBy('check_in_date')
-            ->get();
-
-        // Guests departing today — currently checked in.
-        $todayDepartures = Booking::with(['guest', 'room.roomType'])
-            ->departingToday()
-            ->orderBy('check_out_date')
-            ->get();
-
-        // All guests currently in the hotel.
-        $inHouseGuests = Booking::with(['guest', 'room.roomType'])
-            ->checkedIn()
-            ->orderBy('check_out_date')
-            ->get();
-
-        // For each in-house guest, find the next incoming booking on their room
-        // so we can: (a) cap the extension nights, (b) show a relocation warning.
-        $extensionLimits = [];
-        foreach ($inHouseGuests as $booking) {
-            if (! $booking->room_id) {
-                $extensionLimits[$booking->id] = ['max_nights' => 30, 'next_booking' => null];
-                continue;
-            }
-
-            $nextConflict = Booking::where('room_id', $booking->room_id)
-                ->where('id', '!=', $booking->id)
-                ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
-                ->where('check_in_date', '>=', $booking->check_out_date->toDateString())
-                ->orderBy('check_in_date')
-                ->first();
-
-            if ($nextConflict) {
-                // How many nights can they extend? From current checkout to next check-in.
-                $maxNights = (int) $booking->check_out_date->diffInDays($nextConflict->check_in_date);
-            } else {
-                $maxNights = 30; // No upcoming conflict — generous cap
-            }
-
-            $extensionLimits[$booking->id] = [
-                'max_nights'   => $maxNights,
-                'next_booking' => $nextConflict,
-            ];
-        }
-
-        // Pending room service requests
-        $pendingRoomServices = RoomService::with(['booking.room', 'booking.guest', 'requestedItems.catalog'])
-            ->pending()
-            ->latest()
-            ->get();
-
-        // Recent booking history — checked-out, cancelled, or relocated within the last 14 days.
-        $recentHistory = Booking::with(['guest', 'room'])
-            ->recentHistory()
-            ->orderByDesc('updated_at')
-            ->get();
-
-        return view('reception.dashboard', compact(
-            'upcomingArrivals',
-            'arrivalsToday',
-            'todayDepartures',
-            'inHouseGuests',
-            'extensionLimits',
-            'pendingRoomServices',
-            'recentHistory',
-            'noShows',
-        ));
+        return view('reception.dashboard');
     }
 
 
@@ -194,9 +113,10 @@ class ReceptionDashboardController extends Controller
     public function markAsPaid(Request $request, Booking $booking): RedirectResponse
     {
         $validated = $request->validate([
-            'payment_method' => ['required', 'in:cash,khqr,khqr_aba'],
-            'amount_paid'    => ['required', 'numeric', 'min:0.01'],
-            'payment_for'    => ['required', 'in:booking,stay_extension'],
+            'payment_method'    => ['required', 'in:cash,khqr,khqr_aba'],
+            'amount_paid'       => ['required', 'numeric', 'min:0.01'],
+            'payment_for'       => ['required', 'in:booking,stay_extension'],
+            'payment_reference' => ['required', 'string', 'max:255'],
         ]);
 
         // Determine if this is a partial or full payment.
@@ -210,11 +130,12 @@ class ReceptionDashboardController extends Controller
             : Transaction::STATUS_PARTIAL;
 
         Transaction::create([
-            'booking_id'     => $booking->id,
-            'amount_paid'    => $validated['amount_paid'],
-            'payment_for'    => $validated['payment_for'],
-            'payment_method' => $validated['payment_method'],
-            'payment_status' => $paymentStatus,
+            'booking_id'        => $booking->id,
+            'amount_paid'       => $validated['amount_paid'],
+            'payment_for'       => $validated['payment_for'],
+            'payment_method'    => $validated['payment_method'],
+            'payment_status'    => $paymentStatus,
+            'payment_reference' => $validated['payment_reference'],
         ]);
 
         return back()->with('success', "Payment of \${$validated['amount_paid']} recorded for {$booking->referenceNumber()}.");

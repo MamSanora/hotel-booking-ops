@@ -7,10 +7,10 @@ import './bootstrap';
 // so Alpine is registered manually here and exposed on `window` for debugging.
 // ---------------------------------------------------------------------------
 import Alpine from 'alpinejs';
-import collapse from '@alpinejs/collapse'; // smooth height animation for collapsible menus
+import collapse from '@alpinejs/collapse';
 
-Alpine.plugin(collapse);
 window.Alpine = Alpine;
+Alpine.plugin(collapse);
 Alpine.start();
 
 // ---------------------------------------------------------------------------

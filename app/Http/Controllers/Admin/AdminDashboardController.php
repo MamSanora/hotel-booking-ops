@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\GuestAuth;
+use App\Models\Guest;
 use App\Models\Room;
 use App\Models\Transaction;
 use Carbon\Carbon;
@@ -75,6 +76,7 @@ class AdminDashboardController extends Controller
 
         // ── Registered Guests ─────────────────────────────────────────────
         $totalGuests = GuestAuth::count();
+        $unregisteredGuests = Guest::doesntHave('guestAuth')->count();
 
         // ── Backup Status ─────────────────────────────────────────────────
         $backupStatus   = 'no_backup';
@@ -111,6 +113,7 @@ class AdminDashboardController extends Controller
             'departuresToday',
             'monthlyRevenue',
             'totalGuests',
+            'unregisteredGuests',
             'backupStatus',
             'lastBackupTime',
             'allRooms',
@@ -150,7 +153,6 @@ class AdminDashboardController extends Controller
             ? Carbon::parse(request('end_date'))->endOfDay()
             : now()->endOfDay();
 
-        // Clamp: end must not be before start
         if ($end->lt($start)) {
             $end = $start->copy()->endOfDay();
         }
@@ -158,84 +160,105 @@ class AdminDashboardController extends Controller
         $diffDays   = (int) $start->diffInDays($end);
         $groupByDay = $diffDays <= 60;
 
-        // ── Helper: build a zero-filled map keyed by period ───────────────
+        // ── Cross-Filtering Logic ────────────────────────────────────────
+        $fGuestType   = request('guest_type');
+        $fNationality = request('nationality');
+        $fRoomType    = request('room_type');
+
+        $applyBookingFilters = function($query) use ($fGuestType, $fNationality, $fRoomType) {
+            if ($fGuestType) $query->where('bookings.guest_type', $fGuestType);
+            if ($fNationality) $query->whereHas('guest', fn($q) => $q->where('nationality', $fNationality));
+            if ($fRoomType) $query->whereHas('room.roomType', fn($q) => $q->where('display_name', $fRoomType));
+        };
+
+        $applyTxnFilters = function($query) use ($fGuestType, $fNationality, $fRoomType) {
+            if ($fGuestType || $fNationality || $fRoomType) {
+                $query->whereHas('booking', function($bQuery) use ($fGuestType, $fNationality, $fRoomType) {
+                    if ($fGuestType) $bQuery->where('guest_type', $fGuestType);
+                    if ($fNationality) $bQuery->whereHas('guest', fn($q) => $q->where('nationality', $fNationality));
+                    if ($fRoomType) $bQuery->whereHas('room.roomType', fn($q) => $q->where('display_name', $fRoomType));
+                });
+            }
+        };
 
         // ── Time-series: Revenue ──────────────────────────────────────────
+        $txnQueryDay = Transaction::successful()->whereBetween('transactions.created_at', [$start, $end]);
+        $applyTxnFilters($txnQueryDay);
+
         if ($groupByDay) {
-            $rawRevenue = Transaction::successful()
-                ->whereBetween('created_at', [$start, $end])
-                ->selectRaw('DATE(created_at) as period_key, SUM(amount_paid) as total')
-                ->groupByRaw('DATE(created_at)')
-                ->orderByRaw('DATE(created_at)')
+            $rawRevenue = (clone $txnQueryDay)
+                ->selectRaw('DATE(transactions.created_at) as period_key, SUM(transactions.amount_paid) as total')
+                ->groupByRaw('DATE(transactions.created_at)')
                 ->pluck('total', 'period_key')
                 ->toArray();
 
-            $revenueSeries     = [];
-            $cur               = $start->copy();
+            $revenueSeries = [];
+            $cur = $start->copy();
             while ($cur->lte($end)) {
-                $key             = $cur->format('Y-m-d');
+                $key = $cur->format('Y-m-d');
                 $revenueSeries[] = ['label' => $cur->format('M d'), 'value' => (float) ($rawRevenue[$key] ?? 0)];
                 $cur->addDay();
             }
         } else {
-            $rawRevenue = Transaction::successful()
-                ->whereBetween('created_at', [$start, $end])
-                ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mo, SUM(amount_paid) as total')
-                ->groupByRaw('YEAR(created_at), MONTH(created_at)')
-                ->orderByRaw('YEAR(created_at), MONTH(created_at)')
+            $rawRevenue = (clone $txnQueryDay)
+                ->selectRaw('YEAR(transactions.created_at) as yr, MONTH(transactions.created_at) as mo, SUM(transactions.amount_paid) as total')
+                ->groupByRaw('YEAR(transactions.created_at), MONTH(transactions.created_at)')
                 ->get()
                 ->mapWithKeys(fn ($r) => [sprintf('%04d-%02d', $r->yr, $r->mo) => $r->total])
                 ->toArray();
 
             $revenueSeries = [];
-            $cur           = $start->copy()->startOfMonth();
-            $endM          = $end->copy()->startOfMonth();
+            $cur = $start->copy()->startOfMonth();
+            $endM = $end->copy()->startOfMonth();
             while ($cur->lte($endM)) {
-                $key             = $cur->format('Y-m');
+                $key = $cur->format('Y-m');
                 $revenueSeries[] = ['label' => $cur->format('M Y'), 'value' => (float) ($rawRevenue[$key] ?? 0)];
                 $cur->addMonth();
             }
         }
 
         // ── Time-series: Booking Volume ───────────────────────────────────
+        $bookQueryDay = Booking::whereBetween('bookings.created_at', [$start, $end]);
+        $applyBookingFilters($bookQueryDay);
+
         if ($groupByDay) {
-            $rawBookings = Booking::whereBetween('created_at', [$start, $end])
-                ->selectRaw('DATE(created_at) as period_key, COUNT(*) as total')
-                ->groupByRaw('DATE(created_at)')
-                ->orderByRaw('DATE(created_at)')
+            $rawBookings = (clone $bookQueryDay)
+                ->selectRaw('DATE(bookings.created_at) as period_key, COUNT(*) as total')
+                ->groupByRaw('DATE(bookings.created_at)')
                 ->pluck('total', 'period_key')
                 ->toArray();
 
             $volumeSeries = [];
-            $cur          = $start->copy();
+            $cur = $start->copy();
             while ($cur->lte($end)) {
-                $key          = $cur->format('Y-m-d');
+                $key = $cur->format('Y-m-d');
                 $volumeSeries[] = ['label' => $cur->format('M d'), 'value' => (int) ($rawBookings[$key] ?? 0)];
                 $cur->addDay();
             }
         } else {
-            $rawBookings = Booking::whereBetween('created_at', [$start, $end])
-                ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mo, COUNT(*) as total')
-                ->groupByRaw('YEAR(created_at), MONTH(created_at)')
-                ->orderByRaw('YEAR(created_at), MONTH(created_at)')
+            $rawBookings = (clone $bookQueryDay)
+                ->selectRaw('YEAR(bookings.created_at) as yr, MONTH(bookings.created_at) as mo, COUNT(*) as total')
+                ->groupByRaw('YEAR(bookings.created_at), MONTH(bookings.created_at)')
                 ->get()
                 ->mapWithKeys(fn ($r) => [sprintf('%04d-%02d', $r->yr, $r->mo) => $r->total])
                 ->toArray();
 
             $volumeSeries = [];
-            $cur          = $start->copy()->startOfMonth();
-            $endM         = $end->copy()->startOfMonth();
+            $cur = $start->copy()->startOfMonth();
+            $endM = $end->copy()->startOfMonth();
             while ($cur->lte($endM)) {
-                $key          = $cur->format('Y-m');
+                $key = $cur->format('Y-m');
                 $volumeSeries[] = ['label' => $cur->format('M Y'), 'value' => (int) ($rawBookings[$key] ?? 0)];
                 $cur->addMonth();
             }
         }
 
-        // ── Booking Status Distribution (for the selected period) ─────────
-        $bookingStatuses = Booking::whereBetween('created_at', [$start, $end])
-            ->selectRaw('booking_status, COUNT(*) as cnt')
-            ->groupBy('booking_status')
+        // ── Booking Status Distribution ───────────────────────────────────
+        $statusQuery = Booking::whereBetween('bookings.created_at', [$start, $end]);
+        $applyBookingFilters($statusQuery);
+        $bookingStatuses = $statusQuery
+            ->selectRaw('bookings.booking_status, COUNT(*) as cnt')
+            ->groupBy('bookings.booking_status')
             ->orderByRaw('COUNT(*) DESC')
             ->get()
             ->map(fn ($r) => [
@@ -244,46 +267,93 @@ class AdminDashboardController extends Controller
             ])
             ->values();
 
-        // ── Revenue by Room Type (paid transactions in period) ────────────
-        $revenueByType = Transaction::successful()
+        // ── Revenue by Room Type ──────────────────────────────────────────
+        $revTypeQuery = Transaction::successful()
             ->whereBetween('transactions.created_at', [$start, $end])
-            ->join('bookings',    'bookings.id',    '=', 'transactions.booking_id')
-            ->join('rooms',       'rooms.id',       '=', 'bookings.room_id')
-            ->join('room_types',  'room_types.id',  '=', 'rooms.room_type_id')
-            ->selectRaw('room_types.display_name as label, SUM(transactions.amount_paid) as value, COUNT(DISTINCT bookings.id) as booking_count')
-            ->groupBy('room_types.display_name')
+            ->join('bookings', 'bookings.id', '=', 'transactions.booking_id')
+            ->join('rooms', 'rooms.id', '=', 'bookings.room_id')
+            ->join('room_types', 'room_types.id', '=', 'rooms.room_type_id')
+            ->leftJoin('room_type_settings', 'room_type_settings.room_type_id', '=', 'room_types.id');
+        
+        $applyTxnFilters($revTypeQuery);
+
+        $revenueByType = $revTypeQuery
+            ->selectRaw('room_types.display_name as label, SUM(transactions.amount_paid) as value, COUNT(DISTINCT bookings.id) as booking_count, MAX(room_type_settings.chart_color) as color')
+            ->groupBy('room_types.id', 'room_types.display_name')
             ->orderByRaw('SUM(transactions.amount_paid) DESC')
             ->get()
             ->map(fn ($r) => [
                 'label'         => $r->label,
                 'value'         => (float) $r->value,
                 'booking_count' => (int) $r->booking_count,
+                'color'         => $r->color ?? '#3b82f6',
+            ])
+            ->values();
+
+        // ── NEW: Revenue by Nationality ───────────────────────────────────
+        $revNatQuery = Transaction::successful()
+            ->whereBetween('transactions.created_at', [$start, $end])
+            ->join('bookings', 'bookings.id', '=', 'transactions.booking_id')
+            ->join('guests', 'guests.id', '=', 'bookings.guest_id');
+        
+        $applyTxnFilters($revNatQuery);
+
+        $revenueByNationality = $revNatQuery
+            ->selectRaw('guests.nationality as label, SUM(transactions.amount_paid) as value, COUNT(DISTINCT bookings.id) as booking_count')
+            ->groupBy('guests.nationality')
+            ->orderByRaw('SUM(transactions.amount_paid) DESC')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => [
+                'label'         => $r->label ?? 'Unknown',
+                'value'         => (float) $r->value,
+                'booking_count' => (int) $r->booking_count,
+            ])
+            ->values();
+
+        // ── NEW: Customers by Guest Type ──────────────────────────────────
+        $guestTypeQuery = Booking::whereBetween('bookings.created_at', [$start, $end]);
+        $applyBookingFilters($guestTypeQuery);
+
+        $volumeByGuestType = $guestTypeQuery
+            ->selectRaw('bookings.guest_type as label, COUNT(*) as value')
+            ->groupBy('bookings.guest_type')
+            ->orderByRaw('COUNT(*) DESC')
+            ->get()
+            ->map(fn ($r) => [
+                'label' => ucfirst($r->label ?? 'Unknown'),
+                'value' => (int) $r->value,
             ])
             ->values();
 
         // ── Scalar KPI summary ────────────────────────────────────────────
-        $totalRevenue = (float) Transaction::successful()
-            ->whereBetween('created_at', [$start, $end])
-            ->sum('amount_paid');
+        $kpiRevQuery = Transaction::successful()->whereBetween('transactions.created_at', [$start, $end]);
+        $applyTxnFilters($kpiRevQuery);
+        $totalRevenue = (float) $kpiRevQuery->sum('transactions.amount_paid');
 
-        $totalBookings = Booking::whereBetween('created_at', [$start, $end])->count();
+        $kpiBookQuery = Booking::whereBetween('bookings.created_at', [$start, $end]);
+        $applyBookingFilters($kpiBookQuery);
+        $totalBookings = $kpiBookQuery->count();
 
-        $completedBookings = Booking::whereBetween('created_at', [$start, $end])
-            ->whereIn('booking_status', [Booking::STATUS_CHECKED_OUT, Booking::STATUS_CHECKED_IN])
-            ->count();
+        $kpiCompQuery = Booking::whereBetween('bookings.created_at', [$start, $end])
+            ->whereIn('bookings.booking_status', [Booking::STATUS_CHECKED_OUT, Booking::STATUS_CHECKED_IN]);
+        $applyBookingFilters($kpiCompQuery);
+        $completedBookings = $kpiCompQuery->count();
 
         return response()->json([
-            'grouping'        => $groupByDay ? 'day' : 'month',
-            'period'          => [
+            'grouping'             => $groupByDay ? 'day' : 'month',
+            'period'               => [
                 'start' => $start->format('Y-m-d'),
                 'end'   => $end->format('Y-m-d'),
                 'label' => $start->format('M d, Y') . ' – ' . $end->format('M d, Y'),
             ],
-            'revenue'         => $revenueSeries,
-            'bookingVolume'   => $volumeSeries,
-            'bookingStatuses' => $bookingStatuses,
-            'revenueByType'   => $revenueByType,
-            'summary'         => [
+            'revenue'              => $revenueSeries,
+            'bookingVolume'        => $volumeSeries,
+            'bookingStatuses'      => $bookingStatuses,
+            'revenueByType'        => $revenueByType,
+            'revenueByNationality' => $revenueByNationality,
+            'volumeByGuestType'    => $volumeByGuestType,
+            'summary'              => [
                 'total_revenue'      => $totalRevenue,
                 'total_bookings'     => $totalBookings,
                 'completed_bookings' => $completedBookings,

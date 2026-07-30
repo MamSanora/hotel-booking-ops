@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RoomType;
+use App\Models\RoomTypeAuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -56,6 +58,7 @@ class AdminRoomTypeController extends Controller
             'description'     => ['nullable', 'string', 'max:2000'],
             'is_visible'      => ['nullable', 'boolean'],
             'use_mam_sanora_qr' => ['nullable', 'boolean'],
+            'chart_color'     => ['nullable', 'string', 'regex:/^#[a-fA-F0-9]{6}$/'],
         ], [
             'display_name.unique'      => 'A room type with this name already exists.',
             'display_name.required'    => 'Please provide a room type name.',
@@ -82,7 +85,7 @@ class AdminRoomTypeController extends Controller
             $slug = $originalSlug . '-' . $counter++;
         }
 
-        RoomType::create([
+        $roomType = RoomType::create([
             'slug'            => $slug,
             'display_name'    => $validated['display_name'],
             'adult_capacity'  => $validated['adult_capacity'],
@@ -93,6 +96,18 @@ class AdminRoomTypeController extends Controller
             'is_visible'      => $request->has('is_visible'),
             'use_mam_sanora_qr' => $request->has('use_mam_sanora_qr'),
             'images'          => empty($images) ? null : $images,
+        ]);
+
+        if ($request->filled('chart_color')) {
+            $roomType->uiSettings()->create([
+                'chart_color' => $validated['chart_color'],
+            ]);
+        }
+
+        RoomTypeAuditLog::create([
+            'room_type_id'        => $roomType->id,
+            'managed_by_admin_id' => Auth::guard('admin')->id(),
+            'action'              => 'add_room_type',
         ]);
 
         return redirect()
@@ -114,6 +129,8 @@ class AdminRoomTypeController extends Controller
      */
     public function update(Request $request, RoomType $roomType): RedirectResponse
     {
+        $oldPrice = (float) $roomType->price_per_night;
+
         $validated = $request->validate([
             'display_name'    => [
                 'required', 'string', 'max:100',
@@ -125,6 +142,7 @@ class AdminRoomTypeController extends Controller
             'description'     => ['nullable', 'string', 'max:2000'],
             'is_visible'      => ['nullable', 'boolean'],
             'use_mam_sanora_qr' => ['nullable', 'boolean'],
+            'chart_color'     => ['nullable', 'string', 'regex:/^#[a-fA-F0-9]{6}$/'],
         ], [
             'display_name.unique'      => 'A room type with this name already exists.',
             'display_name.required'    => 'Please provide a room type name.',
@@ -177,6 +195,21 @@ class AdminRoomTypeController extends Controller
             'use_mam_sanora_qr' => $request->has('use_mam_sanora_qr'),
             'images'          => empty($images) ? null : $images,
         ]);
+
+        if ($request->filled('chart_color')) {
+            $roomType->uiSettings()->updateOrCreate(
+                ['room_type_id' => $roomType->id],
+                ['chart_color' => $validated['chart_color']]
+            );
+        }
+
+        if ($oldPrice !== (float) $validated['price_per_night']) {
+            RoomTypeAuditLog::create([
+                'room_type_id'        => $roomType->id,
+                'managed_by_admin_id' => Auth::guard('admin')->id(),
+                'action'              => 'update_price',
+            ]);
+        }
 
         return redirect()
             ->route('admin.room-types.index')

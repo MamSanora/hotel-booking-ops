@@ -97,6 +97,14 @@ class RoomType extends Model
         return $this->hasMany(Room::class);
     }
 
+    /**
+     * UI Settings for the room type (e.g. chart colors).
+     */
+    public function uiSettings()
+    {
+        return $this->hasOne(RoomTypeSetting::class);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     /**

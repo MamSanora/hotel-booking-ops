@@ -14,8 +14,9 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Tailwind CSS + Alpine.js via Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Tailwind CSS (Livewire auto-injects Alpine.js and Livewire scripts) -->
+    @vite(['resources/css/app.css'])
+    @livewireStyles
 
     @yield('styles')
     @stack('styles')
@@ -128,10 +129,16 @@
                 <span>Dashboard</span>
             </a>
 
-            <a href="{{ route('reception.walkin.create') }}"
-               class="rcpt-nav-link {{ request()->routeIs('reception.walkin.create') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
-                <i class="bi bi-person-plus text-base w-5 text-center"></i>
-                <span>New Walk-In</span>
+            <a href="{{ route('reception.manual-booking.create') }}"
+               class="rcpt-nav-link {{ request()->routeIs('reception.manual-booking.create') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                <i class="bi bi-calendar-plus text-base w-5 text-center"></i>
+                <span>New Booking</span>
+            </a>
+            
+            <a href="{{ route('reception.manage-bookings.index') }}"
+               class="rcpt-nav-link {{ request()->routeIs('reception.manage-bookings.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                <i class="bi bi-journal-text text-base w-5 text-center"></i>
+                <span>Manage Bookings</span>
             </a>
 
             <a href="{{ route('reception.room-check.index') }}"
@@ -216,10 +223,9 @@
                     </div>
 
                     {{-- New Walk-In quick button --}}
-                    <a href="{{ route('reception.walkin.create') }}"
-                       class="hidden md:inline-flex items-center gap-2 bg-hotel-gold hover:bg-hotel-gold-hover text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm shadow-hotel-gold/20">
-                        <i class="bi bi-plus-circle"></i>
-                        <span>Walk-In</span>
+                    <a href="{{ route('reception.manual-booking.create') }}" class="flex items-center gap-2 bg-hotel-gold text-hotel-dark px-4 py-2 rounded-xl font-bold hover:bg-yellow-500 transition-colors shadow-sm">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span>New Booking</span>
                     </a>
                 </div>
             </div>
@@ -253,5 +259,6 @@
 
     @yield('scripts')
     @stack('scripts')
+    <x-global-confirm />
 </body>
 </html>

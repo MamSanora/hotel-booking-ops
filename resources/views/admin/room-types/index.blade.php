@@ -93,10 +93,8 @@
                                 </a>
                                 <form action="{{ route('admin.room-types.destroy', $type) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <button type="submit"
-                                            onclick="return confirm('Delete room type \'{{ addslashes($type->display_name) }}\'? This is only possible if no rooms are assigned to it.')"
-                                            class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100"
-                                            title="Delete">
+                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Delete room type \'{{ addslashes($type->display_name) }}\'? This is only possible if no rooms are assigned to it.', action: () => $el.closest('form').submit() })"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-md text-xs font-semibold transition-colors border border-red-100" title="Delete Room Type">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>

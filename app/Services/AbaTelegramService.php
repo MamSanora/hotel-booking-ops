@@ -219,9 +219,10 @@ class AbaTelegramService implements PaymentGatewayInterface
         if ($transactionNumber) { $trackingParts[] = 'TXN:' . $transactionNumber; }
 
         $transaction->update([
-            'amount_paid'     => $confirmedAmount,
-            'payment_status'  => $newStatus,
-            'tracking_status' => implode('|', $trackingParts),
+            'amount_paid'       => $confirmedAmount,
+            'payment_status'    => $newStatus,
+            'tracking_status'   => implode('|', $trackingParts),
+            'payment_reference' => $transactionNumber,
         ]);
 
         Log::info('AbaTelegramService: payment confirmed via Telegram', [

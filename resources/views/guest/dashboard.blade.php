@@ -197,7 +197,7 @@
                                                 </a>
                                             @else
                                                 <form method="POST" action="{{ route('guest.booking.cancel', $booking->id) }}"
-                                                      onsubmit="return confirm('Cancel this booking?')" class="inline-block">
+                                                      x-data @submit.prevent="$dispatch('open-confirm', { message: 'Cancel this booking?', action: () => $el.submit() })" class="inline-block">
                                                     @csrf @method('PATCH')
                                                     <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors" title="Cancel">
                                                         <i class="bi bi-x text-lg"></i>

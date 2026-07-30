@@ -105,11 +105,11 @@
         <div class="px-6 py-4 border-b border-white/10 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0">
-                    <span class="text-blue-300 font-bold text-sm">{{ strtoupper(substr($admin?->name ?? 'A', 0, 1)) }}</span>
+                    <span class="text-blue-300 font-bold text-sm">{{ strtoupper(substr($admin?->full_name ?? 'A', 0, 1)) }}</span>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-white text-sm font-semibold truncate">{{ $admin?->name ?? 'Administrator' }}</div>
-                    <div class="text-white/40 text-[0.65rem] uppercase tracking-widest">Master Admin</div>
+                    <div class="text-white text-sm font-semibold truncate">{{ $admin?->full_name ?? 'Administrator' }}</div>
+                    <div class="text-white/40 text-[0.65rem] uppercase tracking-widest">Super Admin</div>
                 </div>
             </div>
         </div>
@@ -183,11 +183,13 @@
                     <span>Staff Accounts</span>
                 </a>
 
+                @if(auth('admin')->user()->isSuperAdmin())
                 <a href="{{ route('admin.admins.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-shield-lock text-base w-5 text-center"></i>
                     <span>Admin Accounts</span>
                 </a>
+                @endif
             </div>
 
             <div class="pt-4">
@@ -315,5 +317,6 @@
     @stack('scripts')
     
     @stack('modals')
+    <x-global-confirm />
 </body>
 </html>

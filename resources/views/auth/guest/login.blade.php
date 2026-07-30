@@ -53,7 +53,7 @@
             </div>
 
             <h1 class="font-[Playfair_Display] text-3xl font-bold text-hotel-dark mb-1">Welcome back</h1>
-            <p class="text-gray-500 text-sm mb-8">Sign in with your email address or phone number.</p>
+            <p class="text-gray-500 text-sm mb-8">Sign in with your email address.</p>
 
             {{-- Session Error --}}
             @if (session('error'))
@@ -69,7 +69,7 @@
                 {{-- Identifier (email or phone) --}}
                 <div>
                     <label for="identifier" class="block text-[0.8rem] uppercase font-semibold text-gray-500 tracking-wider mb-2">
-                        Email or Phone Number
+                        Email Address
                     </label>
                     <div class="relative">
                         <span id="identifier-icon" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base transition-all">
@@ -78,7 +78,7 @@
                         <input id="identifier" type="text" name="identifier"
                                value="{{ old('identifier') }}"
                                required autofocus autocomplete="username"
-                               placeholder="e.g. your@email.com or +855 12 345 678"
+                               placeholder="e.g. your@email.com"
                                class="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 outline-none transition-all @error('identifier') border-red-400 @enderror">
                     </div>
                     @error('identifier')
@@ -135,25 +135,7 @@
 
 </div>
 
-<script>
-    // Swap the icon in the identifier field based on input type.
-    (function () {
-        const input = document.getElementById('identifier');
-        const icon  = document.getElementById('identifier-icon');
-        if (!input || !icon) return;
 
-        function update() {
-            const val = input.value.trim();
-            const isPhone = val !== '' && !val.includes('@') && /^[\d\+\s\-\(\)]+$/.test(val);
-            icon.innerHTML = isPhone
-                ? '<i class="bi bi-telephone"></i>'
-                : '<i class="bi bi-envelope"></i>';
-        }
-
-        input.addEventListener('input', update);
-        update();
-    })();
-</script>
 
 </body>
 </html>

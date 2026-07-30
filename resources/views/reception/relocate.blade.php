@@ -125,10 +125,9 @@
             </div>
 
             <div class="flex gap-4">
-                <button type="submit" id="confirm-btn"
-                    onclick="return confirm('Confirm relocation? The guest will be moved immediately and the original room will be freed.')"
+                <button type="button" id="confirm-btn" x-data @click.prevent="$dispatch('open-confirm', { message: 'Confirm relocation? The guest will be moved immediately and the original room will be freed.', action: () => $el.closest('form').submit() })"
                     disabled
-                    class="opacity-50 cursor-not-allowed bg-hotel-gold hover:bg-yellow-600 text-white font-bold px-8 py-3 rounded-xl transition-colors shadow-lg shadow-hotel-gold/20 flex items-center gap-2">
+                    class="opacity-50 cursor-not-allowed bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2">
                     <i class="bi bi-arrow-repeat"></i>
                     Confirm Relocation
                 </button>

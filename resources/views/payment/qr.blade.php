@@ -278,7 +278,7 @@
 
                     @if(! app()->isProduction())
                     <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                          onsubmit="return confirm('DEMO: Simulate a successful Bakong payment?')">
+                          x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO: Simulate a successful Bakong payment?', action: () => $el.submit() })">
                         @csrf
                         <button type="submit"
                                 class="w-full flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 font-bold rounded-xl py-2.5 text-xs transition-all">

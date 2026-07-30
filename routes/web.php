@@ -30,7 +30,7 @@ use App\Http\Controllers\Webhook\TelegramWebhookController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Reception\ReceptionDashboardController;
 use App\Http\Controllers\Reception\ReceptionProfileController;
-use App\Http\Controllers\Reception\WalkInBookingController;
+use App\Http\Controllers\Reception\ManualBookingController;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Route;
 
@@ -280,9 +280,14 @@ Route::prefix('reception')->name('reception.')->group(function () {
         Route::post('/payment/manual/{booking}', [ReceptionDashboardController::class, 'markAsPaid'])->name('payment.manual');
         Route::get('/receipt/{booking}',          [ReceptionDashboardController::class, 'receipt'])->name('receipt');
 
-        // Walk-in bookings
-        Route::get('/walk-in/create', [WalkInBookingController::class, 'create'])->name('walkin.create');
-        Route::post('/walk-in',       [WalkInBookingController::class, 'store'])->name('walkin.store');
+        // Manual bookings
+        Route::get('/manual-booking/create', [ManualBookingController::class, 'create'])->name('manual-booking.create');
+        Route::post('/manual-booking',       [ManualBookingController::class, 'store'])->name('manual-booking.store');
+
+        // Manage manual bookings (Edit)
+        Route::get('/manage-bookings', [App\Http\Controllers\Reception\ManageBookingsController::class, 'index'])->name('manage-bookings.index');
+        Route::get('/manage-bookings/{booking}/edit', [App\Http\Controllers\Reception\ManageBookingsController::class, 'edit'])->name('manage-bookings.edit');
+        Route::put('/manage-bookings/{booking}', [App\Http\Controllers\Reception\ManageBookingsController::class, 'update'])->name('manage-bookings.update');
 
         // Room Service Handling
         Route::patch('/room-service/{roomService}/complete', [ReceptionDashboardController::class, 'completeRoomService'])->name('room-service.complete');

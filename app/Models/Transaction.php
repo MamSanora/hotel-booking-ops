@@ -69,6 +69,7 @@ class Transaction extends Model
         'amount_paid',
         'payment_for',
         'payment_method',
+        'payment_reference',
         'payment_status',
         // Stay extension metadata (applied to booking after payment confirmed)
         'extension_nights',

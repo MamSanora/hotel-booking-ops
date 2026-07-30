@@ -483,17 +483,43 @@ class RoomController extends Controller
         }
 
         // ── Create a new pending extension transaction ─────────────────────────
-        // IMPORTANT: The booking's check_out_date and total_price are NOT updated
-        // here. They will be applied by AbaTelegramService after payment confirmation.
-        Transaction::create([
-            'booking_id'             => $booking->id,
-            'amount_paid'            => $extraCost,
-            'payment_for'            => Transaction::FOR_STAY_EXTENSION,
-            'payment_method'         => $paymentMethod,
-            'payment_status'         => Transaction::STATUS_PENDING,
-            'extension_nights'       => $extraNights,
-            'extension_new_checkout' => $newCheckout->toDateString(),
-        ]);
+        try {
+            DB::transaction(function () use ($booking, $extraCost, $paymentMethod, $extraNights, $newCheckout) {
+                // Thread-Safe Amount Lock Check
+                $automatedMethods = [Transaction::METHOD_KHQR_ABA, Transaction::METHOD_KHQR, Transaction::METHOD_TELEGRAM];
+                if (in_array($paymentMethod, $automatedMethods)) {
+                    $conflictingTransaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
+                        ->whereIn('payment_method', $automatedMethods)
+                        ->where('amount_paid', $extraCost)
+                        ->where('updated_at', '>=', now()->subMinutes(1)) // 1-minute expiry for the amount lock
+                        ->where('booking_id', '!=', $booking->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($conflictingTransaction) {
+                        throw new \Exception('AMOUNT_COLLISION:' . $extraCost);
+                    }
+                }
+
+                // IMPORTANT: The booking's check_out_date and total_price are NOT updated
+                // here. They will be applied by AbaTelegramService after payment confirmation.
+                Transaction::create([
+                    'booking_id'             => $booking->id,
+                    'amount_paid'            => $extraCost,
+                    'payment_for'            => Transaction::FOR_STAY_EXTENSION,
+                    'payment_method'         => $paymentMethod,
+                    'payment_status'         => Transaction::STATUS_PENDING,
+                    'extension_nights'       => $extraNights,
+                    'extension_new_checkout' => $newCheckout->toDateString(),
+                ]);
+            });
+        } catch (\Exception $e) {
+            if (str_starts_with($e->getMessage(), 'AMOUNT_COLLISION:')) {
+                $lockedAmount = str_replace('AMOUNT_COLLISION:', '', $e->getMessage());
+                return back()->with('error', "Our automated payment system is currently processing another transaction for the exact amount of $$lockedAmount. This resolves in a few minutes. Please try again shortly.");
+            }
+            throw $e;
+        }
 
         return redirect()
             ->route('payment.show', $booking->id)

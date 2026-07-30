@@ -66,42 +66,69 @@
     </div>
 
     {{-- Search & Filter Form --}}
-    <form action="{{ route('admin.bookings.index') }}" method="GET" class="bg-white p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] mb-6 flex flex-col lg:flex-row gap-4 items-end">
-        <div class="flex-1 w-full">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Search</label>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Guest Name, Ref #..." class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
-        </div>
-        <div class="w-full lg:w-48">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
-            <select name="status" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
-                <option value="">All Statuses</option>
-                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="booked" {{ request('status') == 'booked' ? 'selected' : '' }}>Booked</option>
-                <option value="checked-in" {{ request('status') == 'checked-in' ? 'selected' : '' }}>Checked In</option>
-                <option value="checked-out" {{ request('status') == 'checked-out' ? 'selected' : '' }}>Checked Out</option>
-                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                <option value="no_show" {{ request('status') == 'no_show' ? 'selected' : '' }}>No Show</option>
-            </select>
-        </div>
-        <div class="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-3">
-            <div class="w-full sm:w-auto">
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check-In From</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+    <form action="{{ route('admin.bookings.index') }}" method="GET" class="bg-white p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] mb-6 flex flex-col gap-4">
+        <div class="flex flex-col lg:flex-row gap-4 items-end">
+            <div class="flex-1 w-full">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Guest Name, BK/TR Ref..." class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
             </div>
-            <div class="w-full sm:w-auto">
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check-In To</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+            <div class="w-full lg:w-48 shrink-0">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+                <select name="status" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="booked" {{ request('status') == 'booked' ? 'selected' : '' }}>Booked</option>
+                    <option value="checked-in" {{ request('status') == 'checked-in' ? 'selected' : '' }}>Checked In</option>
+                    <option value="checked-out" {{ request('status') == 'checked-out' ? 'selected' : '' }}>Checked Out</option>
+                    <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    <option value="no_show" {{ request('status') == 'no_show' ? 'selected' : '' }}>No Show</option>
+                </select>
+            </div>
+            <div class="w-full lg:w-48 shrink-0">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Guest Type</label>
+                <select name="guest_type" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                    <option value="">All Types</option>
+                    <option value="registered" {{ request('guest_type') == 'registered' ? 'selected' : '' }}>Registered (Online)</option>
+                    <option value="walk-in" {{ request('guest_type') == 'walk-in' ? 'selected' : '' }}>Walk-in</option>
+                    <option value="phone" {{ request('guest_type') == 'phone' ? 'selected' : '' }}>Phone</option>
+                    <option value="other" {{ request('guest_type') == 'other' ? 'selected' : '' }}>Other (Manual)</option>
+                </select>
             </div>
         </div>
-        <div class="flex gap-2 w-full lg:w-auto mt-2 lg:mt-0">
-            <button type="submit" class="bg-hotel-gold hover:bg-hotel-gold-hover text-white px-5 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors shadow-sm shadow-hotel-gold/20 flex-1 lg:flex-none flex items-center justify-center gap-2">
-                <i class="bi bi-funnel"></i> <span>Filter</span>
-            </button>
-            @if(request()->anyFilled(['search', 'status', 'date_from', 'date_to']))
-                <a href="{{ route('admin.bookings.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors flex items-center justify-center shrink-0" title="Clear Filters">
-                    <i class="bi bi-x-circle"></i>
-                </a>
-            @endif
+        
+        <div class="flex flex-col lg:flex-row gap-4 items-end justify-between">
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                <div class="w-full sm:w-auto">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check-In From</label>
+                    <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                </div>
+                <div class="w-full sm:w-auto">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check-In To</label>
+                    <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                </div>
+                <div class="w-full sm:w-auto">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Sort By</label>
+                    <select name="sort" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                        <option value="latest_booking" {{ request('sort') == 'latest_booking' ? 'selected' : '' }}>Newest Bookings</option>
+                        <option value="earliest_booking" {{ request('sort') == 'earliest_booking' ? 'selected' : '' }}>Oldest Bookings</option>
+                        <option value="check_in_asc" {{ request('sort') == 'check_in_asc' ? 'selected' : '' }}>Check-In (Earliest First)</option>
+                        <option value="check_in_desc" {{ request('sort') == 'check_in_desc' ? 'selected' : '' }}>Check-In (Latest First)</option>
+                        <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Total Price (High to Low)</option>
+                        <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Total Price (Low to High)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 w-full lg:w-auto mt-2 lg:mt-0 shrink-0">
+                <button type="submit" class="bg-hotel-gold hover:bg-hotel-gold-hover text-white px-5 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors shadow-sm shadow-hotel-gold/20 flex-1 lg:flex-none flex items-center justify-center gap-2">
+                    <i class="bi bi-funnel"></i> <span>Apply Filters</span>
+                </button>
+                @if(request()->anyFilled(['search', 'status', 'guest_type', 'date_from', 'date_to', 'sort']))
+                    <a href="{{ route('admin.bookings.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors flex items-center justify-center shrink-0" title="Clear Filters">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
+                @endif
+            </div>
         </div>
     </form>
 
@@ -157,14 +184,21 @@
                             <div class="font-bold text-gray-800">${{ number_format($booking->total_price, 2) }}</div>
                             {{-- Transaction payment status badge --}}
                             @if($latestTxn)
-                                <div class="mt-1">
-                                    <span class="text-[0.72rem] font-semibold px-2 py-0.5 rounded-full {{ $latestTxn->statusBadgeClass() }}">
+                                <div class="mt-1 flex flex-col gap-1 mb-1.5">
+                                    <span class="text-[0.72rem] font-semibold px-2 py-0.5 rounded-full w-max {{ $latestTxn->statusBadgeClass() }}">
                                         {{ $latestTxn->displayStatus() }}
                                         @if($latestTxn->payment_method)
                                             · {{ $latestTxn->displayPaymentMethod() }}
                                         @endif
                                     </span>
                                 </div>
+                                {{-- Audit Information --}}
+                                @if($latestTxn->payment_reference)
+                                    <div class="text-[0.75rem] text-gray-500 font-medium leading-snug">Ref: <span class="font-mono text-gray-700">{{ $latestTxn->payment_reference }}</span></div>
+                                @endif
+                                <div class="text-[0.7rem] text-gray-400 leading-snug">By: {{ $booking->handledBy?->full_name ?? 'System/Online' }}</div>
+                            @else
+                                <div class="text-[0.7rem] text-gray-400 mt-1">By: {{ $booking->handledBy?->full_name ?? 'System/Online' }}</div>
                             @endif
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
@@ -209,10 +243,9 @@
                                 @if(in_array($booking->booking_status, ['pending', 'booked']))
                                     <form action="{{ route('admin.bookings.cancel', $booking->id) }}" method="POST">
                                         @csrf @method('PATCH')
-                                        <button type="submit"
-                                            onclick="return confirm('Cancel this booking?')"
-                                            class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors"
-                                            title="Cancel booking">
+                                        <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Cancel this booking?', action: () => $el.closest('form').submit() })"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-md text-sm font-semibold transition-colors"
+                                                title="Cancel booking">
                                             <i class="bi bi-x-lg"></i>
                                         </button>
                                     </form>
@@ -230,10 +263,9 @@
                                 {{-- Delete (always available) --}}
                                 <form action="{{ route('admin.bookings.destroy', $booking->id) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <button type="submit"
-                                        onclick="return confirm('Permanently delete this booking?')"
-                                        class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors"
-                                        title="Delete booking">
+                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Permanently delete this booking?', action: () => $el.closest('form').submit() })"
+                                            class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors"
+                                            title="Delete booking">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>

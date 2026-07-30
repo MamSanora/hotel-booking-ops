@@ -98,12 +98,6 @@ class TelegramWebhookController extends Controller
                             'current_status' => \App\Models\Room::STATUS_AVAILABLE,
                             'status_updated_at' => now(),
                         ]);
-                        
-                        \App\Models\RoomManagement::create([
-                            'room_id'             => $room->id,
-                            'managed_by_admin_id' => null,
-                            'action'              => 'status_change_via_telegram',
-                        ]);
 
                         $this->telegramService->sendMessage("✅ Room {$roomNumber} is now marked as Available.", $incomingChatId);
                     } else {

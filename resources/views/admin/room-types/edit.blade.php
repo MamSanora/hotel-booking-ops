@@ -164,7 +164,7 @@
                     </label>
                 </div>
 
-                {{-- Mam Sanora QR --}}
+                {{-- Developer QR --}}
                 <div class="md:col-span-2 mt-2">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <div class="relative">
@@ -173,9 +173,22 @@
                             <div class="dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4"></div>
                         </div>
                         <div class="text-[0.95rem] font-medium text-gray-700">
-                            Use Mam Sanora Dynamic QR <span class="text-gray-400 font-normal ml-1">(check to use Mam Sanora's KHQR instead of the default payment flow)</span>
+                            Use Developer Dynamic QR <span class="text-gray-400 font-normal ml-1">(check to use Developer's KHQR instead of the default payment flow)</span>
                         </div>
                     </label>
+                </div>
+
+                {{-- Chart Color --}}
+                <div class="md:col-span-2 mt-2">
+                    <label for="chart_color" class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                        Chart Color <span class="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <div class="flex items-center gap-4">
+                        <input type="color" id="chart_color" name="chart_color" value="{{ old('chart_color', $roomType->uiSettings->chart_color ?? '#3b82f6') }}"
+                               class="h-10 w-20 rounded cursor-pointer border border-gray-200">
+                        <span class="text-[0.90rem] text-gray-500">Pick a color to represent this room type in the Admin Dashboard analytics.</span>
+                    </div>
+                    @error('chart_color') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

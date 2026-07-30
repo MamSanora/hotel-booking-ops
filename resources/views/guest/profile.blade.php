@@ -66,7 +66,7 @@
 
                 <form action="{{ route('guest.profile.update') }}" method="POST">
                     @csrf
-                    @method('PUT')
+                    @method('PATCH')
 
                     <div class="space-y-5">
                         <div>
@@ -93,13 +93,7 @@
                                 </button>
                             </div>
 
-                            {{-- Warning --}}
-                            <div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
-                                <p class="text-xs text-amber-700">
-                                    <i class="bi bi-exclamation-triangle-fill mr-1"></i>
-                                    The password reset feature is not yet available. Please provide a legitimate phone number so we can contact and verify your identity if you lose access to your account.
-                                </p>
-                            </div>
+
 
                             {{-- Existing phones --}}
                             <div id="phone-list" class="space-y-2">
@@ -170,7 +164,7 @@
 
                 <form action="{{ route('guest.profile.password') }}" method="POST">
                     @csrf
-                    @method('PUT')
+                    @method('PATCH')
 
                     <div class="space-y-5">
                         <div>

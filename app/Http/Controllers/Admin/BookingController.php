@@ -48,6 +48,9 @@ class BookingController extends Controller
                       ->orWhereHas('phones', function($p) use ($search) {
                           $p->where('phone_number', 'like', "%{$search}%");
                       });
+                })
+                ->orWhereHas('transactions', function($t) use ($search) {
+                    $t->where('payment_reference', 'like', "%{$search}%");
                 });
             });
         }
@@ -65,9 +68,23 @@ class BookingController extends Controller
             $query->whereDate('check_in_date', '<=', $dateTo);
         }
 
-        $bookings = $query->orderByDesc('created_at')
-            ->paginate(20)
-            ->withQueryString();
+        // 4. Filter by Guest Type
+        if ($guestType = $request->input('guest_type')) {
+            $query->where('guest_type', $guestType);
+        }
+
+        // 5. Sorting
+        $sort = $request->input('sort', 'latest_booking');
+        match ($sort) {
+            'earliest_booking' => $query->orderBy('created_at', 'asc'),
+            'check_in_asc'     => $query->orderBy('check_in_date', 'asc'),
+            'check_in_desc'    => $query->orderBy('check_in_date', 'desc'),
+            'price_high'       => $query->orderBy('total_price', 'desc'),
+            'price_low'        => $query->orderBy('total_price', 'asc'),
+            default            => $query->orderBy('created_at', 'desc'), // latest_booking
+        };
+
+        $bookings = $query->paginate(20)->withQueryString();
 
         // Count cancelled bookings whose transactions were explicitly flagged
         // as refund_pending by the cancel() controller

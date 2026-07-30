@@ -20,8 +20,8 @@ use Illuminate\Support\Facades\Hash;
 /**
  * DemoDataSeeder
  *
- * Generates realistic 3-4 months of hotel operational data.
- * Safe to re-run — skips if guests already exist.
+ * Generates realistic 1 month of hotel operational data for a boutique hotel.
+ * Safely drops existing operational data before seeding.
  */
 class DemoDataSeeder extends Seeder
 {
@@ -32,21 +32,28 @@ class DemoDataSeeder extends Seeder
 
     public function __construct()
     {
-        $this->periodStart = Carbon::create(2026, 3, 1);
+        // 1 month of data for defense team demo
+        $this->periodStart = Carbon::today()->startOfMonth();
     }
 
     public function run(): void
     {
-        if (Guest::count() > 0) {
-            $this->command->warn('  DemoDataSeeder: Guests already exist — skipping.');
-            $this->command->warn('  Run: php artisan migrate:fresh --seed  to reset.');
-            return;
-        }
-
         $this->command->info('');
-        $this->command->info('🏨  Generating Dara Meas Hotel demo data (Mar–Jul 2026)...');
+        $this->command->info('🏨  Dropping existing operational data...');
 
-        $this->rooms    = Room::all()->keyBy('room_number')->toArray();
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        RequestedItem::truncate();
+        RoomService::truncate();
+        Transaction::truncate();
+        Booking::truncate();
+        Phone::truncate();
+        GuestAuth::truncate();
+        Guest::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        $this->command->info('🏨  Generating Dara Meas Hotel demo data (1 month)...');
+
+        $this->rooms    = Room::with('roomType')->get()->keyBy('room_number')->toArray();
         $this->staffIds = Staff::pluck('id')->toArray();
         $this->adminId  = DB::table('admins')->value('id');
 
@@ -66,7 +73,7 @@ class DemoDataSeeder extends Seeder
 
     private function seedCatalog(): void
     {
-        $this->command->info('  📦  Seeding items catalog...');
+        $this->command->info('  📦  Checking items catalog...');
 
         $items = [
             ['Extra Towels',          'amenity',  0],
@@ -104,68 +111,96 @@ class DemoDataSeeder extends Seeder
     {
         $this->command->info('  👤  Seeding guests...');
 
+        // Online guests (developer team asked them to register in July)
         $online = [
-            ['Sopheak Chan',      'male',   'Cambodian',   'sopheak.chan@email.com',    '+855 12 345 678'],
-            ['Bopha Lim',         'female', 'Cambodian',   'bopha.lim@email.com',       '+855 17 234 567'],
-            ['Dara Pich',         'male',   'Cambodian',   'dara.pich99@gmail.com',     '+855 16 789 012'],
-            ['Sreymom Keo',       'female', 'Cambodian',   'sreymom.k@yahoo.com',       '+855 97 456 789'],
-            ['Vibol Heng',        'male',   'Cambodian',   'vibol.heng@gmail.com',      '+855 11 321 654'],
-            ['Channary Sok',      'female', 'Cambodian',   'channary.sok@gmail.com',    '+855 70 567 890'],
-            ['Piseth Meas',       'male',   'Cambodian',   'piseth.meas@hotmail.com',   '+855 12 111 222'],
-            ['Rachana Nhem',      'female', 'Cambodian',   'rachana.nhem@email.com',    '+855 15 333 444'],
-            ['James Wilson',      'male',   'American',    'james.wilson@outlook.com',  '+1 312 555 0101'],
-            ['Emma Thompson',     'female', 'British',     'emma.t@gmail.com',          '+44 7911 123456'],
-            ['Yuki Tanaka',       'female', 'Japanese',    'yuki.tanaka@jp.com',        '+81 90 1234 5678'],
-            ['Liam OBrien',       'male',   'Irish',       'liam.ob@gmail.com',         '+353 87 123 4567'],
-            ['Mei Lin',           'female', 'Chinese',     'mei.lin88@163.com',         '+86 138 0000 1234'],
-            ['Arjun Sharma',      'male',   'Indian',      'arjun.sharma@gmail.com',    '+91 98765 43210'],
-            ['Nadia Blanc',       'female', 'French',      'nadia.blanc@orange.fr',     '+33 6 12 34 56 78'],
-            ['Kevin Park',        'male',   'South Korean','kevin.park@naver.com',      '+82 10 9876 5432'],
-            ['Fatima Al-Rashid',  'female', 'Emirati',     'fatima.r@gmail.com',        '+971 50 123 4567'],
-            ['Lucas Ferreira',    'male',   'Brazilian',   'lucas.ferreira@gmail.com',  '+55 11 99999 8888'],
-            ['Siti Aminah',       'female', 'Malaysian',   'siti.aminah@gmail.com',     '+60 12 345 6789'],
-            ['Tom Baker',         'male',   'Australian',  'tom.baker.au@gmail.com',    '+61 412 345 678'],
+            ['Chan Sopheak',      'male',   'Cambodian',   'sopheak.chan@email.com',    '012 345 678'],
+            ['Lim Bopha',         'female', 'Cambodian',   'bopha.lim@email.com',       '017 234 567'],
+            ['Pich Dara',         'male',   'Cambodian',   'dara.pich99@gmail.com',     '016 789 012'],
+            ['Keo Sreymom',       'female', 'Cambodian',   'sreymom.k@yahoo.com',       '097 456 789'],
+            ['Heng Vibol',        'male',   'Cambodian',   'vibol.heng@gmail.com',      '011 321 654'],
+            ['Sok Channary',      'female', 'Cambodian',   'channary.sok@gmail.com',    '070 567 890'],
+            ['James Wilson',      'male',   'American',    'james.wilson@outlook.com',  '096 555 010'],
+            ['Emma Thompson',     'female', 'British',     'emma.t@gmail.com',          '098 123 456'],
+            ['Hok Hok',           'male',   'Cambodian',   'hok.hok@email.com',         '016 505 606'],
+            ['Sam Bath',          'male',   'Cambodian',   'sam.bath@email.com',        '081 121 232'],
         ];
 
+        // Walk-in / Phone guests (mostly historical and Cambodian)
         $walkin = [
-            ['Kosal Rath',        'male',   'Cambodian',    '+855 12 444 555'],
-            ['Maly Chum',         'female', 'Cambodian',    '+855 17 666 777'],
-            ['Bunna Tep',         'male',   'Cambodian',    '+855 16 888 999'],
-            ['Sokhom Ros',        'male',   'Cambodian',    '+855 11 222 333'],
-            ['Phearun Kong',      'male',   'Cambodian',    '+855 97 111 000'],
-            ['Sreyleak Oun',      'female', 'Cambodian',    '+855 70 999 888'],
-            ['David Chen',        'male',   'Singaporean',  '+65 9123 4567'],
-            ['Sarah Johnson',     'female', 'American',     '+1 415 555 0182'],
-            ['Hiroshi Yamamoto',  'male',   'Japanese',     '+81 80 9876 5432'],
-            ['Marie Dubois',      'female', 'French',       '+33 7 98 76 54 32'],
-            ['Ahmed Hassan',      'male',   'Egyptian',     '+20 100 234 5678'],
-            ['Nguyen Van Minh',   'male',   'Vietnamese',   '+84 90 123 4567'],
-            ['Priya Patel',       'female', 'Indian',       '+91 87654 32109'],
-            ['Carlos Rivera',     'male',   'Mexican',      '+52 55 1234 5678'],
-            ['Ananya Krishnan',   'female', 'Indian',       '+91 99887 76655'],
-            ['Mark Stevens',      'male',   'Canadian',     '+1 604 555 0167'],
-            ['Liu Yang',          'male',   'Chinese',      '+86 139 8888 7777'],
-            ['Aminata Diallo',    'female', 'Senegalese',   '+221 77 123 4567'],
-            ['Ryo Nakamura',      'male',   'Japanese',     '+81 70 5555 4444'],
-            ['Elena Popescu',     'female', 'Romanian',     '+40 721 234 567'],
+            ['Rath Kosal',        'male',   'Cambodian',    '012 444 555'],
+            ['Chum Maly',         'female', 'Cambodian',    '017 666 777'],
+            ['Tep Bunna',         'male',   'Cambodian',    '016 888 999'],
+            ['Ros Sokhom',        'male',   'Cambodian',    '011 222 333'],
+            ['Kong Phearun',      'male',   'Cambodian',    '097 111 000'],
+            ['Oun Sreyleak',      'female', 'Cambodian',    '070 999 888'],
+            ['Meas Piseth',       'male',   'Cambodian',    '012 111 222'],
+            ['Nhem Rachana',      'female', 'Cambodian',    '015 333 444'],
+            ['Sam Vuthy',         'male',   'Cambodian',    '092 123 456'],
+            ['Pheng Kanya',       'female', 'Cambodian',    '069 987 654'],
+            ['Choun Panha',       'male',   'Cambodian',    '081 234 567'],
+            ['So Nary',           'female', 'Cambodian',    '010 345 678'],
+            ['Kim Makara',        'male',   'Cambodian',    '077 456 789'],
+            ['Chea Thida',        'female', 'Cambodian',    '099 567 890'],
+            ['Ly Sovann',         'male',   'Cambodian',    '012 678 901'],
+            ['Ouk Chantha',       'female', 'Cambodian',    '011 789 012'],
+            ['Seng Rithy',        'male',   'Cambodian',    '016 890 123'],
+            ['Nget Borey',        'male',   'Cambodian',    '093 901 234'],
+            ['Vong Sokha',        'female', 'Cambodian',    '089 012 345'],
+            ['Yorn Chenda',       'female', 'Cambodian',    '015 123 987'],
+            ['David Chen',        'male',   'Singaporean',  '085 123 456'],
+            ['Sarah Johnson',     'female', 'American',     '095 555 018'],
+            ['Hiroshi Yamamoto',  'male',   'Japanese',     '012 987 654'],
+            ['Marie Dubois',      'female', 'French',       '069 987 654'],
+            ['Mark Stevens',      'male',   'Canadian',     '010 555 016'],
+            // Added names from fake user accounts creation.docx
+            ['Heang Menghorng',   'male',   'Cambodian',    '012 101 202'],
+            ['Nhem Senghak',      'male',   'Cambodian',    '017 303 404'],
+            ['Tang Kimhak',       'male',   'Cambodian',    '011 707 808'],
+            ['Heng Chanvichet',   'male',   'Cambodian',    '097 909 010'],
+            ['Sovan Lanich',      'female', 'Cambodian',    '070 121 232'],
+            ['Vet Chandavin',     'female', 'Cambodian',    '012 343 454'],
+            ['Kann Brathana',     'male',   'Cambodian',    '015 565 676'],
+            ['Kang Narak',        'male',   'Cambodian',    '092 787 898'],
+            ['Neath Mony',        'female', 'Cambodian',    '069 909 010'],
+            ['Mo Ny',             'female', 'Cambodian',    '010 343 454'],
+            ['Lon Maliza',        'female', 'Cambodian',    '077 565 676'],
+            ['Roth Sally',        'female', 'Cambodian',    '099 787 898'],
+            ['Chan MonoRaksa',    'male',   'Cambodian',    '012 909 010'],
+            ['Kim Vutha',         'male',   'Cambodian',    '011 121 232'],
+            ['Hann Kuyphang',     'male',   'Cambodian',    '016 343 454'],
         ];
 
-        $base = $this->periodStart->copy()->subDays(10);
+        $surnames = ['Sok', 'Sao', 'Mao', 'Chea', 'Keo', 'Nget', 'Ouk', 'Oun', 'Chan', 'Meas', 'Khieu', 'Nhim', 'Nhem', 'Tep', 'Lim', 'Ly', 'Chum', 'Choun', 'Pheng', 'So', 'Kim', 'Yorn', 'Vong', 'Seng', 'Kong', 'Ros', 'Rath', 'Sam', 'Yin', 'Yan', 'Yun', 'Long', 'Nguon', 'Prum', 'Chhay', 'Prak', 'Srey', 'Pen', 'Men'];
+        $givenNames = ['Sopheak', 'Sophea', 'Vibol', 'Vuthy', 'Chantha', 'Thida', 'Bopha', 'Channary', 'Sovann', 'Piseth', 'Rachana', 'Kanya', 'Panha', 'Makara', 'Rithy', 'Borey', 'Sokha', 'Chenda', 'Sreyleak', 'Sreymom', 'Phearun', 'Kosal', 'Bunna', 'Sokhom', 'Maly', 'Sreypov', 'Sreymao', 'Chamroeun', 'Sophal', 'Sophorn', 'Dara', 'Sothea', 'Visal', 'Phalla', 'Kimseng', 'Narak', 'Brathana'];
+        $prefixes = ['010', '011', '012', '015', '016', '017', '069', '070', '077', '081', '085', '092', '093', '096', '097', '098', '099'];
 
+        for ($i = 0; $i < 270; $i++) {
+            $surname = $surnames[array_rand($surnames)];
+            $given = $givenNames[array_rand($givenNames)];
+            $gender = rand(0, 1) ? 'male' : 'female';
+            $prefix = $prefixes[array_rand($prefixes)];
+            $phone = $prefix . ' ' . rand(100, 999) . ' ' . rand(100, 999);
+            $walkin[] = [$surname . ' ' . $given, $gender, 'Cambodian', $phone];
+        }
+
+        // Walk-in guests created around June 20th, 2026 (simulating bulk data entry)
+        $bulkEntryDate = Carbon::create(2026, 6, 20, 9, 0, 0);
+        foreach ($walkin as [$name, $gender, $nat, $phone]) {
+            $t = $bulkEntryDate->copy()->addMinutes(rand(1, 480)); // Spread over an 8-hour workday
+            $g = Guest::create(['full_name' => $name, 'gender' => $gender, 'nationality' => $nat, 'created_at' => $t, 'updated_at' => $t]);
+            Phone::create(['guest_id' => $g->id, 'phone_number' => $phone]);
+        }
+
+        // Online guests created in the recent month
+        $recentStart = Carbon::today()->startOfMonth();
         foreach ($online as [$name, $gender, $nat, $email, $phone]) {
-            $t = $base->copy()->addDays(rand(0, 8));
+            $t = $recentStart->copy()->addDays(rand(0, 25));
             $g = Guest::create(['full_name' => $name, 'gender' => $gender, 'nationality' => $nat, 'created_at' => $t, 'updated_at' => $t]);
             Phone::create(['guest_id' => $g->id, 'phone_number' => $phone]);
             GuestAuth::create(['guest_id' => $g->id, 'email' => $email, 'passwordhash' => Hash::make('password123'), 'email_verified_at' => $t, 'created_at' => $t, 'updated_at' => $t]);
         }
 
-        foreach ($walkin as [$name, $gender, $nat, $phone]) {
-            $t = $base->copy()->addDays(rand(0, 20));
-            $g = Guest::create(['full_name' => $name, 'gender' => $gender, 'nationality' => $nat, 'created_at' => $t, 'updated_at' => $t]);
-            Phone::create(['guest_id' => $g->id, 'phone_number' => $phone]);
-        }
-
-        $this->command->info('     ✓ ' . Guest::count() . ' guests (20 online + 20 walk-in)');
+        $this->command->info('     ✓ ' . Guest::count() . ' guests (' . count($online) . ' online, ' . count($walkin) . ' walk-in/phone)');
     }
 
     /* ─────────────────────────── BOOKINGS ─────────────────────────────── */
@@ -177,7 +212,7 @@ class DemoDataSeeder extends Seeder
         $guests      = Guest::with('guestAuth')->get();
         $online      = $guests->filter(fn($g) => $g->guestAuth !== null)->values();
         $walkin      = $guests->filter(fn($g) => $g->guestAuth === null)->values();
-        $allRooms    = Room::all()->keyBy('id');
+        $allRooms    = Room::with('roomType')->get()->keyBy('id');
         $catalogIds  = ItemsCatalog::pluck('id')->toArray();
         $today       = Carbon::today();
 
@@ -185,55 +220,88 @@ class DemoDataSeeder extends Seeder
         $total = 0;
 
         $types = array_merge(
-            array_fill(0, 12, 'standard_room'),
-            array_fill(0, 10, 'deluxe_room'),
-            array_fill(0, 10, 'family_triple_room')
+            array_fill(0, 20, 'standard_room'),
+            array_fill(0, 12, 'deluxe_room'),
+            array_fill(0, 3, 'family_triple_room')
         );
 
-        // Build scenarios: [month, count, status_logic]
-        $months = [
-            [3,  28, 'done'],
-            [4,  35, 'done'],
-            [5,  25, 'done_with_cancels'],
-            [6,  22, 'recent'],
-            [7,  12, 'future'],
-        ];
+        // Build scenarios: we generate some data for 1 month
+        $months = [];
+        $currentMonth = $this->periodStart->copy()->startOfMonth();
+        
+        while ($currentMonth->lte($today->copy()->startOfMonth())) {
+            $y = $currentMonth->year;
+            $m = $currentMonth->month;
+            $isRecent = $currentMonth->copy()->startOfMonth()->equalTo($today->copy()->startOfMonth());
+            $isAlmostRecent = $currentMonth->copy()->addMonth()->startOfMonth()->equalTo($today->copy()->startOfMonth());
+            
+            if ($isRecent) {
+                $logic = 'recent_with_online';
+                $forceWalkin = false;
+                $count = 45;
+            } elseif ($isAlmostRecent) {
+                $logic = 'recent';
+                $forceWalkin = true;
+                $count = 25;
+            } else {
+                $logic = rand(0, 1) ? 'done' : 'done_with_cancels';
+                $forceWalkin = true;
+                $count = rand(15, 30);
+            }
+            $months[] = [$y, $m, $count, $logic, $forceWalkin];
+            $currentMonth->addMonth();
+        }
 
-        foreach ($months as [$month, $count, $logic]) {
+        foreach ($months as [$year, $month, $count, $logic, $forceWalkin]) {
             for ($i = 0; $i < $count; $i++) {
                 $day      = rand(1, 28);
-                $checkIn  = Carbon::create(2026, $month, $day);
-                $nights   = rand(1, $month === 4 ? 7 : 5);
+                $checkIn  = Carbon::create($year, $month, $day);
+                $nights   = rand(1, $month === 4 ? 4 : 3); // Shorter stays for boutique
                 $checkOut = $checkIn->copy()->addDays($nights);
-                $isOnline = rand(0, 1);
+                
+                // Determine if this is an online booking (only in recent month)
+                $isOnline = false;
+                if (!$forceWalkin && $online->count() > 0) {
+                    $isOnline = rand(1, 10) <= 3; // 30% online in recent month
+                }
+                
                 $guest    = $isOnline ? $online->random() : $walkin->random();
                 $type     = $types[array_rand($types)];
-                $method   = $i % 2 === 0 ? 'khqr' : 'cash';
-                $guestType = $isOnline ? 'user' : ($i % 4 === 0 ? 'phone' : 'walk-in');
+                $method   = $i % 3 === 0 ? 'khqr' : 'cash';
+                $guestType = $isOnline ? 'user' : ($i % 2 === 0 ? 'phone' : 'walk-in');
 
                 // Determine status
                 $status = 'checked-out';
                 if ($logic === 'done_with_cancels') {
                     if ($i === 2) $status = 'cancelled';
                     if ($i === 8) $status = 'no_show';
-                } elseif ($logic === 'recent') {
+                } elseif (in_array($logic, ['recent', 'recent_with_online'])) {
                     if ($checkIn->gt($today)) $status = 'booked';
                     elseif ($checkIn->lte($today) && $checkOut->gt($today)) $status = 'checked-in';
-                    if ($i === 3) $status = 'cancelled';
-                    if ($i === 7) $status = 'no_show';
-                } elseif ($logic === 'future') {
-                    $status = 'booked';
+                    if ($i === 3 && $checkIn->lt($today)) $status = 'cancelled';
+                    if ($i === 7 && $checkIn->lt($today)) $status = 'no_show';
                 }
 
                 // Find available room
                 $roomId = $this->findAvailableRoom($type, $checkIn, $checkOut, $roomBookedDates, $allRooms);
+                if (!$roomId) {
+                    // fallback to any
+                    $roomId = $this->findAvailableRoom('standard_room', $checkIn, $checkOut, $roomBookedDates, $allRooms);
+                }
                 if (!$roomId) continue;
 
                 $this->markRoomBooked($roomId, $checkIn, $checkOut, $roomBookedDates);
 
-                $pricePerNight = $allRooms[$roomId]->price_per_night;
+                $basePrice = $allRooms[$roomId]->roomType->price_per_night ?? 40.0;
+                
+                // Price variations
+                $yearModifier = ($year === 2025) ? 0.9 : 1.0; // 10% cheaper in 2025
+                $isHighSeason = in_array($month, [11, 12, 1, 2, 3]); // Nov to Mar
+                $seasonModifier = $isHighSeason ? 1.15 : 1.0; // 15% pricier in high season
+                
+                $pricePerNight = round($basePrice * $yearModifier * $seasonModifier, 2);
                 $totalPrice    = $nights * $pricePerNight;
-                $extensions    = ($month === 4 && $i < 5) ? rand(1, 2) : 0;
+                $extensions    = ($month === 4 && $i < 3) ? rand(1, 2) : 0;
                 $bookedAt      = $checkIn->copy()->subDays(rand(1, 14));
                 $staffId       = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;
 
@@ -253,6 +321,7 @@ class DemoDataSeeder extends Seeder
 
                 // Transaction
                 if (!in_array($status, ['cancelled', 'no_show', 'pending'])) {
+                    $paymentReference = in_array($method, ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
                     Transaction::create([
                         'booking_id'     => $booking->id,
                         'amount_paid'    => $totalPrice,
@@ -261,6 +330,7 @@ class DemoDataSeeder extends Seeder
                         'payment_status' => 'full',
                         'created_at'     => $bookedAt,
                         'updated_at'     => $bookedAt,
+                        'payment_reference' => $paymentReference,
                     ]);
 
                     for ($e = 0; $e < $extensions; $e++) {
@@ -275,6 +345,7 @@ class DemoDataSeeder extends Seeder
                             'payment_status' => 'full',
                             'created_at'     => $extDate,
                             'updated_at'     => $extDate,
+                            'payment_reference' => $paymentReference,
                         ]);
                     }
                 }
@@ -336,7 +407,13 @@ class DemoDataSeeder extends Seeder
 
             $this->markRoomBooked($roomId, $checkIn, $checkOut, $roomBookedDates);
 
-            $pricePerNight = $allRooms[$roomId]->price_per_night;
+            $basePrice = $allRooms[$roomId]->roomType->price_per_night ?? 40.0;
+            
+            // Apply current season price for guaranteed today bookings
+            $isHighSeason = in_array($today->month, [11, 12, 1, 2, 3]);
+            $seasonModifier = $isHighSeason ? 1.15 : 1.0;
+            $pricePerNight = round($basePrice * 1.0 * $seasonModifier, 2); // 1.0 for current year (2026)
+            
             $totalPrice    = $nights * $pricePerNight;
             $guest         = $guestsPool->get($guestIdx++ % $guestsPool->count());
             $isStaff       = in_array($w['guestType'], ['walk-in', 'phone']);
@@ -356,6 +433,7 @@ class DemoDataSeeder extends Seeder
                 'updated_at'               => $checkIn,
             ]);
 
+            $paymentReference = in_array($w['method'], ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
             Transaction::create([
                 'booking_id'     => $booking->id,
                 'amount_paid'    => $totalPrice,
@@ -364,6 +442,7 @@ class DemoDataSeeder extends Seeder
                 'payment_status' => 'full',
                 'created_at'     => $bookedAt,
                 'updated_at'     => $bookedAt,
+                'payment_reference' => $paymentReference,
             ]);
 
             // Add a room service request for realism
@@ -392,8 +471,10 @@ class DemoDataSeeder extends Seeder
         array &$booked,
         \Illuminate\Support\Collection $rooms
     ): ?int {
-        $candidates = $rooms->where('room_type', $type)->pluck('id')->toArray();
-        $candidates = array_merge($candidates, $rooms->pluck('id')->toArray());
+        $candidates = $rooms->filter(fn($r) => $r->roomType && $r->roomType->slug === $type)->pluck('id')->toArray();
+        if (empty($candidates)) {
+            $candidates = $rooms->pluck('id')->toArray();
+        }
         $candidates = array_values(array_unique($candidates));
         shuffle($candidates);
 

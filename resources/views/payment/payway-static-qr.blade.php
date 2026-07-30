@@ -85,7 +85,7 @@
                 @if(! app()->isProduction())
                 <div class="mt-2 w-full max-w-[300px] hidden">
                     <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                          onsubmit="return confirm('DEMO MODE: Simulate a successful payment?')">
+                          x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO MODE: Simulate a successful payment?', action: () => $el.submit() })">
                         @csrf
                         <button type="submit"
                                 class="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold border border-emerald-300 rounded-xl py-2.5 text-xs transition-all shadow-sm">

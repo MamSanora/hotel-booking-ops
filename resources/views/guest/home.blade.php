@@ -411,7 +411,7 @@
 {{-- ==========================================
      VERIFIED GUEST TESTIMONIALS (POINT 4)
      ========================================== --}}
-<div class="bg-hotel-light py-20 border-b border-[#e8e0d0]">
+<div class="hidden bg-hotel-light py-20 border-b border-[#e8e0d0]">
     <div class="container mx-auto px-4 md:px-6">
         <div class="text-center mb-14">
             <span class="text-hotel-gold font-bold uppercase tracking-widest text-xs mb-2 block">Real Experiences</span>

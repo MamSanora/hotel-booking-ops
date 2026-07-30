@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Room;
-use App\Models\RoomManagement;
 use App\Models\RoomType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,13 +75,6 @@ class AdminRoomController extends Controller
             'current_status' => 'available',
         ]);
 
-        // Audit log: record who created this room.
-        RoomManagement::create([
-            'room_id'             => $room->id,
-            'managed_by_admin_id' => Auth::guard('admin')->id(),
-            'action'              => 'add_room',
-        ]);
-
         return redirect()
             ->route('admin.rooms.index')
             ->with('success', "Room {$room->room_number} created successfully.");
@@ -131,12 +123,6 @@ class AdminRoomController extends Controller
                 'current_status' => Room::STATUS_AVAILABLE,
             ]);
 
-            RoomManagement::create([
-                'room_id'             => $room->id,
-                'managed_by_admin_id' => $adminId,
-                'action'              => 'add_room',
-            ]);
-
             $createdCount++;
         }
 
@@ -158,12 +144,6 @@ class AdminRoomController extends Controller
             $room->update([
                 'current_status' => $validated['current_status'],
                 'status_updated_at' => now(),
-            ]);
-
-            RoomManagement::create([
-                'room_id'             => $room->id,
-                'managed_by_admin_id' => Auth::guard('admin')->id(),
-                'action'              => 'status_change',
             ]);
         }
 
@@ -211,15 +191,6 @@ class AdminRoomController extends Controller
             'bed_configuration' => $validated['bed_configuration'] ?? null,
             'view_type'      => $validated['view_type'] ?? null,
         ]);
-
-        // Audit log: if the room type changed, the effective price may have changed.
-        if ((int) $previousTypeId !== (int) $validated['room_type_id']) {
-            RoomManagement::create([
-                'room_id'             => $room->id,
-                'managed_by_admin_id' => Auth::guard('admin')->id(),
-                'action'              => 'update_price',
-            ]);
-        }
 
         return redirect()
             ->route('admin.rooms.index')

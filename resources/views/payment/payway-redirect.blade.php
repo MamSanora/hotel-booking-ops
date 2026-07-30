@@ -79,7 +79,7 @@
             @if(! app()->isProduction())
             <div class="px-8 md:px-10 pb-8 pt-0 flex flex-wrap gap-4 justify-center bg-white border-t border-gray-100">
                 <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                      onsubmit="return confirm('DEMO MODE: Simulate a successful payment?\n\nThis is for testing only — no real money is charged.')">
+                      x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO MODE: Simulate a successful payment?\n\nThis is for testing only - no real money is charged.', action: () => $el.submit() })">
                     @csrf
                     <button type="submit"
                             class="inline-flex items-center gap-2.5 bg-green-50 hover:bg-green-100 text-green-700 font-bold border-2 border-green-200 hover:border-green-400 rounded-xl px-8 py-3.5 transition-all duration-200">

@@ -72,9 +72,9 @@
                 Default tab: phone path if validation failed on login_phone field,
                 otherwise email path.
             --}}
-            @php $defaultTab = $errors->has('login_phone') ? 'phone' : 'email'; @endphp
+            @php $defaultTab = 'email'; @endphp
 
-            <div class="flex rounded-xl border border-gray-200 p-1 mb-6 bg-gray-50" role="tablist">
+            <div class="hidden flex rounded-xl border border-gray-200 p-1 mb-6 bg-gray-50" role="tablist">
                 <button type="button" id="tab-email" role="tab"
                         onclick="switchTab('email')"
                         class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200">
