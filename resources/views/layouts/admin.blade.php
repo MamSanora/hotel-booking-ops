@@ -317,6 +317,7 @@
     @stack('scripts')
     
     @stack('modals')
+    @livewireScripts
     <x-global-confirm />
 </body>
 </html>

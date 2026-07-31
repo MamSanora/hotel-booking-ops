@@ -259,6 +259,7 @@
 
     @yield('scripts')
     @stack('scripts')
+    @livewireScripts
     <x-global-confirm />
 </body>
 </html>

@@ -100,7 +100,7 @@
          ========================================== --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="font-playfair text-2xl font-bold text-hotel-dark flex items-center">
-            <i class="bi bi-calendar-week mr-3 text-hotel-gold"></i>Upcoming & Active Bookings
+            <i class="bi bi-calendar-week mr-3 text-hotel-gold"></i>Active Bookings
         </h2>
         <a href="{{ route('rooms.index') }}" class="inline-flex items-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">
             <i class="bi bi-plus mr-1"></i>Book a Room

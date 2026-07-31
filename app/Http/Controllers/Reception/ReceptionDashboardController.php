@@ -116,7 +116,7 @@ class ReceptionDashboardController extends Controller
             'payment_method'    => ['required', 'in:cash,khqr,khqr_aba'],
             'amount_paid'       => ['required', 'numeric', 'min:0.01'],
             'payment_for'       => ['required', 'in:booking,stay_extension'],
-            'payment_reference' => ['required', 'string', 'max:255'],
+            'payment_reference' => ['required_unless:payment_method,cash', 'nullable', 'string', 'max:255'],
         ]);
 
         // Determine if this is a partial or full payment.
@@ -129,13 +129,18 @@ class ReceptionDashboardController extends Controller
             ? Transaction::STATUS_FULL
             : Transaction::STATUS_PARTIAL;
 
+        $paymentReference = $validated['payment_reference'] ?? null;
+        if ($validated['payment_method'] === 'cash' && empty($paymentReference)) {
+            $paymentReference = 'Cash note';
+        }
+
         Transaction::create([
             'booking_id'        => $booking->id,
             'amount_paid'       => $validated['amount_paid'],
             'payment_for'       => $validated['payment_for'],
             'payment_method'    => $validated['payment_method'],
             'payment_status'    => $paymentStatus,
-            'payment_reference' => $validated['payment_reference'],
+            'payment_reference' => $paymentReference,
         ]);
 
         return back()->with('success', "Payment of \${$validated['amount_paid']} recorded for {$booking->referenceNumber()}.");

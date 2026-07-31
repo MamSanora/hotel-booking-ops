@@ -294,6 +294,10 @@ Route::prefix('reception')->name('reception.')->group(function () {
 
         // Stay Extension (for walk-in / phone guests without an account)
         Route::post('/extend-stay/{booking}', [ReceptionDashboardController::class, 'extendStay'])->name('extend-stay');
+        
+        // Relocation
+        Route::get('/relocate/{booking}', [\App\Http\Controllers\Reception\ReceptionRelocationController::class, 'show'])->name('relocate.show');
+        Route::post('/relocate/{booking}/confirm', [\App\Http\Controllers\Reception\ReceptionRelocationController::class, 'confirm'])->name('relocate.confirm');
 
         // No-show cancellation (receptionist-level, releases the room)
         Route::patch('/bookings/{booking}/cancel', [ReceptionDashboardController::class, 'cancelNoShow'])->name('bookings.cancel');
