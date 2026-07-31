@@ -414,7 +414,7 @@
                                                name="payment_tier"
                                                value="{{ $tier['value'] }}"
                                                id="tier_{{ $tier['value'] }}"
-                                               {{ $tier['value'] === 100 ? 'checked' : '' }}
+                                               {{ old('payment_tier', 100) == $tier['value'] ? 'checked' : '' }}
                                                class="mt-0.5 accent-hotel-gold shrink-0 tier-radio">
                                         <div class="flex-1">
                                             <div class="flex items-center gap-2">

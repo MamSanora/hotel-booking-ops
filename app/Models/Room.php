@@ -236,7 +236,7 @@ class Room extends Model
         return match ($this->bed_configuration) {
             'twin'   => 'Twin Beds',
             'double' => 'Double Bed',
-            'triple' => 'Triple (Double + Single)',
+            'triple' => 'Triple',
             default  => 'Not specified',
         };
     }

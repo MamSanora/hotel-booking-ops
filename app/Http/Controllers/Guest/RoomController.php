@@ -297,7 +297,7 @@ class RoomController extends Controller
             if (str_starts_with($e->getMessage(), 'AMOUNT_COLLISION:')) {
                 $lockedAmount = str_replace('AMOUNT_COLLISION:', '', $e->getMessage());
                 return back()
-                    ->withErrors(['payment_method' => "Our automated payment system is currently processing another transaction for the amount of $$lockedAmount. This resolves in a few minutes. Please try again shortly."])
+                    ->withErrors(['payment_method' => "Our payment system is currently processing another transaction. This resolves in a few minutes. Please try again."])
                     ->withInput();
             }
 
@@ -516,7 +516,7 @@ class RoomController extends Controller
         } catch (\Exception $e) {
             if (str_starts_with($e->getMessage(), 'AMOUNT_COLLISION:')) {
                 $lockedAmount = str_replace('AMOUNT_COLLISION:', '', $e->getMessage());
-                return back()->with('error', "Our automated payment system is currently processing another transaction for the exact amount of $$lockedAmount. This resolves in a few minutes. Please try again shortly.");
+                return back()->with('error', "Our payment system is currently processing another transaction. This resolves in a few minutes. Please try again.");
             }
             throw $e;
         }

@@ -164,7 +164,10 @@
 
 
 
-        {{-- System Backup --}}
+        {{-- System Backup (Hidden for security/industrial standard)
+             @if(false)
+        --}}
+        @if(false)
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] flex flex-col">
             @php
                 $iconClass  = match($backupStatus) { 'healthy'=>'bi-shield-check text-emerald-600','outdated'=>'bi-shield-exclamation text-amber-500','no_backup'=>'bi-shield-x text-red-500',default=>'bi-shield text-gray-400' };
@@ -194,6 +197,7 @@
                 @endif
             </div>
         </div>
+        @endif
     </div>
 
     @push('modals')
@@ -795,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const revenueChart = new ApexCharts(document.getElementById('chart-revenue'), {
         ...defaultOpts,
-        chart: { ...defaultOpts.chart, type: 'area', height: 240, group: 'timeline', id: 'revenue' },
+        chart: { ...defaultOpts.chart, type: 'area', height: 240 },
         series: [{ name: 'Revenue ($)', data: [] }],
         xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 }, tickAmount: 8 },
         yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
@@ -810,9 +814,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const volumeChart = new ApexCharts(document.getElementById('chart-booking-volume'), {
         ...defaultOpts,
-        chart: { ...defaultOpts.chart, type: 'bar', height: 240, group: 'timeline', id: 'volume' },
+        chart: { ...defaultOpts.chart, type: 'bar', height: 240 },
         series: [{ name: 'Bookings', data: [] }],
-        xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 }, tickAmount: 8 },
+        xaxis: { categories: [], labels: { style: { fontSize: '11px' }, rotate: -35 } },
         yaxis: { labels: { formatter: v => Math.round(v) } },
         colors: ['#6366f1'],
         plotOptions: { bar: { borderRadius: 5, columnWidth: '55%' } },
@@ -831,8 +835,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }},
         series: [{ name: 'Revenue ($)', data: [] }],
-        xaxis: { categories: [] },
-        yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
+        xaxis: { categories: [], labels: { formatter: v => '$' + v.toLocaleString() } },
+        yaxis: { labels: { formatter: undefined } },
         colors: ['#3b82f6'],
         plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
         dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toLocaleString(), style: { colors: ['#fff'] } },
@@ -874,8 +878,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }},
         series: [{ name: 'Revenue ($)', data: [] }],
-        xaxis: { categories: [] },
-        yaxis: { labels: { formatter: v => '$' + v.toLocaleString() } },
+        xaxis: { categories: [], labels: { formatter: v => '$' + v.toLocaleString() } },
+        yaxis: { labels: { formatter: undefined } },
         colors: ['#8b5cf6'],
         plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
         dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toLocaleString(), style: { colors: ['#fff'] } },
