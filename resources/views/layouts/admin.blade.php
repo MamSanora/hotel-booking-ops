@@ -109,7 +109,7 @@
                 </div>
                 <div class="min-w-0">
                     <div class="text-white text-sm font-semibold truncate">{{ $admin?->full_name ?? 'Administrator' }}</div>
-                    <div class="text-white/40 text-[0.65rem] uppercase tracking-widest">Super Admin</div>
+                    <div class="text-white/40 text-[0.65rem] uppercase tracking-widest">{{ $admin?->role === 'superadmin' ? 'Super Admin' : 'Admin' }}</div>
                 </div>
             </div>
         </div>
