@@ -290,6 +290,7 @@ Route::prefix('reception')->name('reception.')->group(function () {
         Route::get('/manage-bookings', [App\Http\Controllers\Reception\ManageBookingsController::class, 'index'])->name('manage-bookings.index');
         Route::get('/manage-bookings/{booking}/edit', [App\Http\Controllers\Reception\ManageBookingsController::class, 'edit'])->name('manage-bookings.edit');
         Route::put('/manage-bookings/{booking}', [App\Http\Controllers\Reception\ManageBookingsController::class, 'update'])->name('manage-bookings.update');
+        Route::put('/manage-bookings/{booking}/cancel', [App\Http\Controllers\Reception\ManageBookingsController::class, 'cancel'])->name('manage-bookings.cancel');
 
         // Room Service Handling
         Route::patch('/room-service/{roomService}/complete', [ReceptionDashboardController::class, 'completeRoomService'])->name('room-service.complete');

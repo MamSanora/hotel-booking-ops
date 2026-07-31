@@ -33,7 +33,7 @@ class DemoDataSeeder extends Seeder
     public function __construct()
     {
         // 3 months of realistic data for defense team demo
-        $this->periodStart = Carbon::today()->subMonths(2)->startOfMonth();
+        $this->periodStart = Carbon::today()->subMonths(3)->startOfMonth();
     }
 
     public function run(): void
@@ -252,7 +252,7 @@ class DemoDataSeeder extends Seeder
             $currentMonth->addMonth();
         }
 
-        $seederTime = Carbon::create(2026, 1, 1, 8, 0, 0);
+        $seederTime = $this->periodStart->copy()->setHour(8);
 
         foreach ($months as [$year, $month, $count, $logic]) {
             for ($i = 0; $i < $count; $i++) {

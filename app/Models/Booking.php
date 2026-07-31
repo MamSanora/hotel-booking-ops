@@ -364,7 +364,11 @@ class Booking extends Model
     public function totalPaid(): float
     {
         return (float) $this->transactions()
-            ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
+            ->whereIn('payment_status', [
+                Transaction::STATUS_FULL, 
+                Transaction::STATUS_PARTIAL, 
+                Transaction::STATUS_REFUNDED
+            ])
             ->sum('amount_paid');
     }
 

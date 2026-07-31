@@ -113,6 +113,10 @@
                         <option value="earliest_booking" {{ request('sort') == 'earliest_booking' ? 'selected' : '' }}>Oldest Bookings</option>
                         <option value="check_in_asc" {{ request('sort') == 'check_in_asc' ? 'selected' : '' }}>Check-In (Earliest First)</option>
                         <option value="check_in_desc" {{ request('sort') == 'check_in_desc' ? 'selected' : '' }}>Check-In (Latest First)</option>
+                        <option value="check_out_asc" {{ request('sort') == 'check_out_asc' ? 'selected' : '' }}>Check-Out (Earliest First)</option>
+                        <option value="check_out_desc" {{ request('sort') == 'check_out_desc' ? 'selected' : '' }}>Check-Out (Latest First)</option>
+                        <option value="guest_asc" {{ request('sort') == 'guest_asc' ? 'selected' : '' }}>Guest Name (A - Z)</option>
+                        <option value="guest_desc" {{ request('sort') == 'guest_desc' ? 'selected' : '' }}>Guest Name (Z - A)</option>
                         <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Total Price (High to Low)</option>
                         <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Total Price (Low to High)</option>
                     </select>
@@ -252,13 +256,6 @@
                                 @endif
 
 
-
-                                {{-- Print Receipt (always available) --}}
-                                <a href="{{ route('admin.bookings.receipt', $booking->id) }}" target="_blank"
-                                    class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors flex items-center justify-center"
-                                    title="Print Receipt">
-                                    <i class="bi bi-printer"></i>
-                                </a>
 
                                 {{-- Delete (always available) --}}
                                 <form action="{{ route('admin.bookings.destroy', $booking->id) }}" method="POST">

@@ -76,12 +76,16 @@ class BookingController extends Controller
         // 5. Sorting
         $sort = $request->input('sort', 'latest_booking');
         match ($sort) {
-            'earliest_booking' => $query->orderBy('id', 'asc'),
-            'check_in_asc'     => $query->orderBy('check_in_date', 'asc'),
-            'check_in_desc'    => $query->orderBy('check_in_date', 'desc'),
-            'price_high'       => $query->orderBy('total_price', 'desc'),
-            'price_low'        => $query->orderBy('total_price', 'asc'),
-            default            => $query->orderBy('id', 'desc'), // latest_booking
+            'earliest_booking' => $query->orderBy('bookings.id', 'asc'),
+            'check_in_asc'     => $query->orderBy('bookings.check_in_date', 'asc'),
+            'check_in_desc'    => $query->orderBy('bookings.check_in_date', 'desc'),
+            'check_out_asc'    => $query->orderBy('bookings.check_out_date', 'asc'),
+            'check_out_desc'   => $query->orderBy('bookings.check_out_date', 'desc'),
+            'guest_asc'        => $query->join('guests', 'bookings.guest_id', '=', 'guests.id')->orderBy('guests.full_name', 'asc')->select('bookings.*'),
+            'guest_desc'       => $query->join('guests', 'bookings.guest_id', '=', 'guests.id')->orderBy('guests.full_name', 'desc')->select('bookings.*'),
+            'price_high'       => $query->orderBy('bookings.total_price', 'desc'),
+            'price_low'        => $query->orderBy('bookings.total_price', 'asc'),
+            default            => $query->orderBy('bookings.id', 'desc'), // latest_booking
         };
 
         $bookings = $query->paginate(20)->withQueryString();

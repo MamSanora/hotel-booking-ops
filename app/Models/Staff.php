@@ -50,6 +50,7 @@ class Staff extends Authenticatable
     {
         return [
             'role' => 'string',
+            'passwordhash' => 'hashed',
         ];
     }
 

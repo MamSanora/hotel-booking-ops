@@ -44,6 +44,7 @@ class Admin extends Authenticatable
         return [
             // Ensures $admin->role returns a clean string for comparison.
             'role' => 'string',
+            'passwordhash' => 'hashed',
         ];
     }
 

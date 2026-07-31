@@ -26,6 +26,7 @@
         }
         @page {
             margin: 0;
+            size: 80mm 80mm;
         }
         /* Thermal paper screen styles */
         body {
@@ -64,65 +65,68 @@
     <div class="thermal-paper">
         <!-- Header -->
         <div class="text-center mb-4">
-            <h1 class="font-bold text-lg">DARA MEAS HOTEL</h1>
-            <p class="text-[10px]">Phnom Penh, Cambodia</p>
-            <p class="text-[10px]">Tel: +855 12 345 678</p>
+            <h1 class="font-bold text-lg uppercase">Darameas Hotel</h1>
+            <p class="text-[10px]">#40E Street 2004,<br>Sangkat Tuek Thla, Khan Sen Sok</p>
+            <p class="text-[10px]">+85523456789 | info@darameas.com</p>
         </div>
 
         <div class="dashed-line"></div>
 
         <!-- Receipt Info -->
-        <div class="mb-2">
-            <div><strong>Receipt No:</strong> RE-{{ $booking->id }}-{{ time() }}</div>
-            <div><strong>Date:</strong> {{ now()->format('Y-m-d H:i') }}</div>
-            <div><strong>Guest:</strong> {{ $booking->guest?->full_name ?? 'Walk-in' }}</div>
-            <div><strong>Ref:</strong> {{ $booking->referenceNumber() }}</div>
-            <div><strong>Room:</strong> {{ $booking->room?->room_number ?? 'N/A' }}</div>
+        <div class="mb-2 text-[11px]">
+            <div><strong>Guest Name:</strong> {{ $booking->guest?->full_name ?? 'Walk-in' }}</div>
+            <div><strong>Receipt Number:</strong> RE-{{ $booking->id }}-{{ time() }}</div>
+            <div><strong>Room Number & Type:</strong> {{ $booking->room?->room_number ?? 'N/A' }} ({{ $booking->room?->roomType?->name ?? 'N/A' }})</div>
+            <div><strong>Check-in:</strong> {{ $booking->check_in_date ? $booking->check_in_date->format('Y-m-d H:i') : 'N/A' }}</div>
+            <div><strong>Check-out:</strong> {{ $booking->check_out_date ? $booking->check_out_date->format('Y-m-d H:i') : 'N/A' }}</div>
         </div>
 
         <div class="dashed-line"></div>
 
         <!-- Items Table -->
-        <table class="w-full text-left mb-2">
+        <table class="w-full text-left mb-2 text-[11px]">
             <thead>
-                <tr>
-                    <th class="w-2/3">Description</th>
-                    <th class="w-1/3 text-right">Amt</th>
+                <tr class="border-b border-black">
+                    <th class="w-2/3 pb-1">Item</th>
+                    <th class="w-1/3 text-right pb-1">Total</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Room Stay -->
+                @php
+                    $nights = $booking->nightCount() + $booking->number_of_stay_extension;
+                    $nightlyCost = $nights > 0 ? $booking->total_price / $nights : $booking->total_price;
+                @endphp
                 <tr>
-                    <td>Room Stay ({{ $booking->check_out_date->diffInDays($booking->check_in_date) + $booking->number_of_stay_extension }}N)</td>
-                    <td class="text-right">${{ number_format($booking->total_price, 2) }}</td>
+                    <td class="pt-1">Room Rate ({{ $nights }} Nights @ ${{ number_format($nightlyCost, 2) }}/night)</td>
+                    <td class="text-right pt-1">${{ number_format($booking->total_price, 2) }}</td>
                 </tr>
             </tbody>
         </table>
 
         <div class="dashed-line"></div>
 
-        <!-- Totals -->
-        <div class="flex justify-between font-bold mb-1">
-            <span>TOTAL DUE:</span>
-            <span>${{ number_format($booking->total_price, 2) }}</span>
-        </div>
-
+        <!-- Totals & Sign-off -->
         @php
-            $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->sum('amount_paid');
+            $totalPaid = $booking->transactions->whereIn('payment_status', ['full', 'partial', 'refunded'])->sum('amount_paid');
             $balance = max(0, $booking->total_price - $totalPaid);
+            $latestTx = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->last();
+            $paymentMethodStr = $latestTx ? ucfirst($latestTx->payment_method) : 'N/A';
         @endphp
 
-        <div class="flex justify-between mb-1">
-            <span>PAID:</span>
-            <span>${{ number_format($totalPaid, 2) }}</span>
+        <div class="flex justify-between font-bold text-[12px] mt-2">
+            <span>Grand Total (USD):</span>
+            <span>${{ number_format($booking->total_price, 2) }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-[11px] mb-2">
+            <span>Grand Total (KHR):</span>
+            <span>៛{{ number_format($booking->total_price * 4000, 0) }}</span>
         </div>
 
-        @if($balance > 0)
-        <div class="flex justify-between font-bold mt-2 pt-1 border-t border-black">
-            <span>BALANCE:</span>
-            <span>${{ number_format($balance, 2) }}</span>
+        <div class="flex justify-between text-[11px] mb-1">
+            <span>Payment Method:</span>
+            <span>{{ $paymentMethodStr }}</span>
         </div>
-        @endif
 
         <div class="dashed-line mt-4"></div>
 

@@ -23,5 +23,3 @@ Schedule::command('bookings:cleanup-abandoned')->everyMinute();
 // Perform automated system and database backups every night
 Schedule::command('backup:run')->dailyAt('03:00');
 Schedule::command('backup:clean')->dailyAt('03:30');
-
-

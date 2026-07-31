@@ -486,3 +486,9 @@
 @include('payment.partials.countdown-script')
 @include('payment.partials.unlock-script')
 @endpush
+})();
+</script>
+
+@include('payment.partials.countdown-script')
+@include('payment.partials.unlock-script')
+@endpush
