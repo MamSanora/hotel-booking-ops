@@ -566,15 +566,15 @@
             <div id="chart-revenue-by-nationality" class="w-full min-h-[240px]"></div>
         </div>
 
-        {{-- Customers by Guest Type --}}
+        {{-- Customers by Booking Origin --}}
         <div class="chart-container w-full lg:w-[calc(50%-12px)] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 border border-[#f0ebe2] flex flex-col transition-all duration-300" style="resize: both; overflow: hidden; min-width: 300px; min-height: 250px;">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
-                    <h5 class="font-semibold text-base text-hotel-dark">Customers by Guest Type</h5>
+                    <h5 class="font-semibold text-base text-hotel-dark">Customers by Booking Origin</h5>
                     <span class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">Volume split</span>
                 </div>
             </div>
-            <div id="chart-volume-by-guest-type" class="w-full min-h-[240px]"></div>
+            <div id="chart-volume-by-booking-origin" class="w-full min-h-[240px]"></div>
         </div>
 
     </div>
@@ -765,16 +765,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#6b7280','#14b8a6','#f97316'];
 
     // ── Global Filter State ─────────────────────────────────────
-    window.chartFilters = { guest_type: null, nationality: null, room_type: null };
+    window.chartFilters = { booking_origin: null, nationality: null, room_type: null };
     
     window.clearCrossFilters = function() {
-        window.chartFilters = { guest_type: null, nationality: null, room_type: null };
+        window.chartFilters = { booking_origin: null, nationality: null, room_type: null };
         document.getElementById('clear-filters-btn').classList.add('hidden');
         triggerFilterUpdate();
     };
 
     function triggerFilterUpdate() {
-        if (window.chartFilters.guest_type || window.chartFilters.nationality || window.chartFilters.room_type) {
+        if (window.chartFilters.booking_origin || window.chartFilters.nationality || window.chartFilters.room_type) {
             document.getElementById('clear-filters-btn').classList.remove('hidden');
         } else {
             document.getElementById('clear-filters-btn').classList.add('hidden');
@@ -882,7 +882,12 @@ document.addEventListener('DOMContentLoaded', function() {
         yaxis: { labels: { formatter: undefined } },
         colors: ['#8b5cf6'],
         plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
-        dataLabels: { enabled: true, formatter: v => '$' + parseFloat(v).toLocaleString(), style: { colors: ['#fff'] } },
+        dataLabels: { 
+            enabled: true, 
+            formatter: v => '$' + parseFloat(v).toLocaleString(), 
+            style: { colors: ['#fff'] },
+            dropShadow: { enabled: true, top: 1, left: 1, blur: 2, color: '#000', opacity: 0.5 }
+        },
         legend: { show: false },
         tooltip: {
             custom: function({series, seriesIndex, dataPointIndex, w}) {
@@ -899,12 +904,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     natChart.render();
 
-    const guestTypeChart = new ApexCharts(document.getElementById('chart-volume-by-guest-type'), {
+    const bookingOriginChart = new ApexCharts(document.getElementById('chart-volume-by-booking-origin'), {
         ...defaultOpts,
         chart: { ...defaultOpts.chart, type: 'donut', height: 240, events: {
             dataPointSelection: function(e, chart, config) {
                 const cat = config.w.config.labels[config.dataPointIndex];
-                if(cat) { window.chartFilters.guest_type = cat.toLowerCase(); triggerFilterUpdate(); }
+                if(cat) { window.chartFilters.booking_origin = cat.toLowerCase(); triggerFilterUpdate(); }
             }
         }},
         series: [],
@@ -914,7 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dataLabels: { enabled: true, formatter: (val, opts) => opts.w.globals.seriesTotals[opts.seriesIndex] },
         legend: { position: 'right', fontSize: '12px' },
     });
-    guestTypeChart.render();
+    bookingOriginChart.render();
 
     // ── Chart Resize Logic ─────────────────────────────────────
     const chartResizeObserver = new ResizeObserver(() => {
@@ -939,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let url = ANALYTICS_URL + '?';
         if (startDate && endDate) url += 'start_date=' + startDate + '&end_date=' + endDate + '&';
         
-        if (window.chartFilters.guest_type) url += 'guest_type=' + encodeURIComponent(window.chartFilters.guest_type) + '&';
+        if (window.chartFilters.booking_origin) url += 'booking_origin=' + encodeURIComponent(window.chartFilters.booking_origin) + '&';
         if (window.chartFilters.nationality) url += 'nationality=' + encodeURIComponent(window.chartFilters.nationality) + '&';
         if (window.chartFilters.room_type) url += 'room_type=' + encodeURIComponent(window.chartFilters.room_type) + '&';
 
@@ -980,12 +985,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (data.volumeByGuestType && data.volumeByGuestType.length > 0) {
-                    guestTypeChart.updateOptions({
+                    bookingOriginChart.updateOptions({
                         series: data.volumeByGuestType.map(d => d.value),
                         labels: data.volumeByGuestType.map(d => d.label),
                     });
                 } else {
-                    guestTypeChart.updateOptions({ series: [], labels: [] });
+                    bookingOriginChart.updateOptions({ series: [], labels: [] });
                 }
 
                 updateKPIs(data.summary, data.period.label);

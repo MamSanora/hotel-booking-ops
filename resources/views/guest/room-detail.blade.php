@@ -129,11 +129,13 @@
 
             {{-- Room Basics --}}
             <div class="flex flex-wrap gap-2.5 mb-8">
+                {{-- Hide available rooms badge temporarily as requested by the user
                 @if($roomsLeft > 0)
                     <span class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[0.82rem] font-bold px-3.5 py-1.5 rounded-lg">
                         <i class="bi bi-check-circle-fill text-emerald-600"></i>Available &middot; {{ $roomsLeft }} {{ Str::plural('room', $roomsLeft) }} left
                     </span>
                 @endif
+                --}}
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
                     <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->roomType?->capacity }} guests
                 </span>

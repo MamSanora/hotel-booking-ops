@@ -31,11 +31,41 @@ class AdminRoomController extends Controller
     /**
      * List all rooms, paginated.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $rooms = Room::with('roomType')->orderBy('room_number')->paginate(20);
+        $query = Room::with('roomType');
 
-        return view('admin.rooms.index', compact('rooms'));
+        // Filtering
+        if ($request->filled('search')) {
+            $query->where('room_number', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('status')) {
+            $query->where('current_status', $request->status);
+        }
+        if ($request->filled('room_type_id')) {
+            $query->where('room_type_id', $request->room_type_id);
+        }
+
+        // Sorting
+        $sort = $request->input('sort', 'room_number');
+        $dir = $request->input('dir', 'asc') === 'desc' ? 'desc' : 'asc';
+
+        if ($sort === 'price') {
+            $query->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
+                  ->select('rooms.*')
+                  ->orderBy('room_types.price_per_night', $dir);
+        } elseif ($sort === 'capacity') {
+            $query->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
+                  ->select('rooms.*')
+                  ->orderBy('room_types.capacity', $dir);
+        } else {
+            $query->orderBy('room_number', $dir);
+        }
+
+        $rooms = $query->paginate(20)->withQueryString();
+        $roomTypes = RoomType::orderBy('display_name')->get();
+
+        return view('admin.rooms.index', compact('rooms', 'roomTypes'));
     }
 
     /**
@@ -220,5 +250,46 @@ class AdminRoomController extends Controller
         return redirect()
             ->route('admin.rooms.index')
             ->with('success', "Room {$roomNumber} deleted successfully.");
+    }
+
+    /**
+     * Delete multiple rooms. Blocked for any rooms that have active bookings.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'   => ['required', 'array'],
+            'ids.*' => ['integer', Rule::exists('rooms', 'id')],
+        ]);
+
+        $rooms = Room::whereIn('id', $validated['ids'])->get();
+        $deletedCount = 0;
+        $failedCount = 0;
+
+        foreach ($rooms as $room) {
+            $hasActiveBookings = $room->bookings()
+                ->whereIn('booking_status', [
+                    Booking::STATUS_PENDING,
+                    Booking::STATUS_BOOKED,
+                    Booking::STATUS_CHECKED_IN,
+                ])
+                ->exists();
+
+            if ($hasActiveBookings) {
+                $failedCount++;
+            } else {
+                $room->delete();
+                $deletedCount++;
+            }
+        }
+
+        $message = "{$deletedCount} room(s) deleted successfully.";
+        if ($failedCount > 0) {
+            $message .= " {$failedCount} room(s) could not be deleted because they have active bookings.";
+        }
+
+        return redirect()
+            ->route('admin.rooms.index')
+            ->with($failedCount > 0 && $deletedCount === 0 ? 'error' : 'success', $message);
     }
 }

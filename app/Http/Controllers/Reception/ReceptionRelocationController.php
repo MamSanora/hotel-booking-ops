@@ -148,7 +148,7 @@ class ReceptionRelocationController extends Controller
                 'number_of_stay_extension' => 0,
                 'total_price'            => $booking->total_price, // carry over; no extra charge
                 'booking_status'         => Booking::STATUS_CHECKED_IN,
-                'guest_type'             => $booking->guest_type ?? Booking::GUEST_TYPE_WALKIN,
+                'booking_origin'             => $booking->booking_origin ?? Booking::ORIGIN_WALKIN,
                 'special_requests'       => $booking->special_requests,
             ]);
 

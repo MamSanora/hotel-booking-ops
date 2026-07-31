@@ -42,17 +42,6 @@
             </p>
         </div>
 
-        {{-- DEV MODE notice --}}
-        <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-            <p class="text-xs text-amber-700 font-semibold mb-1">
-                <i class="bi bi-wrench-adjustable-circle mr-1"></i> Developer / Demo Mode
-            </p>
-            <p class="text-xs text-amber-600">
-                No real SMS is sent. Check
-                <code class="bg-amber-100 rounded px-1 py-0.5 font-mono text-[0.7rem]">storage/logs/laravel.log</code>
-                for the OTP code.
-            </p>
-        </div>
 
         {{-- Success flash --}}
         @if(session('success'))

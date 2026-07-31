@@ -38,9 +38,11 @@ return new class extends Migration
         // Expand the booking_status enum to include 'snatched'.
         // Blueprint::enum() cannot alter an existing enum; raw SQL is required.
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status
-                ENUM('pending','booked','checked-in','checked-out','cancelled','no_show','relocated','snatched')
-                NOT NULL DEFAULT 'booked'");
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status
+                    ENUM('pending','booked','checked-in','checked-out','cancelled','no_show','relocated','snatched')
+                    NOT NULL DEFAULT 'booked'");
+            }
         }
     }
 
@@ -51,9 +53,11 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status
-                ENUM('pending','booked','checked-in','checked-out','cancelled','no_show','relocated')
-                NOT NULL DEFAULT 'booked'");
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status
+                    ENUM('pending','booked','checked-in','checked-out','cancelled','no_show','relocated')
+                    NOT NULL DEFAULT 'booked'");
+            }
         }
     }
 };

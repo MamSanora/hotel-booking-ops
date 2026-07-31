@@ -48,7 +48,7 @@ class BookingFactory extends Factory
             // total_price is calculated from a base rate; actual tests should override this.
             'total_price'              => $nights * 40.00,
             'booking_status'           => Booking::STATUS_BOOKED,
-            'guest_type'               => Booking::GUEST_TYPE_USER,
+            'booking_origin'               => Booking::ORIGIN_USER,
         ];
     }
 
@@ -98,7 +98,7 @@ class BookingFactory extends Factory
     public function walkIn(): static
     {
         return $this->state([
-            'guest_type' => Booking::GUEST_TYPE_WALKIN,
+            'booking_origin' => Booking::ORIGIN_WALKIN,
             'guest_id'   => null,
         ]);
     }

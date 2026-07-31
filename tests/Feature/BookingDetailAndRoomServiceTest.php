@@ -44,7 +44,7 @@ beforeEach(function () {
         'check_out_date' => now()->addDays(2)->format('Y-m-d'),
         'total_price'    => 240.00,
         'booking_status' => Booking::STATUS_CHECKED_IN,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
 
     $this->item1 = ItemsCatalog::create(['item_name' => 'Extra Towels', 'category' => 'amenity']);

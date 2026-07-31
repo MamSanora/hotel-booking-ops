@@ -68,20 +68,20 @@ class BookingController extends Controller
             $query->whereDate('check_in_date', '<=', $dateTo);
         }
 
-        // 4. Filter by Guest Type
-        if ($guestType = $request->input('guest_type')) {
-            $query->where('guest_type', $guestType);
+        // 4. Filter by Booking Origin
+        if ($bookingOrigin = $request->input('booking_origin')) {
+            $query->where('booking_origin', $bookingOrigin);
         }
 
         // 5. Sorting
         $sort = $request->input('sort', 'latest_booking');
         match ($sort) {
-            'earliest_booking' => $query->orderBy('created_at', 'asc'),
+            'earliest_booking' => $query->orderBy('id', 'asc'),
             'check_in_asc'     => $query->orderBy('check_in_date', 'asc'),
             'check_in_desc'    => $query->orderBy('check_in_date', 'desc'),
             'price_high'       => $query->orderBy('total_price', 'desc'),
             'price_low'        => $query->orderBy('total_price', 'asc'),
-            default            => $query->orderBy('created_at', 'desc'), // latest_booking
+            default            => $query->orderBy('id', 'desc'), // latest_booking
         };
 
         $bookings = $query->paginate(20)->withQueryString();

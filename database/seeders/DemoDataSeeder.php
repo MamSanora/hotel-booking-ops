@@ -32,8 +32,8 @@ class DemoDataSeeder extends Seeder
 
     public function __construct()
     {
-        // 1 month of data for defense team demo
-        $this->periodStart = Carbon::today()->startOfMonth();
+        // 3 months of realistic data for defense team demo
+        $this->periodStart = Carbon::today()->subMonths(2)->startOfMonth();
     }
 
     public function run(): void
@@ -111,7 +111,7 @@ class DemoDataSeeder extends Seeder
     {
         $this->command->info('  👤  Seeding guests...');
 
-        // Online guests (developer team asked them to register in July)
+        // Online guests (only deployed recently, so ~30 guests)
         $online = [
             ['Chan Sopheak',      'male',   'Cambodia',   'sopheak.chan@email.com',    '012 345 678'],
             ['Lim Bopha',         'female', 'Cambodia',   'bopha.lim@email.com',       '017 234 567'],
@@ -125,7 +125,22 @@ class DemoDataSeeder extends Seeder
             ['Sam Bath',          'male',   'Cambodia',   'sam.bath@email.com',        '081 121 232'],
         ];
 
-        // Walk-in / Phone guests (mostly historical and Cambodian)
+        $surnames = ['Sok', 'Sao', 'Mao', 'Chea', 'Keo', 'Nget', 'Ouk', 'Oun', 'Chan', 'Meas', 'Khieu', 'Nhim', 'Nhem', 'Tep', 'Lim', 'Ly', 'Chum', 'Choun', 'Pheng', 'So', 'Kim', 'Yorn', 'Vong', 'Seng', 'Kong', 'Ros', 'Rath', 'Sam', 'Yin', 'Yan', 'Yun', 'Long', 'Nguon', 'Prum', 'Chhay', 'Prak', 'Srey', 'Pen', 'Men'];
+        $givenNames = ['Sopheak', 'Sophea', 'Vibol', 'Vuthy', 'Chantha', 'Thida', 'Bopha', 'Channary', 'Sovann', 'Piseth', 'Rachana', 'Kanya', 'Panha', 'Makara', 'Rithy', 'Borey', 'Sokha', 'Chenda', 'Sreyleak', 'Sreymom', 'Phearun', 'Kosal', 'Bunna', 'Sokhom', 'Maly', 'Sreypov', 'Sreymao', 'Chamroeun', 'Sophal', 'Sophorn', 'Dara', 'Sothea', 'Visal', 'Phalla', 'Kimseng', 'Narak', 'Brathana'];
+        $prefixes = ['010', '011', '012', '015', '016', '017', '069', '070', '077', '081', '085', '092', '093', '096', '097', '098', '099'];
+
+        // Add 20 more online guests (total 30)
+        for ($i = 0; $i < 20; $i++) {
+            $surname = $surnames[array_rand($surnames)];
+            $given = $givenNames[array_rand($givenNames)];
+            $gender = rand(0, 1) ? 'male' : 'female';
+            $prefix = $prefixes[array_rand($prefixes)];
+            $phone = $prefix . ' ' . rand(100, 999) . ' ' . rand(100, 999);
+            $email = strtolower($given) . '.' . strtolower($surname) . rand(10, 99) . '@email.com';
+            $online[] = [$surname . ' ' . $given, $gender, 'Cambodia', $email, $phone];
+        }
+
+        // Walk-in / Phone / OTA guests (mostly historical and Cambodian)
         $walkin = [
             ['Rath Kosal',        'male',   'Cambodia',    '012 444 555'],
             ['Chum Maly',         'female', 'Cambodia',    '017 666 777'],
@@ -170,11 +185,7 @@ class DemoDataSeeder extends Seeder
             ['Hann Kuyphang',     'male',   'Cambodia',    '016 343 454'],
         ];
 
-        $surnames = ['Sok', 'Sao', 'Mao', 'Chea', 'Keo', 'Nget', 'Ouk', 'Oun', 'Chan', 'Meas', 'Khieu', 'Nhim', 'Nhem', 'Tep', 'Lim', 'Ly', 'Chum', 'Choun', 'Pheng', 'So', 'Kim', 'Yorn', 'Vong', 'Seng', 'Kong', 'Ros', 'Rath', 'Sam', 'Yin', 'Yan', 'Yun', 'Long', 'Nguon', 'Prum', 'Chhay', 'Prak', 'Srey', 'Pen', 'Men'];
-        $givenNames = ['Sopheak', 'Sophea', 'Vibol', 'Vuthy', 'Chantha', 'Thida', 'Bopha', 'Channary', 'Sovann', 'Piseth', 'Rachana', 'Kanya', 'Panha', 'Makara', 'Rithy', 'Borey', 'Sokha', 'Chenda', 'Sreyleak', 'Sreymom', 'Phearun', 'Kosal', 'Bunna', 'Sokhom', 'Maly', 'Sreypov', 'Sreymao', 'Chamroeun', 'Sophal', 'Sophorn', 'Dara', 'Sothea', 'Visal', 'Phalla', 'Kimseng', 'Narak', 'Brathana'];
-        $prefixes = ['010', '011', '012', '015', '016', '017', '069', '070', '077', '081', '085', '092', '093', '096', '097', '098', '099'];
-
-        for ($i = 0; $i < 270; $i++) {
+        for ($i = 0; $i < 480; $i++) {
             $surname = $surnames[array_rand($surnames)];
             $given = $givenNames[array_rand($givenNames)];
             $gender = rand(0, 1) ? 'male' : 'female';
@@ -225,7 +236,7 @@ class DemoDataSeeder extends Seeder
             array_fill(0, 3, 'family_triple_room')
         );
 
-        // Build scenarios: we generate some data for 1 month
+        // Build scenarios: EXACTLY 3 months
         $months = [];
         $currentMonth = $this->periodStart->copy()->startOfMonth();
         
@@ -233,53 +244,45 @@ class DemoDataSeeder extends Seeder
             $y = $currentMonth->year;
             $m = $currentMonth->month;
             $isRecent = $currentMonth->copy()->startOfMonth()->equalTo($today->copy()->startOfMonth());
-            $isAlmostRecent = $currentMonth->copy()->addMonth()->startOfMonth()->equalTo($today->copy()->startOfMonth());
             
-            if ($isRecent) {
-                $logic = 'recent_with_online';
-                $forceWalkin = false;
-                $count = 45;
-            } elseif ($isAlmostRecent) {
-                $logic = 'recent';
-                $forceWalkin = true;
-                $count = 25;
-            } else {
-                $logic = rand(0, 1) ? 'done' : 'done_with_cancels';
-                $forceWalkin = true;
-                $count = rand(15, 30);
-            }
-            $months[] = [$y, $m, $count, $logic, $forceWalkin];
+            $logic = $isRecent ? 'recent_with_online' : 'historical';
+            $count = 150; // Guaranteed $12k+ revenue (~5 check-ins/day)
+
+            $months[] = [$y, $m, $count, $logic];
             $currentMonth->addMonth();
         }
 
-        foreach ($months as [$year, $month, $count, $logic, $forceWalkin]) {
+        $seederTime = Carbon::create(2026, 1, 1, 8, 0, 0);
+
+        foreach ($months as [$year, $month, $count, $logic]) {
             for ($i = 0; $i < $count; $i++) {
                 $day      = rand(1, 28);
                 $checkIn  = Carbon::create($year, $month, $day);
-                $nights   = rand(1, $month === 4 ? 4 : 3); // Shorter stays for boutique
+                $nights   = rand(1, 3); // Shorter stays for boutique
                 $checkOut = $checkIn->copy()->addDays($nights);
                 
-                // Determine if this is an online booking (only in recent month)
-                $isOnline = false;
-                if (!$forceWalkin && $online->count() > 0) {
-                    $isOnline = rand(1, 10) <= 3; // 30% online in recent month
-                }
+                // Determine origin: historical relied on OTA/walkin, recent relies on user/new website
+                $bookingOriginOptions = $logic === 'historical' 
+                    ? ['other', 'other', 'other', 'other', 'agoda', 'walk-in', 'walk-in', 'phone']
+                    : ['user', 'user', 'user', 'other', 'other', 'agoda', 'walk-in', 'phone'];
                 
+                $bookingOrigin = $bookingOriginOptions[array_rand($bookingOriginOptions)];
+                
+                $isOnline = ($bookingOrigin === 'user');
                 $guest    = $isOnline ? $online->random() : $walkin->random();
+                
                 $type     = $types[array_rand($types)];
-                $method   = $i % 3 === 0 ? 'khqr' : 'cash';
-                $guestType = $isOnline ? 'user' : ($i % 2 === 0 ? 'phone' : 'walk-in');
+                $method   = in_array($bookingOrigin, ['other', 'agoda', 'user']) ? 'khqr' : (rand(0, 1) ? 'cash' : 'khqr');
 
                 // Determine status
                 $status = 'checked-out';
-                if ($logic === 'done_with_cancels') {
-                    if ($i === 2) $status = 'cancelled';
-                    if ($i === 8) $status = 'no_show';
-                } elseif (in_array($logic, ['recent', 'recent_with_online'])) {
+                if ($logic === 'historical') {
+                    if (rand(1, 100) <= 5) $status = 'cancelled';
+                    if (rand(1, 100) <= 2) $status = 'no_show';
+                } elseif ($logic === 'recent_with_online') {
                     if ($checkIn->gt($today)) $status = 'booked';
                     elseif ($checkIn->lte($today) && $checkOut->gt($today)) $status = 'checked-in';
-                    if ($i === 3 && $checkIn->lt($today)) $status = 'cancelled';
-                    if ($i === 7 && $checkIn->lt($today)) $status = 'no_show';
+                    if ($checkIn->lt($today) && rand(1, 100) <= 3) $status = 'cancelled';
                 }
 
                 // Find available room
@@ -302,19 +305,22 @@ class DemoDataSeeder extends Seeder
                 $pricePerNight = round($basePrice * $yearModifier * $seasonModifier, 2);
                 $totalPrice    = $nights * $pricePerNight;
                 $extensions    = ($month === 4 && $i < 3) ? rand(1, 2) : 0;
-                $bookedAt      = $checkIn->copy()->subDays(rand(1, 14));
+                
+                $seederTime->addMinutes(rand(30, 90));
+                $bookedAt      = $seederTime->copy();
+                
                 $staffId       = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;
 
                 $booking = Booking::create([
                     'guest_id'                 => $guest->id,
                     'room_id'                  => $roomId,
-                    'handled_by_staff_id'      => in_array($guestType, ['walk-in','phone']) ? $staffId : null,
+                    'handled_by_staff_id'      => in_array($bookingOrigin, ['walk-in','phone','other','agoda']) ? $staffId : null,
                     'check_in_date'            => $checkIn->toDateString(),
                     'check_out_date'           => $checkOut->toDateString(),
                     'number_of_stay_extension' => $extensions,
                     'total_price'              => $totalPrice,
                     'booking_status'           => $status,
-                    'guest_type'               => $guestType,
+                    'booking_origin'           => $bookingOrigin,
                     'created_at'               => $bookedAt,
                     'updated_at'               => $bookedAt,
                 ]);
@@ -382,11 +388,11 @@ class DemoDataSeeder extends Seeder
     ): void {
         // Varied stay windows all spanning today
         $windows = [
-            ['in' => -2, 'out' => 2,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'standard_room'],
-            ['in' => -1, 'out' => 3,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'deluxe_room'],
-            ['in' => -3, 'out' => 1,  'guestType' => 'walk-in', 'method' => 'cash',  'type' => 'family_triple_room'],
-            ['in' => -1, 'out' => 2,  'guestType' => 'phone',   'method' => 'cash',  'type' => 'standard_room'],
-            ['in' => -2, 'out' => 4,  'guestType' => 'user',    'method' => 'khqr',  'type' => 'deluxe_room'],
+            ['in' => -2, 'out' => 2,  'bookingOrigin' => 'walk-in', 'method' => 'cash',  'type' => 'standard_room'],
+            ['in' => -1, 'out' => 3,  'bookingOrigin' => 'user',    'method' => 'khqr',  'type' => 'deluxe_room'],
+            ['in' => -3, 'out' => 1,  'bookingOrigin' => 'walk-in', 'method' => 'cash',  'type' => 'family_triple_room'],
+            ['in' => -1, 'out' => 2,  'bookingOrigin' => 'phone',   'method' => 'cash',  'type' => 'standard_room'],
+            ['in' => -2, 'out' => 4,  'bookingOrigin' => 'agoda',   'method' => 'khqr',  'type' => 'deluxe_room'],
         ];
 
         $staffId = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;
@@ -416,7 +422,7 @@ class DemoDataSeeder extends Seeder
             
             $totalPrice    = $nights * $pricePerNight;
             $guest         = $guestsPool->get($guestIdx++ % $guestsPool->count());
-            $isStaff       = in_array($w['guestType'], ['walk-in', 'phone']);
+            $isStaff       = in_array($w['bookingOrigin'], ['walk-in', 'phone', 'other', 'agoda']);
             $bookedAt      = $checkIn->copy()->subDays(rand(1, 5));
 
             $booking = Booking::create([
@@ -428,7 +434,7 @@ class DemoDataSeeder extends Seeder
                 'number_of_stay_extension' => 0,
                 'total_price'              => $totalPrice,
                 'booking_status'           => 'checked-in',
-                'guest_type'               => $w['guestType'],
+                'booking_origin'           => $w['bookingOrigin'],
                 'created_at'               => $bookedAt,
                 'updated_at'               => $checkIn,
             ]);

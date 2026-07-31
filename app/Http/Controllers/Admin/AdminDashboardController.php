@@ -161,12 +161,12 @@ class AdminDashboardController extends Controller
         $groupByDay = $diffDays <= 60;
 
         // ── Cross-Filtering Logic ────────────────────────────────────────
-        $fGuestType   = request('guest_type');
+        $fGuestType   = request('booking_origin');
         $fNationality = request('nationality');
         $fRoomType    = request('room_type');
 
         $applyBookingFilters = function($query) use ($fGuestType, $fNationality, $fRoomType) {
-            if ($fGuestType) $query->where('bookings.guest_type', $fGuestType);
+            if ($fGuestType) $query->where('bookings.booking_origin', $fGuestType);
             if ($fNationality) $query->whereHas('guest', fn($q) => $q->where('nationality', $fNationality));
             if ($fRoomType) $query->whereHas('room.roomType', fn($q) => $q->where('display_name', $fRoomType));
         };
@@ -174,7 +174,7 @@ class AdminDashboardController extends Controller
         $applyTxnFilters = function($query) use ($fGuestType, $fNationality, $fRoomType) {
             if ($fGuestType || $fNationality || $fRoomType) {
                 $query->whereHas('booking', function($bQuery) use ($fGuestType, $fNationality, $fRoomType) {
-                    if ($fGuestType) $bQuery->where('guest_type', $fGuestType);
+                    if ($fGuestType) $bQuery->where('booking_origin', $fGuestType);
                     if ($fNationality) $bQuery->whereHas('guest', fn($q) => $q->where('nationality', $fNationality));
                     if ($fRoomType) $bQuery->whereHas('room.roomType', fn($q) => $q->where('display_name', $fRoomType));
                 });
@@ -311,13 +311,13 @@ class AdminDashboardController extends Controller
             ])
             ->values();
 
-        // ── NEW: Customers by Guest Type ──────────────────────────────────
-        $guestTypeQuery = Booking::whereBetween('bookings.created_at', [$start, $end]);
-        $applyBookingFilters($guestTypeQuery);
+        // ── NEW: Customers by Booking Origin ──────────────────────────────────
+        $bookingOriginQuery = Booking::whereBetween('bookings.created_at', [$start, $end]);
+        $applyBookingFilters($bookingOriginQuery);
 
-        $volumeByGuestType = $guestTypeQuery
-            ->selectRaw('bookings.guest_type as label, COUNT(*) as value')
-            ->groupBy('bookings.guest_type')
+        $volumeByGuestType = $bookingOriginQuery
+            ->selectRaw('bookings.booking_origin as label, COUNT(*) as value')
+            ->groupBy('bookings.booking_origin')
             ->orderByRaw('COUNT(*) DESC')
             ->get()
             ->map(fn ($r) => [

@@ -46,12 +46,39 @@
         </a>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
-                    <tr>
-                        <th class="px-5 py-4 font-semibold">Room Type</th>
+    <div x-data="{
+        selected: [],
+        selectAll: false,
+        toggleAll() {
+            if (this.selectAll) {
+                this.selected = {{ $roomTypes->pluck('id')->toJson() }};
+            } else {
+                this.selected = [];
+            }
+        }
+    }">
+        <div class="mb-4 flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100" x-show="selected.length > 0" x-cloak>
+            <span class="text-sm text-gray-600 font-semibold"><span x-text="selected.length"></span> room types selected</span>
+            <form action="{{ route('admin.room-types.bulk-destroy') }}" method="POST" class="inline">
+                @csrf
+                <template x-for="id in selected" :key="id">
+                    <input type="hidden" name="ids[]" :value="id">
+                </template>
+                <button type="button" @click="$dispatch('open-confirm', { message: 'Permanently delete ' + selected.length + ' room types? This cannot be undone and will only succeed for types without assigned rooms.', action: () => $el.closest('form').submit() })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center shadow-sm">
+                    <i class="bi bi-trash mr-2"></i>Delete Selected
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
+                        <tr>
+                            <th class="px-5 py-4 w-12 text-center">
+                                <input type="checkbox" x-model="selectAll" @change="toggleAll" class="rounded border-gray-300 text-hotel-gold focus:ring-hotel-gold cursor-pointer w-4 h-4">
+                            </th>
+                            <th class="px-5 py-4 font-semibold">Room Type</th>
                         <th class="px-5 py-4 font-semibold">Slug</th>
                         <th class="px-5 py-4 font-semibold">Capacity</th>
                         <th class="px-5 py-4 font-semibold">Price / Night</th>
@@ -61,7 +88,10 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($roomTypes as $type)
-                    <tr class="hover:bg-gray-50/50 transition-colors">
+                    <tr class="hover:bg-gray-50/50 transition-colors" :class="{'bg-yellow-50/30': selected.includes({{ $type->id }})}">
+                        <td class="px-5 py-4 text-center">
+                            <input type="checkbox" x-model="selected" value="{{ $type->id }}" class="rounded border-gray-300 text-hotel-gold focus:ring-hotel-gold cursor-pointer w-4 h-4">
+                        </td>
                         <td class="px-5 py-4">
                             <div class="font-semibold text-hotel-dark text-[0.95rem]">{{ $type->display_name }}</div>
                             @if($type->description)
@@ -103,7 +133,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-5 py-10 text-center text-gray-400">
+                        <td colspan="7" class="px-5 py-10 text-center text-gray-400">
                             <i class="bi bi-tag text-3xl block mb-2 opacity-40"></i>
                             No room types found. <a href="{{ route('admin.room-types.create') }}" class="text-hotel-gold hover:underline">Add one now.</a>
                         </td>
@@ -116,6 +146,7 @@
         <div class="p-5 border-t border-gray-100 bg-gray-50">
             {{ $roomTypes->links() }}
         </div>
+    </div>
     </div>
 </div>
 

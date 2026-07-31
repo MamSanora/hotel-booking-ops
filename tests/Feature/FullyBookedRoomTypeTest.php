@@ -52,14 +52,15 @@ it('shows Standard Twin as Available when under virtual capacity', function () {
         'total_price'    => 70.00,
         'booking_status' => Booking::STATUS_BOOKED,
         'payment_tier'   => Booking::TIER_FULL,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
 
-    get('/rooms?checkin=' . $checkIn . '&checkout=' . $checkOut)
-        ->assertSuccessful()
+    $response = get('/rooms?checkin=' . $checkIn . '&checkout=' . $checkOut);
+    
+    $response->assertSuccessful()
         ->assertSee('Standard Twin')
-        ->assertSee('Available')
-        ->assertSee('Book');
+        ->assertDontSee('Fully Booked')
+        ->assertSee('Book Now');
 });
 
 it('shows Standard Twin as Fully Booked on the listing page when all virtual capacity slots are taken', function () {
@@ -75,7 +76,7 @@ it('shows Standard Twin as Fully Booked on the listing page when all virtual cap
         'total_price'    => 70.00,
         'booking_status' => Booking::STATUS_BOOKED,
         'payment_tier'   => Booking::TIER_FULL,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
     Booking::create([
         'guest_id'       => $this->guest->id,
@@ -85,7 +86,7 @@ it('shows Standard Twin as Fully Booked on the listing page when all virtual cap
         'total_price'    => 70.00,
         'booking_status' => Booking::STATUS_BOOKED,
         'payment_tier'   => Booking::TIER_FULL,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
 
     get('/rooms?checkin=' . $checkIn . '&checkout=' . $checkOut)
@@ -108,7 +109,7 @@ it('blocks booking submission and returns check_in_date error when Standard Twin
         'total_price'    => 70.00,
         'booking_status' => Booking::STATUS_BOOKED,
         'payment_tier'   => Booking::TIER_FULL,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
     Booking::create([
         'guest_id'       => $this->guest->id,
@@ -118,7 +119,7 @@ it('blocks booking submission and returns check_in_date error when Standard Twin
         'total_price'    => 70.00,
         'booking_status' => Booking::STATUS_BOOKED,
         'payment_tier'   => Booking::TIER_FULL,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
 
     actingAs($this->guestAuth, 'web');

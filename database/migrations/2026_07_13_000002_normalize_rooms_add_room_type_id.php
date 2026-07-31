@@ -37,7 +37,34 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // ── Step 1: Add nullable FK to rooms ─────────────────────────────────
+        // ── Step 1: Seed room_types from the existing rooms data ─────────────
+        $existingTypes = DB::table('rooms')
+            ->select('room_type', 'price_per_night', 'capacity', 'description')
+            ->whereNotNull('room_type')
+            ->groupBy('room_type', 'price_per_night', 'capacity', 'description')
+            ->get();
+
+        $displayNames = [
+            'standard_twin'   => 'Standard Twin',
+            'standard_double' => 'Standard Double',
+            'deluxe_double'   => 'Deluxe Double',
+            'family_room'     => 'Family Room',
+            'suite'           => 'Suite',
+        ];
+
+        foreach ($existingTypes as $type) {
+            DB::table('room_types')->insertOrIgnore([
+                'slug'            => $type->room_type,
+                'display_name'    => $displayNames[$type->room_type] ?? ucfirst(str_replace('_', ' ', $type->room_type)),
+                'capacity'        => $type->capacity ?? 2,
+                'price_per_night' => $type->price_per_night ?? 0,
+                'description'     => $type->description,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+        }
+
+        // ── Step 2: Add nullable FK to rooms ─────────────────────────────────
         Schema::table('rooms', function (Blueprint $table) {
             $table->foreignId('room_type_id')
                 ->nullable()
@@ -56,9 +83,15 @@ return new class extends Migration
         // MySQL cannot make a nullOnDelete FK column NOT NULL, so we drop and
         // re-add the constraint with RESTRICT before changing nullability.
         if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE rooms DROP FOREIGN KEY rooms_room_type_id_foreign');
-            DB::statement('ALTER TABLE rooms MODIFY room_type_id BIGINT UNSIGNED NOT NULL');
-            DB::statement('ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_id_foreign FOREIGN KEY (room_type_id) REFERENCES room_types(id) ON DELETE RESTRICT');
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement('ALTER TABLE rooms DROP FOREIGN KEY rooms_room_type_id_foreign');
+            }
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement('ALTER TABLE rooms MODIFY room_type_id BIGINT UNSIGNED NOT NULL');
+            }
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement('ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_id_foreign FOREIGN KEY (room_type_id) REFERENCES room_types(id) ON DELETE RESTRICT');
+            }
         }
 
         // ── Step 4: Drop the redundant columns ───────────────────────────────
@@ -94,7 +127,9 @@ return new class extends Migration
 
         // Drop the FK column.
         Schema::table('rooms', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('room_type_id');
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                $table->dropConstrainedForeignId('room_type_id');
+            }
         });
     }
 };

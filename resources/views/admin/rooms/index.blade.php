@@ -55,22 +55,129 @@
     </div>
 
 
-    <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
-                    <tr>
-                        <th class="px-5 py-4 font-semibold">Room No.</th>
+    <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-5 mb-6">
+        <form method="GET" action="{{ route('admin.rooms.index') }}" class="flex flex-wrap gap-4 items-end">
+            <!-- Search -->
+            <div class="flex-1 min-w-[200px]">
+                <label for="search" class="block text-[0.8rem] uppercase tracking-wider font-semibold text-gray-500 mb-2">Search</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="bi bi-search text-gray-400"></i>
+                    </div>
+                    <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Room No..." class="pl-10 w-full rounded-xl border-gray-300 focus:border-hotel-gold focus:ring focus:ring-hotel-gold/20 transition-colors">
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="w-full md:w-48">
+                <label for="status" class="block text-[0.8rem] uppercase tracking-wider font-semibold text-gray-500 mb-2">Status</label>
+                <select name="status" id="status" class="w-full rounded-xl border-gray-300 focus:border-hotel-gold focus:ring focus:ring-hotel-gold/20 transition-colors">
+                    <option value="">All Statuses</option>
+                    <option value="available" {{ request('status') === 'available' ? 'selected' : '' }}>Available</option>
+                    <option value="occupied" {{ request('status') === 'occupied' ? 'selected' : '' }}>Occupied</option>
+                    <option value="cleaning" {{ request('status') === 'cleaning' ? 'selected' : '' }}>Cleaning</option>
+                    <option value="maintenance" {{ request('status') === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
+                </select>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="w-full md:w-56">
+                <label for="room_type_id" class="block text-[0.8rem] uppercase tracking-wider font-semibold text-gray-500 mb-2">Room Type</label>
+                <select name="room_type_id" id="room_type_id" class="w-full rounded-xl border-gray-300 focus:border-hotel-gold focus:ring focus:ring-hotel-gold/20 transition-colors">
+                    <option value="">All Types</option>
+                    @foreach($roomTypes as $type)
+                        <option value="{{ $type->id }}" {{ request('room_type_id') == $type->id ? 'selected' : '' }}>{{ $type->display_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Keep Sort State -->
+            @if(request()->has('sort'))
+                <input type="hidden" name="sort" value="{{ request('sort') }}">
+                <input type="hidden" name="dir" value="{{ request('dir') }}">
+            @endif
+
+            <!-- Submit & Reset -->
+            <div class="flex gap-2 w-full md:w-auto">
+                <button type="submit" class="bg-hotel-dark hover:bg-black text-white px-5 py-2.5 rounded-xl font-semibold transition-colors flex-1 md:flex-none">
+                    Filter
+                </button>
+                @if(request()->hasAny(['search', 'status', 'room_type_id', 'sort']))
+                    <a href="{{ route('admin.rooms.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                @endif
+            </div>
+        </form>
+    </div>
+
+    <div x-data="{
+        selected: [],
+        selectAll: false,
+        toggleAll() {
+            if (this.selectAll) {
+                this.selected = {{ $rooms->pluck('id')->toJson() }};
+            } else {
+                this.selected = [];
+            }
+        }
+    }">
+        <div class="mb-4 flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100" x-show="selected.length > 0" x-cloak>
+            <span class="text-sm text-gray-600 font-semibold"><span x-text="selected.length"></span> rooms selected</span>
+            <form action="{{ route('admin.rooms.bulk-destroy') }}" method="POST" class="inline">
+                @csrf
+                <template x-for="id in selected" :key="id">
+                    <input type="hidden" name="ids[]" :value="id">
+                </template>
+                <button type="button" @click="$dispatch('open-confirm', { message: 'Permanently delete ' + selected.length + ' rooms? This cannot be undone.', action: () => $el.closest('form').submit() })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center shadow-sm">
+                    <i class="bi bi-trash mr-2"></i>Delete Selected
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-500 text-[0.8rem] uppercase tracking-wider">
+                        <tr>
+                            <th class="px-5 py-4 w-12 text-center">
+                                <input type="checkbox" x-model="selectAll" @change="toggleAll" class="rounded border-gray-300 text-hotel-gold focus:ring-hotel-gold cursor-pointer w-4 h-4">
+                            </th>
+                            <th class="px-5 py-4 font-semibold">
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => 'room_number', 'dir' => request('sort') === 'room_number' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800 transition-colors">
+                                    Room No.
+                                    @if(request('sort', 'room_number') === 'room_number')
+                                        <i class="bi bi-chevron-{{ request('dir', 'asc') === 'asc' ? 'up' : 'down' }} text-[0.65rem] text-hotel-gold"></i>
+                                    @endif
+                                </a>
+                            </th>
                         <th class="px-5 py-4 font-semibold">Type</th>
-                        <th class="px-5 py-4 font-semibold">Capacity</th>
-                        <th class="px-5 py-4 font-semibold">Price / Night</th>
+                        <th class="px-5 py-4 font-semibold">
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => 'capacity', 'dir' => request('sort') === 'capacity' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800 transition-colors">
+                                    Capacity
+                                    @if(request('sort') === 'capacity')
+                                        <i class="bi bi-chevron-{{ request('dir') === 'asc' ? 'up' : 'down' }} text-[0.65rem] text-hotel-gold"></i>
+                                    @endif
+                                </a>
+                        </th>
+                        <th class="px-5 py-4 font-semibold">
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => 'price', 'dir' => request('sort') === 'price' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800 transition-colors">
+                                    Price / Night
+                                    @if(request('sort') === 'price')
+                                        <i class="bi bi-chevron-{{ request('dir') === 'asc' ? 'up' : 'down' }} text-[0.65rem] text-hotel-gold"></i>
+                                    @endif
+                                </a>
+                        </th>
                         <th class="px-5 py-4 font-semibold">Status</th>
                         <th class="px-5 py-4 font-semibold text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($rooms as $room)
-                    <tr class="hover:bg-gray-50/50 transition-colors">
+                    <tr class="hover:bg-gray-50/50 transition-colors" :class="{'bg-yellow-50/30': selected.includes({{ $room->id }})}">
+                        <td class="px-5 py-4 text-center">
+                            <input type="checkbox" x-model="selected" value="{{ $room->id }}" class="rounded border-gray-300 text-hotel-gold focus:ring-hotel-gold cursor-pointer w-4 h-4">
+                        </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <strong class="font-playfair text-hotel-dark text-lg">{{ $room->room_number }}</strong>
                         </td>
@@ -90,6 +197,8 @@
                                 <span class="bg-green-100 text-green-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Available</span>
                             @elseif($room->current_status === 'occupied')
                                 <span class="bg-blue-100 text-blue-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Occupied</span>
+                            @elseif($room->current_status === 'cleaning')
+                                <span class="bg-yellow-100 text-yellow-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Cleaning</span>
                             @else
                                 <span class="bg-red-100 text-red-800 text-[0.75rem] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Maintenance</span>
                             @endif
@@ -110,7 +219,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-5 py-8 text-center text-gray-500">No rooms found in the system.</td>
+                        <td colspan="7" class="px-5 py-8 text-center text-gray-500">No rooms found in the system.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -120,6 +229,7 @@
         <div class="p-5 border-t border-gray-100 bg-gray-50">
             {{ $rooms->links() }}
         </div>
+    </div>
     </div>
 </div>
 

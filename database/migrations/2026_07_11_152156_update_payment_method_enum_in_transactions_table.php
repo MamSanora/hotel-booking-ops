@@ -8,15 +8,21 @@ return new class extends Migration
     public function up(): void
     {
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_method ENUM('cash', 'khqr', 'aba_payway', 'khqr_aba') NULL");
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_method ENUM('cash', 'khqr', 'aba_payway', 'khqr_aba') NULL");
+            }
         }
     }
 
     public function down(): void
     {
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("UPDATE transactions SET payment_method = 'khqr' WHERE payment_method IN ('aba_payway', 'khqr_aba')");
-            DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_method ENUM('cash', 'khqr') NULL");
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("UPDATE transactions SET payment_method = 'khqr' WHERE payment_method IN ('aba_payway', 'khqr_aba')");
+            }
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_method ENUM('cash', 'khqr') NULL");
+            }
         }
     }
 };

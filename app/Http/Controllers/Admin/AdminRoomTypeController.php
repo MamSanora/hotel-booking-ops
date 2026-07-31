@@ -237,4 +237,38 @@ class AdminRoomTypeController extends Controller
             ->route('admin.room-types.index')
             ->with('success', "Room type \"{$name}\" deleted successfully.");
     }
+
+    /**
+     * Delete multiple room types.
+     * Blocked for any room types that still have physical rooms assigned.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'   => ['required', 'array'],
+            'ids.*' => ['integer', Rule::exists('room_types', 'id')],
+        ]);
+
+        $roomTypes = RoomType::whereIn('id', $validated['ids'])->get();
+        $deletedCount = 0;
+        $failedCount = 0;
+
+        foreach ($roomTypes as $roomType) {
+            if ($roomType->rooms()->exists()) {
+                $failedCount++;
+            } else {
+                $roomType->delete();
+                $deletedCount++;
+            }
+        }
+
+        $message = "{$deletedCount} room type(s) deleted successfully.";
+        if ($failedCount > 0) {
+            $message .= " {$failedCount} room type(s) could not be deleted because they are assigned to rooms.";
+        }
+
+        return redirect()
+            ->route('admin.room-types.index')
+            ->with($failedCount > 0 && $deletedCount === 0 ? 'error' : 'success', $message);
+    }
 }

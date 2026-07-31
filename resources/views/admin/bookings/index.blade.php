@@ -85,13 +85,13 @@
                 </select>
             </div>
             <div class="w-full lg:w-48 shrink-0">
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Guest Type</label>
-                <select name="guest_type" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Booking Origin</label>
+                <select name="booking_origin" class="w-full border-gray-200 rounded-xl focus:ring-hotel-gold focus:border-hotel-gold text-[0.95rem] px-4 py-2.5 bg-gray-50">
                     <option value="">All Types</option>
-                    <option value="registered" {{ request('guest_type') == 'registered' ? 'selected' : '' }}>Registered (Online)</option>
-                    <option value="walk-in" {{ request('guest_type') == 'walk-in' ? 'selected' : '' }}>Walk-in</option>
-                    <option value="phone" {{ request('guest_type') == 'phone' ? 'selected' : '' }}>Phone</option>
-                    <option value="other" {{ request('guest_type') == 'other' ? 'selected' : '' }}>Other (Manual)</option>
+                    <option value="registered" {{ request('booking_origin') == 'registered' ? 'selected' : '' }}>Registered (Online)</option>
+                    <option value="walk-in" {{ request('booking_origin') == 'walk-in' ? 'selected' : '' }}>Walk-in</option>
+                    <option value="phone" {{ request('booking_origin') == 'phone' ? 'selected' : '' }}>Phone</option>
+                    <option value="other" {{ request('booking_origin') == 'other' ? 'selected' : '' }}>Other (Manual)</option>
                 </select>
             </div>
         </div>
@@ -123,7 +123,7 @@
                 <button type="submit" class="bg-hotel-gold hover:bg-hotel-gold-hover text-white px-5 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors shadow-sm shadow-hotel-gold/20 flex-1 lg:flex-none flex items-center justify-center gap-2">
                     <i class="bi bi-funnel"></i> <span>Apply Filters</span>
                 </button>
-                @if(request()->anyFilled(['search', 'status', 'guest_type', 'date_from', 'date_to', 'sort']))
+                @if(request()->anyFilled(['search', 'status', 'booking_origin', 'date_from', 'date_to', 'sort']))
                     <a href="{{ route('admin.bookings.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-semibold text-[0.95rem] transition-colors flex items-center justify-center shrink-0" title="Clear Filters">
                         <i class="bi bi-x-circle"></i>
                     </a>

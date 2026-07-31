@@ -139,7 +139,7 @@ it('prevents double booking on overlapping dates for the same room', function ()
         'check_out_date' => $checkOut,
         'total_price'    => 240.00,
         'booking_status' => Booking::STATUS_BOOKED,
-        'guest_type'     => Booking::GUEST_TYPE_USER,
+        'booking_origin'     => Booking::ORIGIN_USER,
     ]);
 
     actingAs($guestAuth, 'web');

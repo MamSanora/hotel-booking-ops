@@ -199,12 +199,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/rooms/{room}/quick-status',    [AdminRoomController::class, 'quickStatus'])->name('rooms.quick-status');
         Route::get('/rooms/bulk-create',              [AdminRoomController::class, 'bulkCreate'])->name('rooms.bulk-create');
         Route::post('/rooms/bulk-create',             [AdminRoomController::class, 'bulkStore'])->name('rooms.bulk-store');
+        Route::post('/rooms/bulk-destroy',            [AdminRoomController::class, 'bulkDestroy'])->name('rooms.bulk-destroy');
         Route::resource('rooms',                      AdminRoomController::class)->except(['show']);
 
         // Room type management (CRUD)
         Route::get('/room-types',                     [AdminRoomTypeController::class, 'index'])->name('room-types.index');
         Route::get('/room-types/create',              [AdminRoomTypeController::class, 'create'])->name('room-types.create');
         Route::post('/room-types',                    [AdminRoomTypeController::class, 'store'])->name('room-types.store');
+        Route::post('/room-types/bulk-destroy',       [AdminRoomTypeController::class, 'bulkDestroy'])->name('room-types.bulk-destroy');
         Route::get('/room-types/{roomType}/edit',     [AdminRoomTypeController::class, 'edit'])->name('room-types.edit');
         Route::put('/room-types/{roomType}',          [AdminRoomTypeController::class, 'update'])->name('room-types.update');
         Route::delete('/room-types/{roomType}',       [AdminRoomTypeController::class, 'destroy'])->name('room-types.destroy');

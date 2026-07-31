@@ -39,15 +39,17 @@ return new class extends Migration
         // Modify the ENUM to include 'relocated'.
         // Laravel Blueprint doesn't support ENUM modification natively; use raw SQL.
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
-                'pending',
-                'booked',
-                'checked-in',
-                'checked-out',
-                'cancelled',
-                'no_show',
-                'relocated'
-            ) NOT NULL DEFAULT 'booked'");
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
+                    'pending',
+                    'booked',
+                    'checked-in',
+                    'checked-out',
+                    'cancelled',
+                    'no_show',
+                    'relocated'
+                ) NOT NULL DEFAULT 'booked'");
+            }
         }
 
         // Add special_requests if not present
@@ -61,19 +63,23 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->dropForeign(['relocated_to_booking_id']);
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                $table->dropForeign(['relocated_to_booking_id']);
+            }
             $table->dropColumn('relocated_to_booking_id');
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
-                'pending',
-                'booked',
-                'checked-in',
-                'checked-out',
-                'cancelled',
-                'no_show'
-            ) NOT NULL DEFAULT 'booked'");
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                DB::statement("ALTER TABLE bookings MODIFY COLUMN booking_status ENUM(
+                    'pending',
+                    'booked',
+                    'checked-in',
+                    'checked-out',
+                    'cancelled',
+                    'no_show'
+                ) NOT NULL DEFAULT 'booked'");
+            }
         }
     }
 };

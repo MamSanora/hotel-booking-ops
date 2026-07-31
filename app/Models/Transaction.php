@@ -40,7 +40,7 @@ class Transaction extends Model
     public const STATUS_PENDING  = 'pending';
     public const STATUS_PARTIAL  = 'partial';
     public const STATUS_FULL     = 'full';
-    public const STATUS_FAILED   = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REFUND_PENDING = 'refund_pending';
     public const STATUS_REFUNDED = 'refunded';
 

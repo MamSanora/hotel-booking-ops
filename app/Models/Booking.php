@@ -30,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property int $number_of_stay_extension
  * @property float|null $total_price
  * @property string $booking_status
- * @property string|null $guest_type
+ * @property string|null $booking_origin
  * @property string|null $bed_type         'twin' | 'double' | null
  * @property string|null $floor_preference Floor number string ('2'..'5') | null
  * @property string|null $view_preference  'balcony' | 'window' | null
@@ -95,15 +95,17 @@ class Booking extends Model
         'snatched'    => 'Snatched',
     ];
 
-    // ── Guest Type Constants ───────────────────────────────────────────────
+    // ── Booking Origin Constants ───────────────────────────────────────────
 
-    public const GUEST_TYPE_USER = 'user';
+    public const ORIGIN_USER = 'user';
 
-    public const GUEST_TYPE_WALKIN = 'walk-in';
+    public const ORIGIN_WALKIN = 'walk-in';
 
-    public const GUEST_TYPE_PHONE = 'phone';
+    public const ORIGIN_PHONE = 'phone';
 
-    public const GUEST_TYPE_OTHER = 'other';
+    public const ORIGIN_OTHER = 'other';
+    
+    public const ORIGIN_AGODA = 'agoda';
 
     protected $fillable = [
         'guest_id',
@@ -115,7 +117,7 @@ class Booking extends Model
         'total_price',
         'payment_tier',
         'booking_status',
-        'guest_type',
+        'booking_origin',
         'special_requests',
         'relocated_to_booking_id',
         // Guest preferences (hints for reception; not a guaranteed assignment)

@@ -269,7 +269,7 @@ class RoomController extends Controller
                     'total_price'      => $total,
                     'payment_tier'     => $requestedTier,
                     'booking_status'   => Booking::STATUS_PENDING,
-                    'guest_type'       => Booking::GUEST_TYPE_USER,
+                    'booking_origin'       => Booking::ORIGIN_USER,
                     'special_requests' => $validated['special_requests'] ?? null,
                     'bed_type'         => $validated['bed_type'] ?? null,
                     'floor_preference' => $validated['floor_preference'] ?? null,
