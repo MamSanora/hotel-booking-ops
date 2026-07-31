@@ -75,12 +75,9 @@
             </form>
 
             {{-- Links --}}
-            <div class="mt-6 pt-6 border-t border-gray-100 flex justify-between text-xs text-gray-400">
+            <div class="mt-6 pt-6 border-t border-gray-100 flex justify-center text-xs text-gray-400">
                 <a href="{{ url('/') }}" class="hover:text-hotel-dark transition-colors flex items-center gap-1">
                     <i class="bi bi-house"></i> Back to Hotel Site
-                </a>
-                <a href="{{ route('reception.login') }}" class="hover:text-hotel-dark transition-colors flex items-center gap-1">
-                    <i class="bi bi-person-badge"></i> Reception Login
                 </a>
             </div>
 
