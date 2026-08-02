@@ -305,6 +305,9 @@ Route::prefix('reception')->name('reception.')->group(function () {
         // No-show cancellation (receptionist-level, releases the room)
         Route::patch('/bookings/{booking}/cancel', [ReceptionDashboardController::class, 'cancelNoShow'])->name('bookings.cancel');
 
+        // Walk guest due to overbooking
+        Route::patch('/bookings/{booking}/walk', [ReceptionDashboardController::class, 'walkGuest'])->name('bookings.walk');
+
         // Room Check — receptionist manually marks cleaned/maintenance rooms as available
         Route::get('/room-check',                            [\App\Http\Controllers\Reception\RoomCheckController::class, 'index'])->name('room-check.index');
         Route::patch('/room-check/{room}/mark-available',    [\App\Http\Controllers\Reception\RoomCheckController::class, 'markAvailable'])->name('room-check.mark-available');

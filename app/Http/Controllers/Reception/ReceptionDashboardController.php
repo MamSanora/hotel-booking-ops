@@ -253,4 +253,29 @@ class ReceptionDashboardController extends Controller
 
         return back()->with('success', "Booking {$booking->referenceNumber()} marked as no-show and room released.");
     }
+
+    /**
+     * Walk a guest because of overbooking.
+     *
+     * Changes booking status to RELOCATED and releases the assigned room (if any).
+     * This acts as the data input for the OptimizeOverbooking command.
+     */
+    public function walkGuest(Booking $booking): RedirectResponse
+    {
+        if ($booking->booking_status !== Booking::STATUS_BOOKED) {
+            return back()->with('error', 'Only un-checked-in (booked) guests can be walked.');
+        }
+
+        $booking->update(['booking_status' => Booking::STATUS_RELOCATED]);
+
+        // Release the room if it was assigned
+        if ($booking->room) {
+            $booking->room->update([
+                'current_status'    => \App\Models\Room::STATUS_AVAILABLE,
+                'status_updated_at' => now(),
+            ]);
+        }
+
+        return back()->with('success', "Booking {$booking->referenceNumber()} has been marked as Relocated (Walked).");
+    }
 }
