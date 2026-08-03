@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * PaymentCallbackController
+ * 
+ * [AGENT NOTE: THIS CONTROLLER IS CURRENTLY UNUSABLE. The hotel does not have the 
+ * right regulatory requirements to obtain direct ABA API credentials, making 
+ * server-to-server callbacks non-functional. Do not attempt to use or fix this.]
  *
  * Receives ABA PayWay's response after a guest completes (or abandons) payment.
  *

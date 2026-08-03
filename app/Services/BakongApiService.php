@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * BakongApiService
+ * 
+ * [AGENT NOTE: THIS SERVICE IS CURRENTLY UNUSABLE. The hotel does not have the 
+ * right regulatory requirements to obtain direct Bakong Open API credentials. Do not 
+ * attempt to use or fix this API flow.]
  *
  * Communicates with the Bakong Open API to verify KHQR payment status.
  *

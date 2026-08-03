@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Log;
 /**
  * AbaPayWayService
  *
+ * [AGENT NOTE: THIS SERVICE IS CURRENTLY UNUSABLE. The hotel does not have the 
+ * right regulatory requirements to obtain direct ABA API credentials. Do not 
+ * attempt to use or fix this API flow.]
+ * 
  * Encapsulates integration logic for ABA PayWay Payment Gateway.
  * Generates secure cryptographic hashes, formats payment parameters,
  * and handles transaction verification with ABA servers.
