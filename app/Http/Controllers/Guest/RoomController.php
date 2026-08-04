@@ -361,7 +361,7 @@ class RoomController extends Controller
     }
 
     /**
-     * Store a room service request from the guest dashboard.
+     * Store a room service request from the guest dashboard. Only for sending request, complain, or asking for items listed in items_catalogs table.
      */
     public function storeRoomService(Request $request, Booking $booking): RedirectResponse
     {
