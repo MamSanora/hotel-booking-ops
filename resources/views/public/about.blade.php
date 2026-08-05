@@ -7,7 +7,8 @@
 {{-- ==========================================
      PAGE BANNER
      ========================================== --}}
-<div class="relative bg-hotel-dark py-12 lg:py-16 overflow-hidden" style="background-image: url('{{ asset('images/dara_meas_hero_lobby.png') }}'); background-size: cover; background-position: center;">
+     <!-- background-image: url('{{ asset('images/dara_meas_hero_lobby.png') }}'); hide this from style for now -->
+<div class="relative bg-hotel-dark py-12 lg:py-16 overflow-hidden" style="background-size: cover; background-position: center;">
     <!-- Background Image Overlay -->
     <div class="absolute inset-0 bg-hotel-dark/90" style="background: linear-gradient(135deg, rgba(26,26,46,0.92) 0%, rgba(26,26,46,0.85) 100%);"></div>
     

@@ -8,7 +8,7 @@
      PAGE BANNER
      ========================================== --}}
 <div class="relative bg-gradient-to-br from-hotel-dark to-hotel-accent py-12 lg:py-16 overflow-hidden">
-    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542314831-c6a4d27ece11?w=1600&q=60')] bg-cover bg-center opacity-[0.08]"></div>
+    <div class="absolute inset-0 bg-cover bg-center opacity-[0.08]"></div>
     
     <div class="container mx-auto px-4 md:px-6 relative z-10">
         <h1 class="font-playfair text-3xl lg:text-[2.2rem] font-bold text-white mb-2">
