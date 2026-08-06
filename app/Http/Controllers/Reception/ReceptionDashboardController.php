@@ -47,11 +47,14 @@ class ReceptionDashboardController extends Controller
             return back()->with('error', 'Guests can only be checked in on or after their arrival date, and the booking must be confirmed.');
         }
 
-        $booking->update(['booking_status' => Booking::STATUS_CHECKED_IN]);
+        $booking->update([
+            'booking_status'    => Booking::STATUS_CHECKED_IN,
+            'actual_check_in_at' => now(),
+        ]);
 
         // Mark the room as occupied so it won't show as available.
         $booking->room?->update([
-            'current_status' => \App\Models\Room::STATUS_OCCUPIED,
+            'current_status'    => \App\Models\Room::STATUS_OCCUPIED,
             'status_updated_at' => now(),
         ]);
 
@@ -82,11 +85,14 @@ class ReceptionDashboardController extends Controller
             return back()->with('error', 'Cannot check out — the outstanding balance of $' . number_format(max(0, (float)$booking->total_price - $totalPaid), 2) . ' must be settled first.');
         }
 
-        $booking->update(['booking_status' => Booking::STATUS_CHECKED_OUT]);
+        $booking->update([
+            'booking_status'      => Booking::STATUS_CHECKED_OUT,
+            'actual_check_out_at' => now(),
+        ]);
 
         // Return the room to cleaning so housekeeping can clean it.
         $booking->room?->update([
-            'current_status' => \App\Models\Room::STATUS_CLEANING,
+            'current_status'    => \App\Models\Room::STATUS_CLEANING,
             'status_updated_at' => now(),
         ]);
 
@@ -96,12 +102,66 @@ class ReceptionDashboardController extends Controller
     }
 
     /**
+     * Add a single incidental (ad-hoc) charge to a checked-in booking.
+     *
+     * Called via fetch() from the Incidental Charges modal before the
+     * receptionist finalises the check-out. Each call saves one charge row
+     * and bumps the booking's total_price so the balance check stays correct.
+     *
+     * Returns JSON so the Alpine modal can render a live running total.
+     */
+    public function addIncidentalCharge(Request $request, Booking $booking): \Illuminate\Http\JsonResponse
+    {
+        if (! $booking->isCheckedIn()) {
+            return response()->json(['error' => 'Booking is not currently checked in.'], 422);
+        }
+
+        $validated = $request->validate([
+            'description' => ['required', 'string', 'max:255'],
+            'quantity'    => ['required', 'integer', 'min:1', 'max:999'],
+            'amount'      => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        $total = (float) $validated['amount'] * (int) $validated['quantity'];
+
+        DB::transaction(function () use ($booking, $validated, $total) {
+            \App\Models\IncidentalCharge::create([
+                'booking_id'   => $booking->id,
+                'description'  => $validated['description'],
+                'quantity'     => $validated['quantity'],
+                'amount'       => $validated['amount'],
+                'total_amount' => $total,
+            ]);
+
+            // Bump total_price so the payment balance check in checkout() passes.
+            $booking->increment('total_price', $total);
+        });
+
+        return response()->json([
+            'message'      => 'Charge added.',
+            'charge_total' => $total,
+            'booking_total'=> (float) $booking->fresh()->total_price,
+        ]);
+    }
+
+    /**
      * Display a printable thermal-style receipt for a booking.
      */
     public function receipt(Booking $booking): View
     {
-        $booking->load(['guest', 'room.roomType', 'transactions', 'roomServices.requestedItems']);
-        return view('reception.receipt', compact('booking'));
+        $booking->load([
+            'guest',
+            'room.roomType',
+            'transactions',
+            'roomServices.requestedItems',
+            'bookingRooms.roomType',
+            'incidentalCharges',
+        ]);
+
+        // Pass the live exchange rate for dynamic KHR conversion on the receipt.
+        $exchangeRate = \App\Models\ExchangeRate::usdToKhr()->value('rate') ?? 4100;
+
+        return view('reception.receipt', compact('booking', 'exchangeRate'));
     }
 
     /**

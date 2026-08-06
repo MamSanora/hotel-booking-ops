@@ -80,7 +80,7 @@
                             </th>
                             <th class="px-5 py-4 font-semibold">Room Type</th>
                         <th class="px-5 py-4 font-semibold">Slug</th>
-                        <th class="px-5 py-4 font-semibold">Capacity</th>
+                        <th class="px-5 py-4 font-semibold">Adults / Children</th>
                         <th class="px-5 py-4 font-semibold">Price / Night</th>
                         <th class="px-5 py-4 font-semibold">Rooms</th>
                         <th class="px-5 py-4 font-semibold text-right">Actions</th>
@@ -101,10 +101,8 @@
                         <td class="px-5 py-4">
                             <code class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md">{{ $type->slug }}</code>
                         </td>
-                        <td class="px-5 py-4 whitespace-nowrap">
-                            <div class="text-gray-700">
-                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $type->capacity }} guests
-                            </div>
+                        <td class="px-5 py-4 text-sm text-gray-500">
+                            <i class="bi bi-people text-gray-400 mr-1"></i>{{ $type->adult_capacity }} / {{ $type->child_capacity }}
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <div class="font-bold text-hotel-gold">${{ number_format($type->price_per_night, 2) }}<span class="text-gray-400 font-normal text-xs">/night</span></div>

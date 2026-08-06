@@ -187,7 +187,7 @@
                             {{ $booking->room?->displayType() ?? '—' }}
                         </div>
                         <div class="flex flex-wrap gap-3 text-sm">
-                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->capacity ?? '—' }} guests</span>
+                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->adult_capacity }} Adults, {{ $booking->room?->roomType?->child_capacity }} Children</span>
                             <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>
                         </div>
 

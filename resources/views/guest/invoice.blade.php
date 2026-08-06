@@ -64,7 +64,13 @@
                     </div>
                     <div>
                         <p class="text-gray-500 mb-1 text-xs uppercase tracking-wider">Room</p>
-                        <p class="font-semibold">{{ $booking->room?->displayType() }}</p>
+                        <p class="font-semibold">
+                            @if($booking->bookingRooms->count() > 1)
+                                Multiple Rooms
+                            @else
+                                {{ $booking->room?->displayType() ?? 'N/A' }}
+                            @endif
+                        </p>
                     </div>
                     <div>
                         <p class="text-gray-500 mb-1 text-xs uppercase tracking-wider">Duration</p>
@@ -87,15 +93,29 @@
                 </thead>
                 <tbody class="text-sm">
                     <!-- Room Charge -->
-                    <tr class="border-b border-gray-100">
-                        <td class="py-5 px-4">
-                            <p class="font-semibold text-gray-900">Room Accommodation</p>
-                            <p class="text-gray-500 text-xs mt-1">From {{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d') }} to {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d') }}</p>
-                        </td>
-                        <td class="py-5 px-4 text-center">{{ $booking->nightCount() }}</td>
-                        <td class="py-5 px-4 text-right">${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}</td>
-                        <td class="py-5 px-4 text-right font-semibold text-gray-900">${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</td>
-                    </tr>
+                    @if($booking->bookingRooms->count() > 0)
+                        @foreach($booking->bookingRooms as $bRoom)
+                            <tr class="border-b border-gray-100">
+                                <td class="py-5 px-4">
+                                    <p class="font-semibold text-gray-900">{{ $bRoom->roomType->name }}</p>
+                                    <p class="text-gray-500 text-xs mt-1">From {{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d') }} to {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d') }}</p>
+                                </td>
+                                <td class="py-5 px-4 text-center">{{ $bRoom->quantity }} room(s) × {{ $booking->nightCount() }} night(s)</td>
+                                <td class="py-5 px-4 text-right">${{ number_format($bRoom->price_at_booking, 2) }}</td>
+                                <td class="py-5 px-4 text-right font-semibold text-gray-900">${{ number_format($bRoom->price_at_booking * $bRoom->quantity * $booking->nightCount(), 2) }}</td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr class="border-b border-gray-100">
+                            <td class="py-5 px-4">
+                                <p class="font-semibold text-gray-900">Room Accommodation</p>
+                                <p class="text-gray-500 text-xs mt-1">From {{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d') }} to {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d') }}</p>
+                            </td>
+                            <td class="py-5 px-4 text-center">{{ $booking->nightCount() }}</td>
+                            <td class="py-5 px-4 text-right">${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}</td>
+                            <td class="py-5 px-4 text-right font-semibold text-gray-900">${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</td>
+                        </tr>
+                    @endif
                 </tbody>
                 <tfoot>
                     <tr>

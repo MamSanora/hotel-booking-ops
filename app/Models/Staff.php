@@ -11,15 +11,19 @@ use Illuminate\Notifications\Notifiable;
 /**
  * Staff Model
  *
- * Represents a front-desk receptionist. Replaces the old Receptionist model.
- * Staff authenticate via the 'staff' guard using username and passwordhash.
+ * Represents a hotel staff member (receptionist or cleaner). Replaces the
+ * old Receptionist model. Staff authenticate via the 'staff' guard using
+ * username and passwordhash.
  *
  * Each staff member is optionally linked to the admin who manages them.
- * Staff can handle bookings (walk-in proxy bookings) and room service requests.
+ * Receptionists handle bookings and room service requests.
+ * Cleaners can view and mark rooms as available from their own dashboard.
  *
  * @property int    $id
  * @property string $full_name
- * @property string $role             'receptionist'
+ * @property string|null $phone
+ * @property string|null $email
+ * @property string $role             'receptionist' | 'cleaner'
  * @property int    $managed_by_admin_id
  * @property string $username
  * @property string $passwordhash
@@ -35,6 +39,8 @@ class Staff extends Authenticatable
 
     protected $fillable = [
         'full_name',
+        'phone',
+        'email',
         'role',
         'managed_by_admin_id',
         'username',
@@ -111,6 +117,11 @@ class Staff extends Authenticatable
         return $this->role === 'receptionist';
     }
 
+    public function isCleaner(): bool
+    {
+        return $this->role === 'cleaner';
+    }
+
     public function isAdmin(): bool
     {
         return false;
@@ -128,6 +139,6 @@ class Staff extends Authenticatable
 
     public function dashboardUrl(): string
     {
-        return '/reception/dashboard';
+        return $this->isCleaner() ? '/cleaner/dashboard' : '/reception/dashboard';
     }
 }

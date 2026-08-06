@@ -222,7 +222,7 @@
                 </div>
                 <div class="p-6 flex flex-col flex-grow">
                     <div class="flex justify-between items-center mb-3">
-                        <span class="text-gray-600 text-xs font-medium"><i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->capacity }} guests</span>
+                        <span class="text-gray-600 text-xs font-medium"><i class="bi bi-people mr-1"></i>Up to {{ $room->roomType?->adult_capacity }} Adults, {{ $room->roomType?->child_capacity }} Children</span>
                         <div class="font-playfair text-2xl font-bold text-hotel-gold">
                             <span data-price-usd="{{ $room->roomType?->price_per_night ?? 0 }}">${{ number_format($room->roomType?->price_per_night ?? 0, 0) }}</span>
                             <span class="text-[0.75rem] text-gray-400 font-sans font-normal"
@@ -232,7 +232,7 @@
                     <p class="text-gray-500 text-sm leading-relaxed mb-5 flex-grow">
                         {{ Str::limit($room->roomType?->description ?? 'A comfortable and well-appointed room for your stay in Phnom Penh.', 80) }}
                     </p>
-                    <a href="{{ route('rooms.show', $room) }}"
+                    <a href="{{ route('rooms.show', $room->roomType) }}"
                        class="w-full text-center bg-hotel-dark hover:bg-hotel-accent text-white font-semibold py-2.5 rounded-xl transition-colors duration-200"
                        data-en="View Details & Book" data-km="មើលព័ត៌មាន &amp; កក់">View Details &amp; Book</a>
                 </div>

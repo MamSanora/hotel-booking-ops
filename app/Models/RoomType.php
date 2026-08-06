@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int         $id
  * @property string      $slug            e.g. 'standard_room'
  * @property string      $display_name    e.g. 'Standard Room'
- * @property int         $capacity        Legacy single-integer capacity (kept for compat).
  * @property int|null    $size_sqm        Fixed room size in square metres.
  * @property int         $adult_capacity  Maximum adults this type accommodates.
  * @property int         $child_capacity  Maximum children (under 12) this type accommodates.
@@ -60,7 +59,6 @@ class RoomType extends Model
     protected $fillable = [
         'slug',
         'display_name',
-        'capacity',
         'size_sqm',
         'adult_capacity',
         'child_capacity',
@@ -76,7 +74,6 @@ class RoomType extends Model
     {
         return [
             'price_per_night'        => 'decimal:2',
-            'capacity'               => 'integer',
             'size_sqm'               => 'integer',
             'adult_capacity'         => 'integer',
             'child_capacity'         => 'integer',
@@ -95,6 +92,14 @@ class RoomType extends Model
     public function rooms(): HasMany
     {
         return $this->hasMany(Room::class);
+    }
+
+    /**
+     * Get the total maximum capacity of this room type.
+     */
+    public function maxCapacity(): int
+    {
+        return $this->adult_capacity + $this->child_capacity;
     }
 
     /**
@@ -227,16 +232,15 @@ class RoomType extends Model
         $bookingLimits    = $this->computeBookingLimits($virtualCapacity);
         $tierBookingLimit = $bookingLimits[$requestedTier] ?? $virtualCapacity;
 
-        // Count ALL active bookings for this type on the overlapping date range.
-        // (Standard nesting: each booking consumes capacity regardless of tier.)
-        $totalActiveBookings = Booking::where(function ($q) {
-                $q->whereHas('room', fn ($q2) => $q2->where('room_type_id', $this->id));
+        // Count ALL active room quantities for this type on the overlapping date range.
+        $totalActiveBookings = (int) \App\Models\BookingRoom::where('room_type_id', $this->id)
+            ->whereHas('booking', function ($q) use ($checkIn, $checkOut, $excludeBookingId) {
+                $q->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
+                  ->where('check_in_date', '<', $checkOut)
+                  ->where('check_out_date', '>', $checkIn)
+                  ->when($excludeBookingId, fn ($q2) => $q2->where('id', '!=', $excludeBookingId));
             })
-            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
-            ->where('check_in_date', '<', $checkOut)
-            ->where('check_out_date', '>', $checkIn)
-            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
-            ->count();
+            ->sum('quantity');
 
         return $totalActiveBookings < $tierBookingLimit;
     }
@@ -306,13 +310,13 @@ class RoomType extends Model
         $checkIn  = $checkIn ?: now()->toDateString();
         $checkOut = $checkOut ?: now()->addDay()->toDateString();
 
-        $activeBookings = Booking::where(function ($q) {
-                $q->whereHas('room', fn ($q2) => $q2->where('room_type_id', $this->id));
+        $activeBookings = (int) \App\Models\BookingRoom::where('room_type_id', $this->id)
+            ->whereHas('booking', function ($q) use ($checkIn, $checkOut) {
+                $q->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
+                  ->where('check_in_date', '<', $checkOut)
+                  ->where('check_out_date', '>', $checkIn);
             })
-            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
-            ->where('check_in_date', '<', $checkOut)
-            ->where('check_out_date', '>', $checkIn)
-            ->count();
+            ->sum('quantity');
 
         $remaining = $physicalCount - $activeBookings;
         if ($this->hasAvailableVirtualCapacity($checkIn, $checkOut)) {

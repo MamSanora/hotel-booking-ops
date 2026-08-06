@@ -23,9 +23,18 @@ class AuthStaff
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::guard('staff')->check() && ! Auth::guard('admin')->check()) {
+        $staff = Auth::guard('staff')->user();
+        $admin = Auth::guard('admin')->user();
+
+        if (! $staff && ! $admin) {
             return redirect()->route('reception.login')
                 ->with('error', 'Please log in to access the reception panel.');
+        }
+
+        // Cleaners have their own dashboard — block them from reception routes.
+        if ($staff && $staff->isCleaner()) {
+            return redirect('/cleaner/dashboard')
+                ->with('error', 'Cleaning staff do not have access to the reception panel.');
         }
 
         return $next($request);

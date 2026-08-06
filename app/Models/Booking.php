@@ -113,6 +113,8 @@ class Booking extends Model
         'handled_by_staff_id',
         'check_in_date',
         'check_out_date',
+        'actual_check_in_at',
+        'actual_check_out_at',
         'number_of_stay_extension',
         'total_price',
         'payment_tier',
@@ -133,6 +135,8 @@ class Booking extends Model
         return [
             'check_in_date'            => 'date',
             'check_out_date'           => 'date',
+            'actual_check_in_at'       => 'datetime',
+            'actual_check_out_at'      => 'datetime',
             'total_price'              => 'decimal:2',
             'payment_tier'             => 'integer',
             'number_of_stay_extension' => 'integer',
@@ -190,6 +194,23 @@ class Booking extends Model
     public function relocatedTo(): BelongsTo
     {
         return $this->belongsTo(Booking::class, 'relocated_to_booking_id');
+    }
+
+    /**
+     * The room type lines in this booking (multi-room support).
+     * Each pivot row carries quantity and price_at_booking.
+     */
+    public function bookingRooms(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\BookingRoom::class);
+    }
+
+    /**
+     * Ad-hoc charges applied at check-out (broken items, extras, etc.).
+     */
+    public function incidentalCharges(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\IncidentalCharge::class);
     }
 
     /**

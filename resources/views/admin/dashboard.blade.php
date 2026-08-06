@@ -80,6 +80,20 @@
             <button onclick="document.getElementById('backup-alert-error').remove()" class="text-red-400 hover:text-red-600 text-lg leading-none ml-2">&times;</button>
         </div>
     @endif
+    @if (session('exchange_rate_success'))
+        <div id="exchange-alert-success" class="flex items-start gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-5 py-4 mb-6 shadow-sm">
+            <i class="bi bi-currency-exchange text-emerald-500 text-xl mt-0.5 shrink-0"></i>
+            <div class="flex-1 text-sm font-medium">{{ session('exchange_rate_success') }}</div>
+            <button onclick="document.getElementById('exchange-alert-success').remove()" class="text-emerald-400 hover:text-emerald-600 text-lg leading-none ml-2">&times;</button>
+        </div>
+    @endif
+    @if (session('exchange_rate_error'))
+        <div id="exchange-alert-error" class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 rounded-xl px-5 py-4 mb-6 shadow-sm">
+            <i class="bi bi-exclamation-triangle text-red-500 text-xl mt-0.5 shrink-0"></i>
+            <div class="flex-1 text-sm font-medium">{{ session('exchange_rate_error') }}</div>
+            <button onclick="document.getElementById('exchange-alert-error').remove()" class="text-red-400 hover:text-red-600 text-lg leading-none ml-2">&times;</button>
+        </div>
+    @endif
 
     {{-- ==========================================
          HOTEL STATISTICS
@@ -161,6 +175,45 @@
                 <i class="bi bi-grid-3x3-gap"></i> View room board
             </div>
         </button>
+
+        {{-- Manual Exchange Rate Sync --}}
+        <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 transition-transform hover:-translate-y-1 border border-[#f0ebe2] flex flex-col">
+            @php
+                $adminId      = auth('admin')->id();
+                $onExCooldown = cache()->has("admin_exchange_rate_sync_{$adminId}");
+                $exExpiresAt  = $onExCooldown ? (cache()->get("admin_exchange_rate_sync_{$adminId}") ?? now()->timestamp) : now()->timestamp;
+                $exCooldownSecs = $onExCooldown ? max(0, $exExpiresAt - now()->timestamp) : 0;
+                $exCooldownMins = $onExCooldown ? (int) ceil($exCooldownSecs / 60) : 0;
+                
+                $latestRate = \App\Models\ExchangeRate::usdToKhr()->first();
+                $rateHealthy = $latestRate && !$latestRate->isStale();
+                
+                $exIconClass  = $rateHealthy ? 'bi-currency-exchange text-emerald-600' : 'bi-currency-exchange text-amber-500';
+                $exBgClass    = $rateHealthy ? 'bg-emerald-50' : 'bg-amber-50';
+                $exBadgeClass = $rateHealthy ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+                $exBadgeLabel = $rateHealthy ? '● Live' : '⚠ Stale / Empty';
+            @endphp
+            <div class="w-12 h-12 rounded-xl {{ $exBgClass }} flex items-center justify-center text-[1.4rem] mb-4"><i class="bi {{ $exIconClass }}"></i></div>
+            <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold px-2 py-0.5 rounded-full {{ $exBadgeClass }}">{{ $exBadgeLabel }}</span></div>
+            <div class="text-[0.85rem] text-gray-500 font-semibold uppercase tracking-wider mb-2">Exchange Rate</div>
+            <div class="text-xs text-gray-400 leading-snug mb-4">
+                @if ($latestRate)
+                    1 USD = <span class="text-gray-600 font-medium font-bold">{{ number_format($latestRate->rate, 0) }} KHR</span><br>
+                    <span class="text-[0.65rem]">{{ $latestRate->fetched_at->diffForHumans() }}</span>
+                @else 
+                    No USD to KHR rates fetched yet. Default is 4100 KHR.
+                @endif
+            </div>
+            <div class="mt-auto">
+                @if ($onExCooldown)
+                    <div class="w-full flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-100 rounded-lg px-3 py-2 cursor-not-allowed"><i class="bi bi-hourglass-split"></i> Next in {{ $exCooldownMins }} min{{ $exCooldownMins !== 1 ? 's' : '' }}</div>
+                @else
+                    <form method="POST" action="{{ route('admin.exchange-rate.sync') }}" x-data @submit.prevent="$dispatch('open-confirm', { message: 'Fetch latest NBC exchange rate?', action: () => $el.submit() })">@csrf
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 text-xs font-semibold bg-hotel-dark text-white rounded-lg px-3 py-2 hover:bg-hotel-accent transition-colors"><i class="bi bi-cloud-arrow-down"></i> Sync Now</button>
+                    </form>
+                @endif
+            </div>
+        </div>
 
 
 

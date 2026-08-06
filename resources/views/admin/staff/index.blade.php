@@ -42,6 +42,8 @@
                         <th class="px-5 py-4 font-semibold">Full Name</th>
                         <th class="px-5 py-4 font-semibold">Username</th>
                         <th class="px-5 py-4 font-semibold">Role</th>
+                        <th class="px-5 py-4 font-semibold">Phone</th>
+                        <th class="px-5 py-4 font-semibold">Email</th>
                         <th class="px-5 py-4 font-semibold">Added</th>
                         <th class="px-5 py-4 font-semibold text-right">Actions</th>
                     </tr>
@@ -56,9 +58,21 @@
                             <div class="text-gray-600 text-[0.95rem] font-mono">{{ $member->username }}</div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
-                            <span class="bg-blue-50 text-blue-700 text-[0.75rem] font-bold px-3 py-1 rounded-full capitalize">
-                                {{ ucfirst($member->role) }}
-                            </span>
+                            @if($member->role === 'cleaner')
+                                <span class="bg-teal-50 text-teal-700 text-[0.75rem] font-bold px-3 py-1 rounded-full capitalize">
+                                    Cleaner
+                                </span>
+                            @else
+                                <span class="bg-blue-50 text-blue-700 text-[0.75rem] font-bold px-3 py-1 rounded-full capitalize">
+                                    Receptionist
+                                </span>
+                            @endif
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap">
+                            <div class="text-gray-600 text-[0.9rem]">{{ $member->phone ?: '—' }}</div>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="text-gray-600 text-[0.9rem]">{{ $member->email ?: '—' }}</div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <div class="text-gray-500 text-[0.95rem]">{{ $member->created_at->format('M d, Y') }}</div>
@@ -79,7 +93,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-5 py-8 text-center text-gray-500">No staff accounts found.</td>
+                        <td colspan="7" class="px-5 py-8 text-center text-gray-500">No staff accounts found.</td>
                     </tr>
                     @endforelse
                 </tbody>

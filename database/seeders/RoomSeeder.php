@@ -62,7 +62,6 @@ class RoomSeeder extends Seeder
     private array $roomTypeData = [
         'standard_room' => [
             'display_name'    => 'Standard Room',
-            'capacity'        => 3,  // Legacy: max occupancy (adults + children)
             'size_sqm'        => 25,
             'adult_capacity'  => 2,
             'child_capacity'  => 1,
@@ -71,7 +70,6 @@ class RoomSeeder extends Seeder
         ],
         'deluxe_room' => [
             'display_name'    => 'Deluxe Room',
-            'capacity'        => 3,
             'size_sqm'        => 32,
             'adult_capacity'  => 2,
             'child_capacity'  => 1,
@@ -80,16 +78,14 @@ class RoomSeeder extends Seeder
         ],
         'family_triple_room' => [
             'display_name'    => 'Family Triple Room',
-            'capacity'        => 4,
             'size_sqm'        => 40,
-            'adult_capacity'  => 2,
+            'adult_capacity'  => 3,
             'child_capacity'  => 2,
             'price_per_night' => 60.00,
-            'description'     => 'A generous 40 m² top-floor family room with three beds, panoramic city views, a deluxe bathroom, and ample storage space. Designed for families with up to 2 adults and 2 children under 12. Enjoy the best views in the hotel.',
+            'description'     => 'A generous 40 m² top-floor family room with three beds, panoramic city views, a deluxe bathroom, and ample storage space. Designed for up to 3 adults and 2 children under 12. Enjoy the best views in the hotel.',
         ],
         'test_room' => [
             'display_name'    => 'Test Room',
-            'capacity'        => 1,
             'size_sqm'        => null,
             'adult_capacity'  => 1,
             'child_capacity'  => 0,

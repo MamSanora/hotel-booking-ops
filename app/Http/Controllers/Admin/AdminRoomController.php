@@ -54,10 +54,10 @@ class AdminRoomController extends Controller
             $query->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
                   ->select('rooms.*')
                   ->orderBy('room_types.price_per_night', $dir);
-        } elseif ($sort === 'capacity') {
+        } elseif ($sort === 'adult_capacity') {
             $query->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
                   ->select('rooms.*')
-                  ->orderBy('room_types.capacity', $dir);
+                  ->orderBy('room_types.adult_capacity', $dir);
         } else {
             $query->orderBy('room_number', $dir);
         }

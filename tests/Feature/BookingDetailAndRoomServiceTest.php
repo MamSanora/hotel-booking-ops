@@ -27,7 +27,8 @@ beforeEach(function () {
         ?? RoomType::create([
             'slug'            => 'deluxe_double',
             'display_name'    => 'Deluxe Double',
-            'capacity'        => 2,
+            'adult_capacity'  => 2,
+            'child_capacity'  => 0,
             'price_per_night' => 80.00,
         ]);
 

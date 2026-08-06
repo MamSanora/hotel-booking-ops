@@ -41,7 +41,7 @@
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.07)] p-6 hover:-translate-y-1 transition-transform duration-300">
             <div class="flex justify-between items-center">
                 <div>
-                    <div class="font-playfair text-3xl font-bold text-hotel-dark leading-tight">{{ $upcomingBookings->count() }}</div>
+                    <div class="font-playfair text-3xl font-bold text-hotel-dark leading-tight">{{ $upcomingStaysCount }}</div>
                     <div class="text-gray-500 text-[0.75rem] font-bold uppercase tracking-wider mt-1">Upcoming Stays</div>
                 </div>
                 <div class="w-14 h-14 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
@@ -54,7 +54,7 @@
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.07)] p-6 hover:-translate-y-1 transition-transform duration-300">
             <div class="flex justify-between items-center">
                 <div>
-                    <div class="font-playfair text-3xl font-bold text-hotel-dark leading-tight">{{ $pastBookings->count() }}</div>
+                    <div class="font-playfair text-3xl font-bold text-hotel-dark leading-tight">{{ $pastStaysCount }}</div>
                     <div class="text-gray-500 text-[0.75rem] font-bold uppercase tracking-wider mt-1">Past Stays</div>
                 </div>
                 <div class="w-14 h-14 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-2xl">
@@ -68,7 +68,7 @@
             <div class="flex justify-between items-center">
                 <div>
                     <div class="font-playfair text-3xl font-bold text-hotel-dark leading-tight">
-                        {{ $upcomingBookings->where('booking_status', 'checked-in')->count() }}
+                        {{ $currentStaysCount }}
                     </div>
                     <div class="text-gray-500 text-[0.75rem] font-bold uppercase tracking-wider mt-1">Currently In Hotel</div>
                 </div>
@@ -78,17 +78,17 @@
             </div>
         </div>
 
-        <!-- Total Stays -->
+        <!-- Total Nights Stayed -->
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.07)] p-6 hover:-translate-y-1 transition-transform duration-300">
             <div class="flex justify-between items-center">
                 <div>
                     <div class="font-playfair text-3xl font-bold text-hotel-dark leading-tight">
-                        {{ $upcomingBookings->count() + $pastBookings->count() }}
+                        {{ $totalNightsCount }}
                     </div>
-                    <div class="text-gray-500 text-[0.75rem] font-bold uppercase tracking-wider mt-1">Total Stays</div>
+                    <div class="text-gray-500 text-[0.75rem] font-bold uppercase tracking-wider mt-1">Total Nights Stayed</div>
                 </div>
-                <div class="w-14 h-14 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-2xl">
-                    <i class="bi bi-award"></i>
+                <div class="w-14 h-14 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl">
+                    <i class="bi bi-moon-stars"></i>
                 </div>
             </div>
         </div>

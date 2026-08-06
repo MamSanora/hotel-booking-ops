@@ -43,7 +43,8 @@ class StoreRoomRequest extends FormRequest
 
             'price_per_night' => ['required', 'numeric', 'min:0', 'max:99999.99'],
 
-            'capacity' => ['required', 'integer', 'min:1', 'max:20'],
+            'adult_capacity' => ['required', 'integer', 'min:1', 'max:20'],
+            'child_capacity' => ['required', 'integer', 'min:0', 'max:10'],
         ];
     }
 
@@ -53,7 +54,7 @@ class StoreRoomRequest extends FormRequest
             'room_number.unique'  => 'A room with this number already exists.',
             'room_type.in'        => 'Please select a valid room type.',
             'price_per_night.min' => 'Price cannot be negative.',
-            'capacity.min'        => 'Room must accommodate at least 1 guest.',
+            'adult_capacity.min'  => 'Room must accommodate at least 1 adult.',
         ];
     }
 }

@@ -67,54 +67,60 @@ class RoomController extends Controller
         $children     = (int) $request->input('children', 0);
         $totalGuests  = $adults + $children;
 
-        // Load room types — filter by visibility and capacity immediately via query to optimize.
-        $roomTypesQuery = RoomType::with('rooms')
-            ->where('is_visible', true)
-            ->where('capacity', '>=', $totalGuests);
-            
-        // If type filter is provided, also apply it to the query
+        // Load all visible room types — NO capacity filter here.
+        // Instead, we inject capacity data to the view so Alpine.js can show
+        // real-time warnings on each card without hiding options from the guest.
+        $roomTypesQuery = RoomType::with('rooms')->where('is_visible', true);
+
+        // Optional slug filter (type pills — not capacity-based)
         if ($typeFilter) {
             $roomTypesQuery->where('slug', $typeFilter);
         }
 
-        $roomTypes = $roomTypesQuery->get();
+        $roomTypes = $roomTypesQuery->orderBy('price_per_night')->get();
 
-        // For each room type, compute virtual availability status and remaining counts.
-        // We pass this to the view so it can show "Available" / "Fully Booked" badges and "X rooms left".
-        $availability = [];
+        // Compute virtual availability status and remaining room counts per type.
+        $availability    = [];
         $availableCounts = [];
+        $capacityData    = []; // injected as JSON for Alpine.js real-time card warnings
         foreach ($roomTypes as $rt) {
             if ($checkinDate && $checkoutDate) {
-                // Use virtual capacity: available if at least one more tier-100 slot exists.
                 $availability[$rt->id] = $rt->hasAvailableVirtualCapacity(
                     $checkinDate,
                     $checkoutDate,
-                    Booking::TIER_FULL   // most conservative check for the listing
+                    Booking::TIER_FULL
                 );
             } else {
-                // No date filter: show as available if any physical room is not in maintenance.
                 $availability[$rt->id] = $rt->rooms()->where('current_status', '!=', 'maintenance')->exists();
             }
             $availableCounts[$rt->id] = $rt->getAvailableCount($checkinDate, $checkoutDate);
+
+            // Alpine.js payload per room type (keyed by slug for easy lookup)
+            $capacityData[$rt->slug] = [
+                'maxAdults'  => (int) $rt->adult_capacity,
+                'maxChildren'=> (int) $rt->child_capacity,
+                'available'  => $availability[$rt->id],
+                'roomsLeft'  => $availableCounts[$rt->id],
+                'priceNight' => (float) $rt->price_per_night,
+            ];
         }
 
-        // We still need $rooms for backward compat with count() calls in views;
-        // pass $roomTypes as the main collection, $rooms as an empty placeholder.
-        return view('guest.rooms', compact('roomTypes', 'availability', 'availableCounts', 'checkinDate', 'checkoutDate', 'typeFilter'));
+        return view('guest.rooms', compact(
+            'roomTypes', 'availability', 'availableCounts',
+            'checkinDate', 'checkoutDate', 'typeFilter',
+            'adults', 'children', 'capacityData'
+        ));
     }
 
-    /**
-     * Room detail page — still accepts a physical Room model for the URL
-     * (so existing links and routes work unchanged), but the view only shows
-     * Room Type information, not the physical room number.
-     */
-    public function show(Room $room): View
-    {
-        $room->load('roomType');
-        $roomType = $room->roomType;
 
-        $availableBeds = $roomType->rooms()->whereNotNull('bed_configuration')->distinct()->pluck('bed_configuration');
-        $availableViews = $roomType->rooms()->whereNotNull('view_type')->distinct()->pluck('view_type');
+    /**
+     * Room detail page — accepts a RoomType by slug.
+     * URL: /rooms/{roomType:slug}
+     */
+    public function show(RoomType $roomType): View
+    {
+        $availableBeds   = $roomType->rooms()->whereNotNull('bed_configuration')->distinct()->pluck('bed_configuration');
+        $availableViews  = $roomType->rooms()->whereNotNull('view_type')->distinct()->pluck('view_type');
         $availableFloors = $roomType->rooms()
             ->get()
             ->map(fn($r) => substr($r->room_number, 0, 1))
@@ -123,8 +129,13 @@ class RoomController extends Controller
             ->sort()
             ->values();
 
-        return view('guest.room-detail', compact('room', 'availableBeds', 'availableViews', 'availableFloors'));
+        // Pass a representative room for backward-compat with the booking form (if still needed)
+        // and the roomType itself for all display information.
+        $room = $roomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+
+        return view('guest.room-detail', compact('roomType', 'room', 'availableBeds', 'availableViews', 'availableFloors'));
     }
+
 
     /**
      * Store a new self-service booking.
@@ -135,20 +146,20 @@ class RoomController extends Controller
      * payment_method saved on the transaction.
      * Both records are created in a DB transaction for consistency.
      */
-    public function store(StoreBookingRequest $request, Room $room): RedirectResponse
+    public function store(StoreBookingRequest $request, RoomType $roomType): RedirectResponse
     {
         $validated     = $request->validated();
         $requestedTier = (int) $validated['payment_tier'];
-        $roomType      = $room->roomType;
+
 
         // GuestAuth -> guest_id (bookings are linked to Guest, not GuestAuth).
         $guestId = Auth::user()->guest_id;
 
         try {
-            $booking = DB::transaction(function () use ($validated, $room, $roomType, $guestId, $requestedTier) {
+            $booking = DB::transaction(function () use ($validated, $roomType, $guestId, $requestedTier) {
                 // Lock the room type to prevent concurrent overbooking evaluations.
-                // This is the core fix: concurrent requests will queue here.
                 $lockedRoomType = \App\Models\RoomType::where('id', $roomType->id)->lockForUpdate()->first();
+
 
                 // Check if there's already a pending booking for this guest and room type.
                 // We intentionally do NOT filter on dates or payment_tier here: a guest who
@@ -181,13 +192,16 @@ class RoomController extends Controller
                 );
 
                 if (!$assignedRoom) {
-                    $assignedRoom = $room;
+                    // Fallback: assign any non-maintenance room from this type
+                    $assignedRoom = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->first();
                 }
+
+                $requestedRooms = max(1, (int) $validated['rooms']);
 
                 $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                     ->diffInDays(Carbon::parse($validated['check_out_date'])));
 
-                $total = $nights * (float) $lockedRoomType->price_per_night;
+                $total = $nights * (float) $lockedRoomType->price_per_night * $requestedRooms;
 
                 // Deposit = total × (tier / 100). For 100% tier this equals total.
                 $depositAmount = round($total * ($requestedTier / 100), 2);
@@ -232,6 +246,16 @@ class RoomController extends Controller
                         'view_preference'  => $validated['view_preference'] ?? null,
                     ]);
 
+                    // Sync booking_room
+                    $existingBooking->bookingRooms()->updateOrCreate(
+                        ['room_type_id' => $roomType->id],
+                        [
+                            'room_id' => $assignedRoom->id,
+                            'quantity' => $requestedRooms,
+                            'price_at_booking' => $lockedRoomType->price_per_night,
+                        ]
+                    );
+
                     // Check for existing pending transaction
                     $transaction = $existingBooking->transactions()
                         ->where('payment_status', Transaction::STATUS_PENDING)
@@ -274,6 +298,14 @@ class RoomController extends Controller
                     'bed_type'         => $validated['bed_type'] ?? null,
                     'floor_preference' => $validated['floor_preference'] ?? null,
                     'view_preference'  => $validated['view_preference'] ?? null,
+                ]);
+
+                // Create the booking_room pivot record
+                $booking->bookingRooms()->create([
+                    'room_type_id' => $roomType->id,
+                    'room_id' => $assignedRoom->id,
+                    'quantity' => $requestedRooms,
+                    'price_at_booking' => $lockedRoomType->price_per_night,
                 ]);
 
                 // Create a pending transaction with the deposit amount.
@@ -547,7 +579,7 @@ class RoomController extends Controller
      * Check if a room matching specific preferences is available.
      * Used by the booking form AJAX call to show a warning if preferences aren't met.
      */
-    public function checkPreferences(Request $request, Room $room)
+    public function checkPreferences(Request $request, RoomType $roomType)
     {
         $request->validate([
             'check_in_date'    => 'required|date|after_or_equal:today',
@@ -558,15 +590,9 @@ class RoomController extends Controller
             'view_preference'  => 'nullable|string',
         ]);
 
-        $roomType = $room->roomType;
-        
         $guestId = Auth::check() ? Auth::user()->guest_id : null;
         $existingBooking = null;
         if ($guestId) {
-            // Mirror the same loose lookup as store(): match on room type + pending status only.
-            // If the guest has a pending booking for this room type (regardless of the exact
-            // dates or tier they currently have in the form), it will be updated in-place by
-            // store() — so we should exclude it from the capacity count here too.
             $existingBooking = Booking::where('guest_id', $guestId)
                ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
                ->where('booking_status', Booking::STATUS_PENDING)
@@ -627,6 +653,225 @@ class RoomController extends Controller
         }
 
         return response()->json(['available' => false, 'reason' => 'preferences_unavailable']);
+    }
+
+    /**
+     * Show the multi-type checkout page.
+     * Decodes the ?cart= query parameter.
+     */
+    public function multiTypeCheckout(Request $request)
+    {
+        $cartJson = $request->input('cart');
+        if (!$cartJson) {
+            return redirect()->route('rooms.index')->with('error', 'Your cart is empty.');
+        }
+
+        $cart = json_decode($cartJson, true);
+        if (!is_array($cart) || empty($cart)) {
+            return redirect()->route('rooms.index')->with('error', 'Invalid cart data.');
+        }
+
+        $checkin = $request->input('checkin', date('Y-m-d'));
+        $checkout = $request->input('checkout', Carbon::parse($checkin)->addDay()->toDateString());
+
+        $cartItems = [];
+        $totalPricePerNight = 0;
+
+        foreach ($cart as $item) {
+            if (!isset($item['slug']) || !isset($item['qty'])) continue;
+            
+            $roomType = RoomType::where('slug', $item['slug'])->first();
+            if (!$roomType) continue;
+
+            $qty = (int) $item['qty'];
+            if ($qty <= 0) continue;
+
+            $cartItems[] = [
+                'roomType' => $roomType,
+                'qty' => $qty,
+            ];
+            $totalPricePerNight += $roomType->price_per_night * $qty;
+        }
+
+        if (empty($cartItems)) {
+            return redirect()->route('rooms.index')->with('error', 'No valid room types in your cart.');
+        }
+
+        $nights = max(1, (int) Carbon::parse($checkin)->diffInDays(Carbon::parse($checkout)));
+        $totalPrice = $totalPricePerNight * $nights;
+
+        return view('guest.multi-room-checkout', compact('cartItems', 'checkin', 'checkout', 'nights', 'totalPrice', 'cartJson'));
+    }
+
+    /**
+     * Store a multi-type booking.
+     */
+    public function multiTypeStore(Request $request)
+    {
+        $validated = $request->validate([
+            'cart_json'        => 'required|string',
+            'check_in_date'    => 'required|date|after_or_equal:today',
+            'check_out_date'   => 'required|date|after:check_in_date',
+            'payment_tier'     => 'required|integer|in:' . implode(',', [Booking::TIER_FULL, Booking::TIER_DEPOSIT_50, Booking::TIER_DEPOSIT_20]),
+            'payment_method'   => 'required|string|in:' . implode(',', [Transaction::METHOD_KHQR_ABA, Transaction::METHOD_KHQR, Transaction::METHOD_TELEGRAM, Transaction::METHOD_CARD]),
+            'special_requests' => 'nullable|string|max:1000',
+            'bed_type'         => 'nullable|array',
+            'floor_preference' => 'nullable|array',
+            'view_preference'  => 'nullable|array',
+        ]);
+
+        $cart = json_decode($validated['cart_json'], true);
+        if (!is_array($cart) || empty($cart)) {
+            return redirect()->route('rooms.index')->with('error', 'Invalid cart data.');
+        }
+
+        $guestId = Auth::user()->guest_id;
+        $requestedTier = (int) $validated['payment_tier'];
+
+        try {
+            DB::beginTransaction();
+
+            $total = 0;
+            $primaryRoomId = null;
+            $primaryBedType = null;
+            $primaryFloor = null;
+            $primaryView = null;
+            $bookingRoomsData = [];
+
+            // 1. Verify capacity for all items in the cart
+            foreach ($cart as $item) {
+                if (!isset($item['slug']) || !isset($item['qty'])) continue;
+
+                $lockedRoomType = RoomType::where('slug', $item['slug'])->lockForUpdate()->first();
+                if (!$lockedRoomType) continue;
+
+                $qty = (int) $item['qty'];
+                if ($qty <= 0) continue;
+
+                // Capacity check logic
+                $physicalCount = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->count();
+                $virtualCapacity = (int) floor($physicalCount * $lockedRoomType->overbooking_multiplier);
+                $bookingLimits = $lockedRoomType->computeBookingLimits($virtualCapacity);
+                $tierBookingLimit = $bookingLimits[$requestedTier] ?? $virtualCapacity;
+                
+                $totalActiveBookings = (int) \App\Models\BookingRoom::where('room_type_id', $lockedRoomType->id)
+                    ->whereHas('booking', function ($q) use ($validated) {
+                        $q->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
+                          ->where('check_in_date', '<', $validated['check_out_date'])
+                          ->where('check_out_date', '>', $validated['check_in_date']);
+                    })
+                    ->sum('quantity');
+
+                if (($totalActiveBookings + $qty) > $tierBookingLimit) {
+                    throw new \Exception('CAPACITY_EXHAUSTED_' . $lockedRoomType->name);
+                }
+
+                $assignedRoom = $lockedRoomType->pickAvailableRoom(
+                    $validated['check_in_date'],
+                    $validated['check_out_date'],
+                    $requestedTier
+                );
+
+                if (!$assignedRoom) {
+                    $assignedRoom = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+                }
+
+                if (!$primaryRoomId && $assignedRoom) {
+                    $primaryRoomId = $assignedRoom->id;
+                    $primaryBedType = $validated['bed_type'][$lockedRoomType->id] ?? null;
+                    $primaryFloor = $validated['floor_preference'][$lockedRoomType->id] ?? null;
+                    $primaryView = $validated['view_preference'][$lockedRoomType->id] ?? null;
+                }
+
+                $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
+                    ->diffInDays(Carbon::parse($validated['check_out_date'])));
+
+                $total += $nights * (float) $lockedRoomType->price_per_night * $qty;
+
+                $bookingRoomsData[] = [
+                    'room_type_id' => $lockedRoomType->id,
+                    'room_id' => $assignedRoom ? $assignedRoom->id : null,
+                    'quantity' => $qty,
+                    'price_at_booking' => $lockedRoomType->price_per_night,
+                ];
+            }
+
+            if (empty($bookingRoomsData)) {
+                throw new \Exception('CART_EMPTY');
+            }
+
+            $depositAmount = round($total * ($requestedTier / 100), 2);
+
+            // ── Payment Amount Lock (Thread-Safe) ────────────────────
+            $automatedMethods = [Transaction::METHOD_KHQR_ABA, Transaction::METHOD_KHQR, Transaction::METHOD_TELEGRAM];
+            if (in_array($validated['payment_method'], $automatedMethods)) {
+                $conflictingTransaction = Transaction::where('payment_status', Transaction::STATUS_PENDING)
+                    ->whereIn('payment_method', $automatedMethods)
+                    ->where('amount_paid', $depositAmount)
+                    ->where('updated_at', '>=', now()->subMinutes(1))
+                    ->whereHas('booking', fn ($q) => $q->where('booking_status', Booking::STATUS_PENDING))
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($conflictingTransaction) {
+                    throw new \Exception('AMOUNT_COLLISION:' . $depositAmount);
+                }
+            }
+
+            // Create the booking
+            $booking = Booking::create([
+                'guest_id'         => $guestId,
+                'room_id'          => $primaryRoomId,
+                'check_in_date'    => $validated['check_in_date'],
+                'check_out_date'   => $validated['check_out_date'],
+                'total_price'      => $total,
+                'payment_tier'     => $requestedTier,
+                'booking_status'   => Booking::STATUS_PENDING,
+                'booking_origin'   => Booking::ORIGIN_USER,
+                'special_requests' => $validated['special_requests'] ?? null,
+                'bed_type'         => $primaryBedType,
+                'floor_preference' => $primaryFloor,
+                'view_preference'  => $primaryView,
+            ]);
+
+            // Create pivot records
+            foreach ($bookingRoomsData as $data) {
+                $booking->bookingRooms()->create($data);
+            }
+
+            // Create pending transaction
+            Transaction::create([
+                'booking_id'     => $booking->id,
+                'amount_paid'    => $depositAmount,
+                'payment_for'    => Transaction::FOR_BOOKING,
+                'payment_method' => $validated['payment_method'],
+                'payment_status' => Transaction::STATUS_PENDING,
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('payment.show', $booking->id)
+                ->with('success', 'Multi-room booking reserved successfully! Please complete payment.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if (str_starts_with($e->getMessage(), 'CAPACITY_EXHAUSTED_')) {
+                $roomName = str_replace('CAPACITY_EXHAUSTED_', '', $e->getMessage());
+                return back()->with('error', "Sorry, $roomName does not have enough capacity for the requested dates.");
+            }
+
+            if (str_starts_with($e->getMessage(), 'AMOUNT_COLLISION:')) {
+                return back()->with('error', "Our payment system is currently processing another transaction. Please try again in 1 minute.");
+            }
+
+            if ($e->getMessage() === 'CART_EMPTY') {
+                return back()->with('error', "Your cart contains no valid room types.");
+            }
+
+            throw $e;
+        }
     }
 }
 

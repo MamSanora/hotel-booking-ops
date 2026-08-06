@@ -12,26 +12,15 @@ class RoomFactory extends Factory
 {
     protected $model = Room::class;
 
-    /** Type-level defaults for capacity and nightly price. */
-    private const TYPE_DEFAULTS = [
-        'standard_twin'   => ['capacity' => 2, 'price' => 35.00],
-        'standard_double' => ['capacity' => 2, 'price' => 50.00],
-        'deluxe_double'   => ['capacity' => 2, 'price' => 80.00],
-    ];
-
     public function definition(): array
     {
-        $type     = fake()->randomElement(array_keys(Room::ROOM_TYPES));
-        $defaults = self::TYPE_DEFAULTS[$type];
-
         return [
             // Generate a plausible 3-digit room number (floor 2–4, room 01–20).
             'room_number'    => (string) fake()->unique()->numberBetween(201, 499),
-            'room_type'      => $type,
-            'capacity'       => $defaults['capacity'],
-            'price_per_night' => $defaults['price'],
-            'description'    => fake()->sentence(12),
+            'room_type_id'   => \App\Models\RoomType::factory(),
             'current_status' => 'available',
+            'bed_configuration' => fake()->randomElement(['twin', 'double', 'triple']),
+            'view_type'      => fake()->randomElement(['window', 'balcony', 'none']),
         ];
     }
 
@@ -41,17 +30,5 @@ class RoomFactory extends Factory
     public function occupied(): static
     {
         return $this->state(['current_status' => 'occupied']);
-    }
-
-    /**
-     * State: standard twin room.
-     */
-    public function standardTwin(): static
-    {
-        return $this->state([
-            'room_type'      => 'standard_twin',
-            'capacity'       => 2,
-            'price_per_night' => 35.00,
-        ]);
     }
 }

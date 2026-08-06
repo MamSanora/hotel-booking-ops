@@ -137,7 +137,7 @@
                 @endif
                 --}}
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
-                    <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->roomType?->capacity }} guests
+                    <i class="bi bi-people text-hotel-gold"></i>Up to {{ $room->roomType?->adult_capacity }} Adults, {{ $room->roomType?->child_capacity }} Children
                 </span>
                 <span class="inline-flex items-center gap-1.5 bg-hotel-light border border-[#e8e0d0] text-hotel-dark text-[0.82rem] font-medium px-3.5 py-1.5 rounded-lg">
                     <i class="bi bi-wifi text-hotel-gold"></i>Free Wi-Fi
@@ -241,8 +241,9 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('booking.store', $room) }}" method="POST" id="bookingForm" class="space-y-4">
+                    <form action="{{ route('booking.store', $roomType) }}" method="POST" id="bookingForm" class="space-y-4">
                         @csrf
+
 
                         {{-- Dates --}}
                         <div class="grid grid-cols-2 gap-4">
@@ -259,6 +260,27 @@
                                        value="{{ old('check_out_date', request('checkout')) }}" required
                                        class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
                             </div>
+                        </div>
+
+                        {{-- Number of Rooms --}}
+                        <div>
+                            <label for="rooms" class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">
+                                Number of Rooms
+                            </label>
+                            <input type="number"
+                                   name="rooms"
+                                   id="rooms"
+                                   min="1"
+                                   max="10"
+                                   value="{{ old('rooms', max(1, (int) request('rooms', 1))) }}"
+                                   required
+                                   class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
+                            <p class="text-[0.72rem] text-gray-400 mt-1">
+                                <i class="bi bi-info-circle"></i> Each room accommodates up to {{ $roomType->adult_capacity }} Adults and {{ $roomType->child_capacity }} Children.
+                            </p>
+                            @error('rooms')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         {{-- Special Requests --}}
@@ -373,8 +395,12 @@
                         {{-- Price Summary --}}
                         <div class="bg-hotel-light rounded-xl p-5 my-6 space-y-2.5 border border-[#e8e0d0]" id="priceSummary">
                             <div class="flex justify-between text-[0.9rem] text-gray-600">
-                                <span>Rate per night</span>
-                                <span class="font-medium text-gray-800">${{ number_format($room->roomType?->price_per_night ?? 0, 2) }}</span>
+                                <span>Rate per room / night</span>
+                                <span class="font-medium text-gray-800">${{ number_format($roomType->price_per_night ?? 0, 2) }}</span>
+                            </div>
+                            <div class="flex justify-between text-[0.9rem] text-gray-600">
+                                <span>Number of rooms</span>
+                                <span id="roomCount" class="font-medium text-gray-800">&mdash;</span>
                             </div>
                             <div class="flex justify-between text-[0.9rem] text-gray-600">
                                 <span>Number of nights</span>
@@ -398,7 +424,7 @@
                             </div>
                             <div class="pt-2 border-t border-[#e0d8cc]/60 flex items-center gap-1.5 text-[0.76rem] text-emerald-700 font-medium">
                                 <i class="bi bi-shield-check text-base"></i>
-                                <span>Taxes & basic amenities included · No hidden fees.</span>
+                                <span>Taxes &amp; basic amenities included · No hidden fees.</span>
                             </div>
                         </div>
 
@@ -476,9 +502,11 @@
 
 @push('scripts')
 <script>
-    const pricePerNight = {{ $room->roomType?->price_per_night ?? 0 }};
+    const pricePerNight = {{ $roomType->price_per_night ?? 0 }};
     const checkInEl   = document.getElementById('check_in_date');
     const checkOutEl  = document.getElementById('check_out_date');
+    const roomsEl     = document.getElementById('rooms');
+    const roomCountEl = document.getElementById('roomCount');
     const nightEl     = document.getElementById('nightCount');
     const totalEl     = document.getElementById('totalPrice');
     const khrEl       = document.getElementById('khrPrice');
@@ -492,13 +520,20 @@
         return checked ? parseInt(checked.value, 10) : 100;
     }
 
+    function getRoomCount() {
+        return Math.max(1, parseInt(roomsEl?.value || 1, 10));
+    }
+
     function calculatePrice() {
         if (!checkInEl || !checkOutEl) return;
         const ci = new Date(checkInEl.value);
         const co = new Date(checkOutEl.value);
+        const rooms = getRoomCount();
+        if (roomCountEl) roomCountEl.textContent = rooms + (rooms === 1 ? ' room' : ' rooms');
+
         if (checkInEl.value && checkOutEl.value && co > ci) {
             const nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
-            const total  = nights * pricePerNight;
+            const total  = nights * pricePerNight * rooms;
             const khrTotal = Math.round(total * 4100);
             const tier   = getSelectedTier();
             const deposit = Math.round(total * tier) / 100;
@@ -543,6 +578,10 @@
             calculatePrice();
         });
         checkOutEl.addEventListener('change', calculatePrice);
+        if (roomsEl) {
+            roomsEl.addEventListener('input', calculatePrice);
+            roomsEl.addEventListener('change', calculatePrice);
+        }
 
         // Recalculate whenever a tier radio is changed.
         document.querySelectorAll('input.tier-radio').forEach(function (radio) {
@@ -556,7 +595,7 @@
         const warningBox = document.getElementById('preferenceWarning');
         const fullyBookedBox = document.getElementById('fullyBookedWarning');
         const submitBtn = document.querySelector('#bookingForm button[type="submit"]');
-        const roomId = '{{ $room->id }}';
+        const roomId = '{{ $roomType->slug }}';
 
         async function checkPreferences() {
             if (!checkInEl.value || !checkOutEl.value) return;

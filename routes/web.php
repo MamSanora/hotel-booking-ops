@@ -31,6 +31,8 @@ use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Reception\ReceptionDashboardController;
 use App\Http\Controllers\Reception\ReceptionProfileController;
 use App\Http\Controllers\Reception\ManualBookingController;
+use App\Http\Controllers\Cleaner\CleanerRoomCheckController;
+use App\Http\Controllers\Cleaner\CleanerProfileController;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Route;
 
@@ -41,8 +43,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [RoomController::class, 'home'])->name('home');
 Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
-Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
-Route::post('/rooms/{room}/check-preferences', [RoomController::class, 'checkPreferences'])->name('rooms.check-preferences');
+Route::get('/rooms/{roomType:slug}', [RoomController::class, 'show'])->name('rooms.show');
+Route::post('/rooms/{roomType:slug}/check-preferences', [RoomController::class, 'checkPreferences'])->name('rooms.check-preferences');
+
 
 // Static pages
 Route::get('/about',   [PageController::class, 'about'])->name('about');
@@ -117,10 +120,17 @@ Route::prefix('guest')->name('guest.')->group(function () {
 });
 
 // Book a room — POST from the room detail page (requires auth).
-Route::post('/rooms/{room}/book', [RoomController::class, 'store'])
+Route::post('/rooms/{roomType:slug}/book', [RoomController::class, 'store'])
     ->middleware('auth')
     ->name('booking.store');
 
+// Multi-type room booking checkout (requires auth).
+Route::get('/rooms/checkout/multi', [RoomController::class, 'multiTypeCheckout'])
+    ->middleware('auth')
+    ->name('booking.multi-checkout');
+Route::post('/rooms/checkout/multi', [RoomController::class, 'multiTypeStore'])
+    ->middleware('auth')
+    ->name('booking.multi-store');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ABA PAYWAY / KHQR PAYMENT ROUTES  (requires web auth)
@@ -282,6 +292,10 @@ Route::prefix('reception')->name('reception.')->group(function () {
         Route::post('/payment/manual/{booking}', [ReceptionDashboardController::class, 'markAsPaid'])->name('payment.manual');
         Route::get('/receipt/{booking}',          [ReceptionDashboardController::class, 'receipt'])->name('receipt');
 
+        // Incidental charges — JSON endpoint called from the checkout modal
+        Route::post('/bookings/{booking}/add-charge', [ReceptionDashboardController::class, 'addIncidentalCharge'])->name('bookings.add-charge');
+
+
         // Manual bookings
         Route::get('/manual-booking/create', [ManualBookingController::class, 'create'])->name('manual-booking.create');
         Route::post('/manual-booking',       [ManualBookingController::class, 'store'])->name('manual-booking.store');
@@ -317,6 +331,38 @@ Route::prefix('reception')->name('reception.')->group(function () {
         Route::get('/profile',                    [ReceptionProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile',                  [ReceptionProfileController::class, 'update'])->name('profile.update');
         Route::patch('/profile/password',         [ReceptionProfileController::class, 'updatePassword'])->name('profile.password');
+
+    });
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLEANING STAFF ROUTES  (staff guard, role = cleaner)
+// ═══════════════════════════════════════════════════════════════════════════
+
+Route::prefix('cleaner')->name('cleaner.')->group(function () {
+
+    // Reuse the reception login page — same staff guard.
+    // On successful login, dashboardUrl() redirects cleaners to /cleaner/dashboard.
+    Route::get('/login',  [\App\Http\Controllers\Auth\Staff\LoginController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Auth\Staff\LoginController::class, 'login'])->name('login.post');
+
+    // ── Protected cleaner routes ────────────────────────────────────────
+    Route::middleware('auth.cleaner')->group(function () {
+
+        // Cleaner dashboard (redirected here from dashboardUrl())
+        Route::get('/dashboard', function () {
+            return redirect()->route('cleaner.room-check.index');
+        })->name('dashboard');
+
+        // Room Check — view cleaning/maintenance rooms and mark them available
+        Route::get('/room-check',                         [CleanerRoomCheckController::class, 'index'])->name('room-check.index');
+        Route::patch('/room-check/{room}/mark-available', [CleanerRoomCheckController::class, 'markAvailable'])->name('room-check.mark-available');
+
+        // Profile Management
+        Route::get('/profile',           [CleanerProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile',         [CleanerProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/password',[CleanerProfileController::class, 'updatePassword'])->name('profile.password');
 
     });
 });

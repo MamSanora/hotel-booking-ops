@@ -32,7 +32,7 @@ class StoreStaffRequest extends FormRequest
         return [
             'full_name' => ['required', 'string', 'max:50'],
 
-            'role' => ['required', Rule::in(['receptionist'])],
+            'role' => ['required', Rule::in(['receptionist', 'cleaner'])],
 
             'managed_by_admin_id' => ['nullable', 'integer', 'exists:admins,id'],
 
@@ -54,6 +54,10 @@ class StoreStaffRequest extends FormRequest
             ],
 
             'password_confirmation' => ['nullable', 'string'],
+
+            'phone' => ['nullable', 'string', 'max:30'],
+
+            'email' => ['nullable', 'email', 'max:100'],
         ];
     }
 

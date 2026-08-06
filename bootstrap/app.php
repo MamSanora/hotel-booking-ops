@@ -35,6 +35,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // Staff (receptionists) must be authenticated via the 'staff' guard.
             // Renamed from 'auth.receptionist' to match the renamed guard/table.
             'auth.staff' => \App\Http\Middleware\AuthStaff::class,
+
+            // Cleaners use the same 'staff' guard but are restricted to their
+            // own /cleaner/* routes. Receptionists cannot access cleaner routes.
+            'auth.cleaner' => \App\Http\Middleware\AuthCleaner::class,
         ]);
 
         // When an unauthenticated guest visits a protected route (e.g. /guest/dashboard),

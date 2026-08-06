@@ -7,7 +7,7 @@
 <div class="bg-gradient-to-br from-hotel-dark to-hotel-accent py-12 mb-10 text-white">
     <div class="container mx-auto px-4 md:px-6">
         <h1 class="font-playfair text-3xl md:text-[2.2rem] font-bold mb-2">Add Staff Member</h1>
-        <p class="text-white/70 text-[0.95rem]">Create a new username-based account for front desk staff.</p>
+        <p class="text-white/70 text-[0.95rem]">Create a new account for a receptionist or cleaning staff member.</p>
     </div>
 </div>
 
@@ -57,8 +57,25 @@
                 <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Role</label>
                 <select name="role" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
                     <option value="receptionist" {{ old('role', 'receptionist') === 'receptionist' ? 'selected' : '' }}>Receptionist</option>
+                    <option value="cleaner" {{ old('role') === 'cleaner' ? 'selected' : '' }}>Cleaner (Housekeeping)</option>
                 </select>
                 @error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            {{-- Contact Info --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Phone <span class="font-normal text-gray-400 normal-case">(optional)</span></label>
+                    <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="+855 12 345 678"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                    @error('phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-[0.85rem] font-semibold text-gray-700 uppercase tracking-wider mb-2">Email <span class="font-normal text-gray-400 normal-case">(optional)</span></label>
+                    <input type="email" name="email" value="{{ old('email') }}" placeholder="staff@hotel.com"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-hotel-gold focus:ring-2 focus:ring-hotel-gold/20 transition-all text-[0.95rem]">
+                    @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             {{-- Password --}}

@@ -153,9 +153,9 @@
                             </th>
                         <th class="px-5 py-4 font-semibold">Type</th>
                         <th class="px-5 py-4 font-semibold">
-                                <a href="{{ request()->fullUrlWithQuery(['sort' => 'capacity', 'dir' => request('sort') === 'capacity' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800 transition-colors">
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => 'adult_capacity', 'dir' => request('sort') === 'adult_capacity' && request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800 transition-colors">
                                     Capacity
-                                    @if(request('sort') === 'capacity')
+                                    @if(request('sort') === 'adult_capacity')
                                         <i class="bi bi-chevron-{{ request('dir') === 'asc' ? 'up' : 'down' }} text-[0.65rem] text-hotel-gold"></i>
                                     @endif
                                 </a>
@@ -186,7 +186,7 @@
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             <div class="text-gray-700">
-                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $room->roomType?->capacity ?? '—' }} guests
+                                <i class="bi bi-people text-gray-400 mr-1"></i>{{ $room->roomType?->adult_capacity }}A / {{ $room->roomType?->child_capacity }}C
                             </div>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">

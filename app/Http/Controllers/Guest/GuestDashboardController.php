@@ -27,6 +27,29 @@ class GuestDashboardController extends Controller
         // GuestAuth → Guest → bookings()
         $guestId = Auth::user()->guest_id;
 
+        // Stats Counters
+        $upcomingStaysCount = Booking::where('guest_id', $guestId)
+            ->whereIn('booking_status', [Booking::STATUS_PENDING, Booking::STATUS_BOOKED])
+            ->count();
+
+        $currentStaysCount = Booking::where('guest_id', $guestId)
+            ->where('booking_status', Booking::STATUS_CHECKED_IN)
+            ->count();
+
+        $pastStaysCount = Booking::where('guest_id', $guestId)
+            ->where('booking_status', Booking::STATUS_CHECKED_OUT)
+            ->count();
+            
+        // Calculate Total Nights Stayed from checked-in and checked-out bookings
+        $totalNightsCount = 0;
+        $validStaysForNights = Booking::where('guest_id', $guestId)
+            ->whereIn('booking_status', [Booking::STATUS_CHECKED_IN, Booking::STATUS_CHECKED_OUT])
+            ->get();
+            
+        foreach ($validStaysForNights as $stay) {
+            $totalNightsCount += $stay->nightCount();
+        }
+
         // Upcoming: active or confirmed bookings ordered by check-in date,
         // and check-out date is today or in the future.
         // Exclude all terminal/non-actionable statuses so they don't linger.
@@ -63,6 +86,13 @@ class GuestDashboardController extends Controller
             ->limit(10)
             ->get();
 
-        return view('guest.dashboard', compact('upcomingBookings', 'pastBookings'));
+        return view('guest.dashboard', compact(
+            'upcomingBookings', 
+            'pastBookings',
+            'upcomingStaysCount',
+            'currentStaysCount',
+            'pastStaysCount',
+            'totalNightsCount'
+        ));
     }
 }

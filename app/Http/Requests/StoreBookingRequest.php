@@ -37,6 +37,7 @@ class StoreBookingRequest extends FormRequest
                 'after:check_in_date',
                 $maxCheckout ? 'before_or_equal:' . $maxCheckout : null,
             ]),
+            'rooms'            => ['required', 'integer', 'min:1', 'max:10'],
             'special_requests' => ['nullable', 'string', 'max:1000'],
             'payment_method'   => [
                 'required',
