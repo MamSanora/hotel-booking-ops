@@ -71,6 +71,9 @@ class Booking extends Model
 
     // ── Payment Tier Constants ─────────────────────────────────────────────
 
+    /** Guest pays 0% upfront (No Deposit); full amount settled at check-in. */
+    public const TIER_NO_DEPOSIT = 0;
+
     /** Guest pays 20% upfront; remainder settled at check-in. */
     public const TIER_DEPOSIT_20 = 20;
 
@@ -81,7 +84,7 @@ class Booking extends Model
     public const TIER_FULL = 100;
 
     /** All valid payment tiers. */
-    public const PAYMENT_TIERS = [self::TIER_DEPOSIT_20, self::TIER_DEPOSIT_50, self::TIER_FULL];
+    public const PAYMENT_TIERS = [self::TIER_NO_DEPOSIT, self::TIER_DEPOSIT_20, self::TIER_DEPOSIT_50, self::TIER_FULL];
 
     /** Human-readable labels for each status value. */
     public const STATUS_LABELS = [

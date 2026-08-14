@@ -51,7 +51,7 @@ class StoreBookingRequest extends FormRequest
             ],
             // The percentage of the total price paid upfront.
             // 20 = 20% deposit, 50 = 50% deposit, 100 = full payment.
-            'payment_tier' => ['required', 'integer', 'in:20,50,100'],
+            'payment_tier' => ['required', 'integer', 'in:0,20,50,100'],
             // Guest preference fields (optional, used as hints for reception).
             'bed_type'         => ['nullable', 'string', 'max:50'],
             'floor_preference' => ['nullable', 'string', 'max:50'],

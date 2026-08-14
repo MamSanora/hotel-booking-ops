@@ -45,8 +45,9 @@
                         </div>
 
                         {{-- Dynamic QR Code Matrix Overlay (rendered by qrcodejs) --}}
-                        <div class="absolute flex items-center justify-center" style="top: 39%; left: 13.5%; width: 73%; height: auto; aspect-ratio: 1/1;">
-                            <div id="khqr-matrix" class="w-full h-full"></div>
+                        {{-- We wrap this in a larger white block to completely occlude the static QR code on the template --}}
+                        <div class="absolute flex items-center justify-center bg-white" style="top: 37%; left: 11%; width: 78%; height: auto; aspect-ratio: 1/1; padding: 2%;">
+                            <div id="khqr-matrix" class="w-full h-full flex items-center justify-center"></div>
                         </div>
                     </div>
                 </div>

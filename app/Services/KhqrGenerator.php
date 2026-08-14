@@ -8,10 +8,17 @@ use Illuminate\Support\Facades\Log;
  * KhqrGenerator
  *
  * Generates an ABA-flavoured KHQR (EMVCo Merchant-Presented QR) string
- * entirely offline \u2014 no API call, no pre-uploaded images required.
+ * entirely offline — no API call, no pre-uploaded images required.
  *
- * The payload format was reverse-engineered from the hotel\u2019s own ABA QR
- * codes and matches ABA Bank Cambodia\u2019s Tag-30 merchant-info structure.
+ * The payload format was reverse-engineered from the hotel’s own ABA QR
+ * codes and matches ABA Bank Cambodia’s Tag-30 merchant-info structure.
+ * 
+ * IMPORTANT NOTE ON EXPIRATION & ABA PAYWAY API:
+ * Since the hotel management has restricted access to the live production API credentials 
+ * for security and compliance reasons, we must use this offline generation method. 
+ * Because it is offline, there is no way to embed a cryptographic "expiration time" 
+ * into the QR code that the bank app will enforce. True QR code expiration requires 
+ * the official PayWay API which is currently out of scope for this architecture.
  *
  * Usage:
  *   $qr = KhqrGenerator::forAmount(30.00);

@@ -16,6 +16,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6.4",
+        "maatwebsite/excel": "*",
         "spatie/laravel-backup": "^9.3",
         "symfony/http-client": "^7.4",
         "symfony/postmark-mailer": "^7.4"

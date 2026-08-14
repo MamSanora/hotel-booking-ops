@@ -60,9 +60,102 @@
         <a href="{{ route('admin.dashboard') }}" class="text-hotel-gold hover:text-hotel-gold/80 flex items-center font-medium transition-colors">
             <i class="bi bi-arrow-left mr-2"></i> Back to Dashboard
         </a>
-        <a href="{{ route('admin.bookings.export') }}" class="bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm">
-            <i class="bi bi-file-earmark-spreadsheet"></i> Export Report (CSV)
-        </a>
+        <div x-data="{ showExportModal: false }">
+            <button @click="showExportModal = true" class="bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export Report (Excel)
+            </button>
+
+            <!-- Export Modal -->
+            <div x-show="showExportModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                    
+                    <div x-show="showExportModal" 
+                         x-transition:enter="ease-out duration-300" 
+                         x-transition:enter-start="opacity-0" 
+                         x-transition:enter-end="opacity-100" 
+                         x-transition:leave="ease-in duration-200" 
+                         x-transition:leave-start="opacity-100" 
+                         x-transition:leave-end="opacity-0" 
+                         class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" 
+                         @click="showExportModal = false"
+                         aria-hidden="true"></div>
+
+                    <!-- This element is to trick the browser into centering the modal contents. -->
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                    <div x-show="showExportModal" 
+                         x-transition:enter="ease-out duration-300" 
+                         x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                         x-transition:leave="ease-in duration-200" 
+                         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                         class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                        
+                        <div class="sm:flex sm:items-start">
+                            <div class="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-blue-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                                <i class="bi bi-file-earmark-excel text-blue-600 text-lg"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg font-bold leading-6 text-gray-900" id="modal-title">
+                                    Export Bookings Report
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500">
+                                        Do you want to export the bookings currently filtered on your screen, or export all historical booking data?
+                                    </p>
+                                </div>
+                                
+                                <div class="mt-6 flex flex-col gap-3">
+                                    <!-- Form for Filtered Data -->
+                                    <form action="{{ route('admin.bookings.export') }}" method="GET" class="w-full">
+                                        @if(request()->has('search'))
+                                            <input type="hidden" name="search" value="{{ request('search') }}">
+                                        @endif
+                                        @if(request()->has('status'))
+                                            <input type="hidden" name="status" value="{{ request('status') }}">
+                                        @endif
+                                        @if(request()->has('date_from'))
+                                            <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                                        @endif
+                                        @if(request()->has('date_to'))
+                                            <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                                        @endif
+                                        @if(request()->has('booking_origin'))
+                                            <input type="hidden" name="booking_origin" value="{{ request('booking_origin') }}">
+                                        @endif
+                                        
+                                        <button type="submit" @click="showExportModal = false" class="w-full flex justify-between items-center px-4 py-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-xl transition-colors text-left group">
+                                            <div>
+                                                <div class="font-bold text-blue-800 text-[0.95rem]">Export Current View</div>
+                                                <div class="text-xs text-blue-600 mt-0.5">Generates Excel using your active search and date filters</div>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-blue-500 group-hover:translate-x-1 transition-transform"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Form for All Data -->
+                                    <form action="{{ route('admin.bookings.export') }}" method="GET" class="w-full">
+                                        <button type="submit" @click="showExportModal = false" class="w-full flex justify-between items-center px-4 py-3 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl transition-colors text-left group">
+                                            <div>
+                                                <div class="font-bold text-gray-700 text-[0.95rem]">Export All Data</div>
+                                                <div class="text-xs text-gray-500 mt-0.5">Generates full Excel history (ignores current filters)</div>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-gray-400 group-hover:translate-x-1 transition-transform"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                            <button type="button" @click="showExportModal = false" class="inline-flex justify-center w-full px-4 py-2 mt-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Search & Filter Form --}}

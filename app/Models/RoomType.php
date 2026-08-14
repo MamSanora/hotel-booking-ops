@@ -211,6 +211,12 @@ class RoomType extends Model
      *   eliminating the infinite double-booking flaw of the previous
      *   implementation (which only counted same-or-higher-tier bookings).
      *
+     * NOTE ON MULTI-ROOM BOOKINGS:
+     * Virtual room (overbooking) logic intentionally does NOT apply to multi-room bookings.
+     * Walking a single guest and their partner is manageable, but walking a group of
+     * families who booked multiple rooms is a severe operational failure. Multi-room
+     * bookings must be fulfilled strictly by physical availability.
+     *
      * @param  string    $checkIn          Check-in date (Y-m-d)
      * @param  string    $checkOut         Check-out date (Y-m-d)
      * @param  int       $requestedTier    Payment tier: 20, 50, or 100
@@ -320,6 +326,9 @@ class RoomType extends Model
 
         $remaining = $physicalCount - $activeBookings;
         if ($this->hasAvailableVirtualCapacity($checkIn, $checkOut)) {
+            // Intentionally clamp virtual remaining rooms to exactly 1.
+            // This natively restricts frontend quantity dropdowns from allowing multi-room bookings
+            // within the virtual buffer, ensuring groups/families are never walked.
             return max(1, $remaining);
         }
 

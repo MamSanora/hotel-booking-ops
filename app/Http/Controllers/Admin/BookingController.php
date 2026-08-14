@@ -109,47 +109,59 @@ class BookingController extends Controller
     }
 
     /**
-     * Export bookings to CSV.
+     * Export bookings to Excel.
      */
-    public function export()
+    public function export(\Illuminate\Http\Request $request)
     {
-        $bookings = Booking::with(['guest', 'room', 'transactions'])->orderByDesc('created_at')->get();
+        $query = Booking::query();
 
-        $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=bookings_report_" . now()->format('Y-m-d') . ".csv",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
-
-        $columns = ['Booking ID', 'Reference', 'Guest Name', 'Room', 'Check-In', 'Check-Out', 'Total Price', 'Status', 'Payment Status'];
-
-        $callback = function() use($bookings, $columns) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, $columns);
-
-            foreach ($bookings as $booking) {
-                $latestTxn = $booking->transactions->sortByDesc('created_at')->first();
-                $paymentStatus = $latestTxn ? $latestTxn->displayStatus() : 'Unpaid';
+        // 1. Search by Booking Reference or Guest Name/Email/Phone
+        if ($search = $request->input('search')) {
+            $query->where(function($q) use ($search) {
+                $numericSearch = preg_replace('/[^0-9]/', '', $search);
+                if (!empty($numericSearch)) {
+                    $q->where('id', 'like', "%{$numericSearch}%");
+                }
                 
-                fputcsv($file, [
-                    $booking->id,
-                    $booking->referenceNumber(),
-                    $booking->guest?->full_name ?? 'Walk-in Guest',
-                    $booking->room?->displayType() . ' (Room ' . $booking->room?->room_number . ')',
-                    $booking->check_in_date?->format('Y-m-d'),
-                    $booking->check_out_date?->format('Y-m-d'),
-                    $booking->total_price,
-                    $booking->booking_status,
-                    $paymentStatus
-                ]);
-            }
+                $q->orWhereHas('guest', function($g) use ($search) {
+                    $g->where('full_name', 'like', "%{$search}%")
+                      ->orWhereHas('guestAuth', function($ga) use ($search) {
+                          $ga->where('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('phones', function($p) use ($search) {
+                          $p->where('phone_number', 'like', "%{$search}%");
+                      });
+                })
+                ->orWhereHas('transactions', function($t) use ($search) {
+                    $t->where('payment_reference', 'like', "%{$search}%");
+                });
+            });
+        }
 
-            fclose($file);
-        };
+        // 2. Filter by Status
+        if ($status = $request->input('status')) {
+            $query->where('booking_status', $status);
+        }
 
-        return response()->stream($callback, 200, $headers);
+        // 3. Filter by Date Range (Check-in Dates)
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('check_in_date', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('check_in_date', '<=', $dateTo);
+        }
+
+        // 4. Filter by Booking Origin
+        if ($bookingOrigin = $request->input('booking_origin')) {
+            $query->where('booking_origin', $bookingOrigin);
+        }
+
+        $query->orderByDesc('created_at');
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\BookingsExport($query),
+            'bookings_report_' . now()->format('Y-m-d_His') . '.xlsx'
+        );
     }
 
     /**

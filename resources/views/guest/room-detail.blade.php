@@ -436,6 +436,7 @@
                                     ['value' => 100, 'label' => 'Full Payment',     'desc'  => 'Pay the full amount now and your reservation is fully secured.'],
                                     ['value' => 50,  'label' => '50% Deposit',      'desc'  => 'Pay 50% now, settle the remaining balance at check-in.'],
                                     ['value' => 20,  'label' => '20% Deposit',      'desc'  => 'Pay 20% now to hold your reservation, balance due at check-in.'],
+                                    ['value' => 0,   'label' => 'No Deposit',       'desc'  => 'Secure your room now and pay the full amount upon arrival.'],
                                 ] as $tier)
                                     <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 cursor-pointer transition-all border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]">
                                         <input type="radio"
