@@ -84,7 +84,7 @@
                                 </a>
                                 <form action="{{ route('admin.staff.destroy', $member) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Permanently remove this staff account?', action: () => $el.closest('form').submit() })" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100" title="Delete">
+                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Permanently remove this staff account?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>

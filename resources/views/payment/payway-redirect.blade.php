@@ -27,7 +27,7 @@
                     <i class="bi bi-door-open text-hotel-gold text-base"></i>
                     <div>
                         <span class="text-gray-500 block">Room</span>
-                        <strong class="text-hotel-dark">{{ $booking->room?->displayType() ?? 'Room' }}</strong>
+                        <strong class="text-hotel-dark">{{ $booking->displayRooms() }}</strong>
                     </div>
                 </div>
                 <div class="flex items-center gap-2.5 text-[0.88rem]">
@@ -79,7 +79,7 @@
             @if(! app()->isProduction())
             <div class="px-8 md:px-10 pb-8 pt-0 flex flex-wrap gap-4 justify-center bg-white border-t border-gray-100">
                 <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                      x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO MODE: Simulate a successful payment?\n\nThis is for testing only - no real money is charged.', action: () => $el.submit() })">
+                      x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO MODE: Simulate a successful payment?\n\nThis is for testing only - no real money is charged.', action: (function(f) { return () => f.submit(); })($el) })">
                     @csrf
                     <button type="submit"
                             class="inline-flex items-center gap-2.5 bg-green-50 hover:bg-green-100 text-green-700 font-bold border-2 border-green-200 hover:border-green-400 rounded-xl px-8 py-3.5 transition-all duration-200">

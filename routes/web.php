@@ -168,6 +168,7 @@ Route::middleware('auth')->prefix('payment')->name('payment.')->group(function (
 
     // Success and failure landing pages.
     Route::get('/success/{booking}', function (Booking $booking) {
+        $booking->loadMissing(['room.roomType', 'bookingRooms.roomType']);
         return view('payment.success', compact('booking'));
     })->name('success');
 
@@ -223,6 +224,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Booking management
         Route::get('/bookings',                       [AdminBookingController::class, 'index'])->name('bookings.index');
+        Route::get('/incidentals',                    \App\Livewire\Admin\IncidentalChargesList::class)->name('incidentals.index');
         Route::get('/bookings/export',                [AdminBookingController::class, 'export'])->name('bookings.export');
         Route::patch('/bookings/{booking}/approve',   [AdminBookingController::class, 'approve'])->name('bookings.approve');
         Route::patch('/bookings/{booking}/cancel',    [AdminBookingController::class, 'cancel'])->name('bookings.cancel');
@@ -271,14 +273,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STAFF (RECEPTION) AUTH ROUTES  (staff guard → staff table)
+// SHARED STAFF AUTH ROUTES (staff guard → staff table)
 // ═══════════════════════════════════════════════════════════════════════════
 
-Route::prefix('reception')->name('reception.')->group(function () {
-
+Route::prefix('staff')->name('staff.')->group(function () {
     Route::get('/login',  [StaffLoginController::class, 'showLogin'])->name('login');
     Route::post('/login', [StaffLoginController::class, 'login'])->name('login.post');
     Route::post('/logout',[StaffLoginController::class, 'logout'])->name('logout');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STAFF (RECEPTION) PROTECTED ROUTES  (staff guard → staff table, role = receptionist)
+// ═══════════════════════════════════════════════════════════════════════════
+
+Route::prefix('reception')->name('reception.')->group(function () {
 
     // ── Protected reception routes ──────────────────────────────────────
     Route::middleware('auth.staff')->group(function () {
@@ -337,15 +345,10 @@ Route::prefix('reception')->name('reception.')->group(function () {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CLEANING STAFF ROUTES  (staff guard, role = cleaner)
+// CLEANING STAFF PROTECTED ROUTES  (staff guard, role = cleaner)
 // ═══════════════════════════════════════════════════════════════════════════
 
 Route::prefix('cleaner')->name('cleaner.')->group(function () {
-
-    // Reuse the reception login page — same staff guard.
-    // On successful login, dashboardUrl() redirects cleaners to /cleaner/dashboard.
-    Route::get('/login',  [\App\Http\Controllers\Auth\Staff\LoginController::class, 'showLogin'])->name('login');
-    Route::post('/login', [\App\Http\Controllers\Auth\Staff\LoginController::class, 'login'])->name('login.post');
 
     // ── Protected cleaner routes ────────────────────────────────────────
     Route::middleware('auth.cleaner')->group(function () {

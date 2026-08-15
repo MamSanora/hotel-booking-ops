@@ -175,44 +175,77 @@
 
         {{-- Main Card --}}
         <div class="bg-white rounded-2xl shadow-sm border border-[#f0ebe2] overflow-hidden mb-6">
-            {{-- Room Info --}}
+            {{-- Room Info — multi-type aware --}}
+            @php
+                $isMultiType = $booking->bookingRooms->isNotEmpty();
+            @endphp
             <div class="p-6 border-b border-[#f0ebe2]">
                 <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Room Details</h2>
-                <div class="flex items-start gap-5">
-                    <div class="w-24 h-20 rounded-xl bg-hotel-light flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <i class="bi bi-building text-hotel-gold text-4xl"></i>
-                    </div>
-                    <div class="flex-grow">
-                        <div class="font-playfair text-xl font-bold text-hotel-dark mb-2">
-                            {{ $booking->room?->displayType() ?? '—' }}
-                        </div>
-                        <div class="flex flex-wrap gap-3 text-sm">
-                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->adult_capacity }} Adults, {{ $booking->room?->roomType?->child_capacity }} Children</span>
-                            <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>
-                        </div>
 
-                        @if($booking->booking_status === 'checked-in' && $booking->room)
-                        <div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                            <div>
-                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Room No.</div>
-                                <div class="font-bold text-hotel-dark">{{ $booking->room->room_number }}</div>
+                @if($isMultiType)
+                    {{-- Multi-type: show one card per room type line --}}
+                    <div class="space-y-3">
+                        @foreach($booking->bookingRooms as $br)
+                        <div class="flex items-center gap-4 bg-hotel-light/60 border border-[#e8e0d0] rounded-xl px-4 py-3">
+                            <div class="w-10 h-10 rounded-lg bg-hotel-gold/10 flex items-center justify-center shrink-0">
+                                <i class="bi bi-building text-hotel-gold text-lg"></i>
                             </div>
-                            <div>
-                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Floor</div>
-                                <div class="font-bold text-hotel-dark">{{ is_numeric(substr($booking->room->room_number, 0, 1)) ? substr($booking->room->room_number, 0, 1) : '—' }}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-hotel-dark text-[0.95rem]">{{ $br->roomType?->name ?? '—' }}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">
+                                    ${{ number_format($br->price_at_booking, 2) }}/night
+                                    &middot; Up to {{ $br->roomType?->adult_capacity ?? '?' }} adults, {{ $br->roomType?->child_capacity ?? '?' }} children
+                                </div>
                             </div>
-                            <div>
-                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Bed Type</div>
-                                <div class="font-bold text-hotel-dark">{{ $booking->room->displayBedConfiguration() }}</div>
-                            </div>
-                            <div>
-                                <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">View</div>
-                                <div class="font-bold text-hotel-dark">{{ $booking->room->displayViewType() }}</div>
+                            <div class="text-right shrink-0">
+                                <span class="inline-block bg-hotel-gold/10 text-hotel-gold font-bold text-sm px-3 py-1 rounded-full">
+                                    &times; {{ $br->quantity }}
+                                </span>
+                                <div class="text-xs text-gray-400 mt-0.5">
+                                    ${{ number_format($br->lineTotal(), 2) }} total
+                                </div>
                             </div>
                         </div>
-                        @endif
+                        @endforeach
                     </div>
-                </div>
+                @else
+                    {{-- Standard single-type display --}}
+                    <div class="flex items-start gap-5">
+                        <div class="w-24 h-20 rounded-xl bg-hotel-light flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <i class="bi bi-building text-hotel-gold text-4xl"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="font-playfair text-xl font-bold text-hotel-dark mb-2">
+                                {{ $booking->room?->displayType() ?? '—' }}
+                            </div>
+                            <div class="flex flex-wrap gap-3 text-sm">
+                                <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->adult_capacity }} Adults, {{ $booking->room?->roomType?->child_capacity }} Children</span>
+                                <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>
+                            </div>
+
+                            @if($booking->booking_status === 'checked-in' && $booking->room)
+                            <div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Room No.</div>
+                                    <div class="font-bold text-hotel-dark">{{ $booking->room->room_number }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Floor</div>
+                                    <div class="font-bold text-hotel-dark">{{ is_numeric(substr($booking->room->room_number, 0, 1)) ? substr($booking->room->room_number, 0, 1) : '—' }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Bed Type</div>
+                                    <div class="font-bold text-hotel-dark">{{ $booking->room->displayBedConfiguration() }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">View</div>
+                                    <div class="font-bold text-hotel-dark">{{ $booking->room->displayViewType() }}</div>
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </div>
 
             {{-- Booking Dates --}}
@@ -236,6 +269,7 @@
                         <div class="font-bold text-hotel-dark text-base">
                             {{ $booking->nightCount() }} Night{{ $booking->nightCount() !== 1 ? 's' : '' }}
                         </div>
+                    </div>
                 </div>
                 @if($booking->special_requests)
                     <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm flex items-start gap-2">
@@ -248,16 +282,29 @@
                 @endif
             </div>
 
-            {{-- Payment Summary --}}
+            {{-- Payment Summary — multi-type aware --}}
             <div class="p-6 border-b border-[#f0ebe2] bg-hotel-light/50">
-                <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Payment Summary & Rate Calculation</h2>
+                <h2 class="font-semibold text-sm uppercase text-gray-400 tracking-wider mb-4">Payment Summary &amp; Rate Calculation</h2>
                 <div class="space-y-2.5 text-sm text-gray-600">
-                    <div class="flex justify-between">
-                        <span>Room Rate (${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }})</span>
-                        <span class="font-medium text-gray-800">${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</span>
-                    </div>
+
+                    @if($isMultiType)
+                        {{-- Line-item breakdown for multi-type bookings --}}
+                        @foreach($booking->bookingRooms as $br)
+                        <div class="flex justify-between">
+                            <span>{{ $br->roomType?->name ?? '—' }} ×{{ $br->quantity }} &mdash; ${{ number_format($br->price_at_booking, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
+                            <span class="font-medium text-gray-800">${{ number_format($br->lineTotal(), 2) }}</span>
+                        </div>
+                        @endforeach
+                    @else
+                        {{-- Standard single room line --}}
+                        <div class="flex justify-between">
+                            <span>Room Rate (${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }})</span>
+                            <span class="font-medium text-gray-800">${{ number_format(($booking->room?->roomType?->price_per_night ?? 0) * $booking->nightCount(), 2) }}</span>
+                        </div>
+                    @endif
+
                     <div class="flex justify-between text-xs text-gray-500">
-                        <span>10% VAT & 2% Accommodation Tax</span>
+                        <span>10% VAT &amp; 2% Accommodation Tax</span>
                         <span class="text-emerald-700 font-semibold">Included</span>
                     </div>
                     <div class="border-t border-dashed border-gray-300 pt-2.5 flex justify-between font-bold text-hotel-dark text-base">

@@ -129,7 +129,7 @@
                 <template x-for="id in selected" :key="id">
                     <input type="hidden" name="ids[]" :value="id">
                 </template>
-                <button type="button" @click="$dispatch('open-confirm', { message: 'Permanently delete ' + selected.length + ' rooms? This cannot be undone.', action: () => $el.closest('form').submit() })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center shadow-sm">
+                <button type="button" @click="$dispatch('open-confirm', { message: 'Permanently delete ' + selected.length + ' rooms? This cannot be undone.', action: (function(f) { return () => f.submit(); })($el.closest('form')) })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center shadow-sm">
                     <i class="bi bi-trash mr-2"></i>Delete Selected
                 </button>
             </form>
@@ -210,7 +210,7 @@
                                 </a>
                                 <form action="{{ route('admin.rooms.destroy', $room) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Permanently delete this room?', action: () => $el.closest('form').submit() })" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100" title="Delete">
+                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Permanently delete this room?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors border border-red-100" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>

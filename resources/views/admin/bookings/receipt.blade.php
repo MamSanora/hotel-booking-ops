@@ -3,131 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt - {{ $booking->referenceNumber() }}</title>
+    <title>Receipt — {{ $booking->referenceNumber() }}</title>
+    <!-- Tailwind via CDN for quick thermal styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @page { margin: 0; }
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            background: #e5e7eb;
-            margin: 0;
-            padding: 2rem;
-            display: flex;
-            justify-content: center;
-        }
-        .receipt {
-            background: #fff;
-            width: 300px; /* Thermal printer width */
-            padding: 1.5rem;
-            color: #000;
-            font-size: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .text-center { text-align: center; }
-        .font-bold { font-weight: bold; }
-        .text-lg { font-size: 1.25rem; }
-        .text-xl { font-size: 1.5rem; }
-        .mb-1 { margin-bottom: 0.25rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mt-4 { margin-top: 1rem; }
-        .pb-2 { padding-bottom: 0.5rem; }
-        .border-b { border-bottom: 1px dashed #000; }
-        .border-t { border-top: 1px dashed #000; }
-        .flex { display: flex; }
-        .justify-between { justify-content: space-between; }
-        
-        .print-btn {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-family: sans-serif;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .print-btn:hover { background: #1d4ed8; }
-
+        /* Print specific styles */
         @media print {
-            body {
-                background: #fff;
-                padding: 0;
-                display: block;
-            }
-            .receipt {
-                width: 100%;
-                max-width: 300px;
-                box-shadow: none;
-                margin: 0 auto;
-                padding: 0;
-            }
-            .print-btn { display: none; }
+            body { margin: 0; padding: 0; background: white; }
+            .no-print { display: none !important; }
+            .thermal-paper { box-shadow: none; width: 604px; margin: 0 auto; }
         }
+        @page { margin: 0; size: 80mm auto; }
+        body { background-color: #f3f4f6; font-family: 'Courier New', Courier, monospace; color: #000; }
+
+        /* Conformed to exactly 604px with 30px padding (simulating 192 DPI thermal print)         *
+         * Font scale: 1pt = 2.67px at 192 DPI                                                    *
+         *   - Hotel name / grand total: 12pt = 32px                                              *
+         *   - Body text (items, labels): 9.75pt = 26px  (industry standard Font A ≈ 9–10pt)     *
+         *   - Sub-text (address, rate):  9pt    = 24px                                           */
+        .thermal-paper {
+            width: 604px;
+            margin: 2rem auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            font-size: 26px;   /* body base = 9.75pt */
+            line-height: 1.5;
+        }
+        .dashed-line { border-top: 2px dashed #000; margin: 20px 0; }
     </style>
 </head>
 <body>
-    <button class="print-btn" onclick="window.print()">Print Receipt</button>
 
-    <div class="receipt">
-        <div class="text-center mb-4 border-b pb-2">
-            <h1 class="text-xl font-bold mb-1">Dara Meas Hotel</h1>
-            <div>123 Riverside Road, Phnom Penh</div>
-            <div>Tel: +855 12 345 678</div>
+    <!-- Print Button (Hidden on Print) -->
+    <div class="text-center mt-4 no-print">
+        <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-3 rounded-lg font-sans font-semibold text-lg hover:bg-gray-700 transition">
+            Print Receipt
+        </button>
+        <a href="{{ route('admin.bookings.index') }}" class="ml-2 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-sans font-semibold text-lg hover:bg-gray-300 transition">
+            Back
+        </a>
+    </div>
+
+    <!-- Thermal Receipt -->
+    <div class="thermal-paper">
+
+        <!-- Hotel Header — logo + config-driven name/address -->
+        <div class="text-center mb-6">
+            <img src="{{ asset('images/logo.png') }}" alt="{{ config('app.hotel_name', 'Dara Meas Hotel') }} Logo"
+                 style="max-height: 80px; width: auto; margin: 0 auto 12px; display: block;">
+            <h1 class="font-bold text-[32px] uppercase">{{ config('app.hotel_name', 'Dara Meas Hotel') }}</h1>
+            <p class="text-[24px] mt-2">{{ config('app.hotel_address', 'Phnom Penh, Cambodia') }}</p>
+            <p class="text-[24px] mt-1">{{ config('app.hotel_phone', '') }}{{ config('app.hotel_email') ? ' | ' . config('app.hotel_email') : '' }}</p>
         </div>
+
+        <div class="dashed-line"></div>
+
+        <!-- Receipt Info -->
+        @php
+            $checkInDisplay = $booking->actual_check_in_at
+                ? $booking->actual_check_in_at->format('d M Y, H:i')
+                : ($booking->check_in_date ? $booking->check_in_date->format('d M Y') . ' 14:00' : 'N/A');
+
+            $checkOutDisplay = $booking->actual_check_out_at
+                ? $booking->actual_check_out_at->format('d M Y, H:i')
+                : ($booking->check_out_date ? $booking->check_out_date->format('d M Y') . ' 12:00' : 'N/A');
+        @endphp
 
         <div class="mb-4">
-            <div class="flex justify-between mb-1">
-                <span>Receipt No:</span>
-                <span>{{ $booking->referenceNumber() }}</span>
+            <div class="mb-1"><strong>Guest Name:</strong> {{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
+            <div class="mb-1"><strong>Receipt No:</strong> RE-{{ $booking->referenceNumber() }}</div>
+            <div class="mb-1"><strong>Room:</strong>
+                @if($booking->bookingRooms->count() > 1)
+                    Multiple Rooms
+                @else
+                    {{ $booking->room?->room_number ?? 'N/A' }}
+                    ({{ $booking->room?->roomType?->display_name ?? $booking->room?->roomType?->name ?? 'N/A' }})
+                @endif
             </div>
-            <div class="flex justify-between mb-1">
-                <span>Date:</span>
-                <span>{{ now()->format('d/m/Y H:i') }}</span>
-            </div>
-            <div class="flex justify-between mb-1">
-                <span>Guest:</span>
-                <span>{{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</span>
-            </div>
+            <div class="mb-1"><strong>Check-in:</strong> {{ $checkInDisplay }}</div>
+            <div><strong>Check-out:</strong> {{ $checkOutDisplay }}</div>
         </div>
 
-        <div class="border-b pb-2 mb-2">
-            <div class="font-bold mb-1">Room {{ $booking->room?->room_number }} ({{ $booking->room?->displayType() }})</div>
-            <div class="flex justify-between mb-1">
-                <span>Check-in:</span>
-                <span>{{ $booking->check_in_date?->format('d/m/y') }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Check-out:</span>
-                <span>{{ $booking->check_out_date?->format('d/m/y') }}</span>
-            </div>
+        <div class="dashed-line"></div>
+
+        <!-- Items Table -->
+        @php
+            $nights          = $booking->nightCount() + $booking->number_of_stay_extension;
+            $nightsLabel     = max(1, $nights);
+            $incidentalTotal = $booking->incidentalCharges->sum('total_amount');
+            $roomTotal       = (float) $booking->total_price - (float) $incidentalTotal;
+            $nightlyCost     = $nightsLabel > 0 ? $roomTotal / $nightsLabel : $roomTotal;
+        @endphp
+
+        <table class="w-full text-left mb-4">
+            <thead>
+                <tr class="border-b-2 border-black">
+                    <th class="w-2/3 pb-2">Item</th>
+                    <th class="w-1/3 text-right pb-2">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Room Stay -->
+                @if($booking->bookingRooms->count() > 0)
+                    @foreach($booking->bookingRooms as $bRoom)
+                        <tr>
+                            <td class="pt-2">
+                                {{ $bRoom->roomType->name }} ({{ $bRoom->quantity }} room{{ $bRoom->quantity > 1 ? 's' : '' }}, {{ $nightsLabel }} night{{ $nightsLabel > 1 ? 's' : '' }} @ ${{ number_format($bRoom->price_at_booking, 2) }}/night)
+                            </td>
+                            <td class="text-right pt-2 align-top">${{ number_format($bRoom->quantity * $bRoom->price_at_booking * $nightsLabel, 2) }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td class="pt-2">
+                            Room Rate ({{ $nightsLabel }} Night{{ $nightsLabel > 1 ? 's' : '' }}
+                            @ ${{ number_format($nightlyCost, 2) }}/night)
+                        </td>
+                        <td class="text-right pt-2 align-top">${{ number_format($roomTotal, 2) }}</td>
+                    </tr>
+                @endif
+
+                <!-- Incidental / Ad-hoc Charges -->
+                @foreach($booking->incidentalCharges as $charge)
+                <tr>
+                    <td class="pt-2">
+                        {{ $charge->description }}
+                        @if($charge->quantity > 1)× {{ $charge->quantity }}@endif
+                    </td>
+                    <td class="text-right pt-2 align-top">${{ number_format($charge->total_amount, 2) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div class="dashed-line"></div>
+
+        <!-- Totals & Sign-off -->
+        @php
+            $totalPaid = $booking->transactions
+                ->whereIn('payment_status', ['full', 'partial', 'refunded'])
+                ->sum('amount_paid');
+            $balance   = max(0, $booking->total_price - $totalPaid);
+            $latestTx  = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->last();
+            $paymentMethodStr = $latestTx ? ucfirst($latestTx->payment_method) : 'N/A';
+            $khrRate = $exchangeRate ?? 4100;
+        @endphp
+
+        <div class="flex justify-between font-bold text-[32px] mt-4">
+            <span>Grand Total (USD):</span>
+            <span>${{ number_format($booking->total_price, 2) }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-[26px] mb-4">
+            <span>Grand Total (KHR):</span>
+            <span>៛{{ number_format($booking->total_price * $khrRate, 0) }}</span>
         </div>
 
-        <div class="border-b pb-2 mb-2">
-            <div class="flex justify-between font-bold text-lg">
-                <span>TOTAL</span>
-                <span>${{ number_format($booking->total_price, 2) }}</span>
-            </div>
+        <div class="flex justify-between mb-2">
+            <span>Payment Method:</span>
+            <span>{{ $paymentMethodStr }}</span>
         </div>
 
-        <div class="mb-4">
-            <div class="flex justify-between mb-1">
-                <span>Payment Method:</span>
-                <span>{{ $latestTxn ? $latestTxn->displayPaymentMethod() : 'Cash' }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Status:</span>
-                <span>{{ ucfirst($booking->booking_status) }}</span>
-            </div>
+        @if($balance > 0)
+        <div class="flex justify-between mb-2 text-red-700 font-bold">
+            <span>Balance Due:</span>
+            <span>${{ number_format($balance, 2) }}</span>
         </div>
+        @endif
 
-        <div class="text-center mt-4 border-t pt-2">
-            <div>Thank you for choosing Dara Meas!</div>
-            <div>Please come again</div>
+        <div class="dashed-line mt-6"></div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6">
+            <p class="mb-2 font-bold text-[26px]">Thank you for your stay!</p>
+            <p class="text-[24px]">Please come again.</p>
+            <p class="text-[24px] mt-4">Rate: 1 USD = {{ number_format($khrRate, 0) }} KHR</p>
         </div>
     </div>
+
 </body>
 </html>

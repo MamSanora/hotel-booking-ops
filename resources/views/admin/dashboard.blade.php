@@ -208,7 +208,7 @@
                 @if ($onExCooldown)
                     <div class="w-full flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-100 rounded-lg px-3 py-2 cursor-not-allowed"><i class="bi bi-hourglass-split"></i> Next in {{ $exCooldownMins }} min{{ $exCooldownMins !== 1 ? 's' : '' }}</div>
                 @else
-                    <form method="POST" action="{{ route('admin.exchange-rate.sync') }}" x-data @submit.prevent="$dispatch('open-confirm', { message: 'Fetch latest NBC exchange rate?', action: () => $el.submit() })">@csrf
+                    <form method="POST" action="{{ route('admin.exchange-rate.sync') }}" x-data @submit.prevent="$dispatch('open-confirm', { message: 'Fetch latest NBC exchange rate?', action: (function(f) { return () => f.submit(); })($el) })">@csrf
                         <button type="submit" class="w-full flex items-center justify-center gap-2 text-xs font-semibold bg-hotel-dark text-white rounded-lg px-3 py-2 hover:bg-hotel-accent transition-colors"><i class="bi bi-cloud-arrow-down"></i> Sync Now</button>
                     </form>
                 @endif
@@ -244,7 +244,7 @@
                 @if ($onCooldown)
                     <div class="w-full flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-100 rounded-lg px-3 py-2 cursor-not-allowed"><i class="bi bi-hourglass-split"></i> Next in {{ $cooldownMins }} min{{ $cooldownMins !== 1 ? 's' : '' }}</div>
                 @else
-                    <form method="POST" action="{{ route('admin.backup.run') }}" x-data @submit.prevent="$dispatch('open-confirm', { message: 'Run a manual backup now?', action: () => $el.submit() })">@csrf
+                    <form method="POST" action="{{ route('admin.backup.run') }}" x-data @submit.prevent="$dispatch('open-confirm', { message: 'Run a manual backup now?', action: (function(f) { return () => f.submit(); })($el) })">@csrf
                         <button type="submit" class="w-full flex items-center justify-center gap-2 text-xs font-semibold bg-hotel-dark text-white rounded-lg px-3 py-2 hover:bg-hotel-accent transition-colors"><i class="bi bi-cloud-arrow-up"></i> Backup Now</button>
                     </form>
                 @endif

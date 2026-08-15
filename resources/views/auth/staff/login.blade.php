@@ -23,7 +23,7 @@
                     <i class="bi bi-person-badge-fill text-hotel-gold text-2xl"></i>
                 </div>
                 <h1 class="font-[Playfair_Display] text-2xl font-bold text-hotel-dark">Staff Login</h1>
-                <p class="text-gray-500 text-sm mt-1">Dara Meas Hotel — Front Desk Portal</p>
+                <p class="text-gray-500 text-sm mt-1">Dara Meas Hotel — Staff Portal</p>
             </div>
 
             {{-- Error Alert --}}
@@ -34,7 +34,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('reception.login.post') }}" class="space-y-5">
+            <form method="POST" action="{{ route('staff.login.post') }}" class="space-y-5">
                 @csrf
 
                 {{-- Username --}}

@@ -130,7 +130,13 @@
                 <a href="{{ route('admin.bookings.index') }}"
                    class="admin-nav-link {{ request()->routeIs('admin.bookings.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                     <i class="bi bi-calendar-check text-base w-5 text-center"></i>
-                    <span>Bookings</span>
+                    <span>All Bookings</span>
+                </a>
+
+                <a href="{{ route('admin.incidentals.index') }}"
+                   class="admin-nav-link {{ request()->routeIs('admin.incidentals.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
+                    <i class="bi bi-tools text-base w-5 text-center"></i>
+                    <span>Incidentals</span>
                 </a>
 
                 <a href="{{ route('admin.rooms.index') }}"
@@ -290,6 +296,7 @@
             @endif
 
             @yield('content')
+            {{ $slot ?? '' }}
         </main>
     </div>
 

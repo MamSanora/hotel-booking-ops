@@ -145,12 +145,7 @@
                class="rcpt-nav-link {{ request()->routeIs('reception.room-check.*') ? 'active' : 'text-white/60' }} flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">
                 <i class="bi bi-check2-all text-base w-5 text-center"></i>
                 <span>Room Check</span>
-                @php
-                    $pendingClean = \App\Models\Room::whereIn('current_status', ['cleaning', 'maintenance'])->count();
-                @endphp
-                @if($pendingClean > 0)
-                    <span class="ml-auto bg-amber-500 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full leading-none">{{ $pendingClean }}</span>
-                @endif
+                @livewire('reception.room-check-badge')
             </a>
 
 
@@ -163,7 +158,7 @@
                     <span>Profile Settings</span>
                 </a>
 
-                <form method="POST" action="{{ route('reception.logout') }}">
+                <form method="POST" action="{{ route('staff.logout') }}">
                     @csrf
                     <button type="submit"
                             class="rcpt-nav-link text-white/60 hover:text-red-400 w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-r-xl text-sm font-medium">

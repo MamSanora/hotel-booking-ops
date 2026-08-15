@@ -12,16 +12,14 @@ use Illuminate\View\View;
 /**
  * Staff LoginController
  *
- * Handles front-desk staff authentication using the 'staff' guard.
+ * Handles front-desk and cleaning staff authentication using the 'staff' guard.
  * Staff log in with a username + password (staff table, username + passwordhash).
- * Replaces the old Receptionist/LoginController (which used email + password
- * against the removed 'receptionists' table).
  *
  * Completely isolated from the 'web' (guest) and 'admin' guards.
  *
- * Login URL:  GET  /reception/login
- * Process:    POST /reception/login
- * Dashboard:  /reception/dashboard
+ * Login URL:  GET  /staff/login
+ * Process:    POST /staff/login
+ * Dashboard:  Dynamically routes to /reception/dashboard or /cleaner/dashboard
  */
 class LoginController extends Controller
 {
@@ -31,7 +29,7 @@ class LoginController extends Controller
     public function showLogin(): View|RedirectResponse
     {
         if (Auth::guard('staff')->check()) {
-            return redirect()->route('reception.dashboard');
+            return redirect()->intended(Auth::guard('staff')->user()->dashboardUrl());
         }
 
         return view('auth.staff.login');
@@ -47,7 +45,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('reception.dashboard'));
+        return redirect()->intended(Auth::guard('staff')->user()->dashboardUrl());
     }
 
     /**
@@ -60,6 +58,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('reception.login');
+        return redirect()->route('staff.login');
     }
 }

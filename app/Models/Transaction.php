@@ -71,6 +71,7 @@ class Transaction extends Model
         'payment_method',
         'payment_reference',
         'payment_status',
+        'processed_by_staff_id',
         // Stay extension metadata (applied to booking after payment confirmed)
         'extension_nights',
         'extension_new_checkout',
@@ -94,6 +95,14 @@ class Transaction extends Model
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    /**
+     * The staff member who processed this transaction (if manually handled).
+     */
+    public function processedBy(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'processed_by_staff_id');
     }
 
     // ── Query Scopes ───────────────────────────────────────────────────────

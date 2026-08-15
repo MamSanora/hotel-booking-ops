@@ -27,7 +27,7 @@ class AuthStaff
         $admin = Auth::guard('admin')->user();
 
         if (! $staff && ! $admin) {
-            return redirect()->route('reception.login')
+            return redirect()->route('staff.login')
                 ->with('error', 'Please log in to access the reception panel.');
         }
 

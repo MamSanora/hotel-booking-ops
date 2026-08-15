@@ -123,8 +123,8 @@ class RoomController extends Controller
         $availableViews  = $roomType->rooms()->whereNotNull('view_type')->distinct()->pluck('view_type');
         $availableFloors = $roomType->rooms()
             ->get()
-            ->map(fn($r) => substr($r->room_number, 0, 1))
-            ->filter(fn($f) => is_numeric($f))
+            ->map(fn($r) => $r->floor)
+            ->filter()
             ->unique()
             ->sort()
             ->values();
@@ -133,7 +133,16 @@ class RoomController extends Controller
         // and the roomType itself for all display information.
         $room = $roomType->rooms()->where('current_status', '!=', 'maintenance')->first();
 
-        return view('guest.room-detail', compact('roomType', 'room', 'availableBeds', 'availableViews', 'availableFloors'));
+        // Live exchange rate from the DB; fall back to 4,100 if not configured.
+        $exchangeRate = \App\Models\ExchangeRate::usdToKhr()->value('rate') ?? 4100;
+
+        $guestId = \Illuminate\Support\Facades\Auth::user()?->guest_id;
+        $hasNoDepositBooking = $guestId ? \App\Models\Booking::where('guest_id', $guestId)
+            ->where('payment_tier', 0)
+            ->whereIn('booking_status', [\App\Models\Booking::STATUS_PENDING, \App\Models\Booking::STATUS_BOOKED, \App\Models\Booking::STATUS_CHECKED_IN])
+            ->exists() : false;
+
+        return view('guest.room-detail', compact('roomType', 'room', 'availableBeds', 'availableViews', 'availableFloors', 'exchangeRate', 'hasNoDepositBooking'));
     }
 
 
@@ -151,9 +160,34 @@ class RoomController extends Controller
         $validated     = $request->validated();
         $requestedTier = (int) $validated['payment_tier'];
 
+        // Group booking policy: No Deposit is not allowed for 3 or more rooms.
+        $roomCount = (int) ($validated['rooms'] ?? 1);
+        if ($requestedTier === 0 && $roomCount > 2) {
+            return back()->withInput()->with('error', 'A deposit is required for group bookings of 3 or more rooms. Please select a payment option.');
+        }
 
         // GuestAuth -> guest_id (bookings are linked to Guest, not GuestAuth).
         $guestId = Auth::user()->guest_id;
+
+        // Anti-circumvention: Prevent multiple No Deposit bookings
+        if ($requestedTier === 0) {
+            $hasNoDepositBooking = \App\Models\Booking::where('guest_id', $guestId)
+                ->where('payment_tier', 0)
+                ->whereIn('booking_status', [\App\Models\Booking::STATUS_PENDING, \App\Models\Booking::STATUS_BOOKED, \App\Models\Booking::STATUS_CHECKED_IN])
+                ->exists();
+
+            if ($hasNoDepositBooking) {
+                return back()->withInput()->with('error', 'You already have an active No Deposit booking. Please pay a deposit to confirm additional rooms.');
+            }
+        }
+
+        // Save phone number if provided
+        if (!empty($validated['phone_number'])) {
+            $guest = \App\Models\Guest::find($guestId);
+            if ($guest && !$guest->phones()->where('phone_number', $validated['phone_number'])->exists()) {
+                $guest->phones()->create(['phone_number' => $validated['phone_number']]);
+            }
+        }
 
         try {
             $booking = DB::transaction(function () use ($validated, $roomType, $guestId, $requestedTier) {
@@ -184,19 +218,32 @@ class RoomController extends Controller
                     throw new \Exception('CAPACITY_EXHAUSTED');
                 }
 
-                // ── Step 2: Auto-assign the best physical room ──────────────────────
-                $assignedRoom = $lockedRoomType->pickAvailableRoom(
+                $requestedRooms = max(1, (int) $validated['rooms']);
+
+                // ── Step 2: Auto-assign distinct physical rooms (one per requested room) ──
+                $assignedRooms = $lockedRoomType->pickAvailableRooms(
                     $validated['check_in_date'],
                     $validated['check_out_date'],
-                    $requestedTier
+                    $requestedRooms,
+                    $requestedTier,
+                    $validated['bed_type'] ?? null,
+                    $validated['view_preference'] ?? null,
+                    $validated['floor_preference'] ?? null,
                 );
 
-                if (!$assignedRoom) {
-                    // Fallback: assign any non-maintenance room from this type
-                    $assignedRoom = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+                // Fallback: if the algorithm returned fewer rooms than requested (very rare
+                // edge case — e.g. only 1 non-maintenance room exists), pad with any non-maintenance room.
+                while ($assignedRooms->count() < $requestedRooms) {
+                    $fallback = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')
+                        ->whereNotIn('id', $assignedRooms->pluck('id')->toArray())
+                        ->first()
+                        ?? $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+                    if (!$fallback) break;
+                    $assignedRooms->push($fallback);
                 }
 
-                $requestedRooms = max(1, (int) $validated['rooms']);
+                // Primary room (first assigned) goes on the parent booking for legacy compat.
+                $primaryRoom = $assignedRooms->first();
 
                 $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                     ->diffInDays(Carbon::parse($validated['check_out_date'])));
@@ -235,7 +282,7 @@ class RoomController extends Controller
                     // new intent. This is safe: the capacity check above already excluded this
                     // booking via $existingBooking->id, so no double-counting occurs.
                     $existingBooking->update([
-                        'room_id'          => $assignedRoom->id,
+                        'room_id'          => $primaryRoom?->id,
                         'check_in_date'    => $validated['check_in_date'],
                         'check_out_date'   => $validated['check_out_date'],
                         'total_price'      => $total,
@@ -246,15 +293,16 @@ class RoomController extends Controller
                         'view_preference'  => $validated['view_preference'] ?? null,
                     ]);
 
-                    // Sync booking_room
-                    $existingBooking->bookingRooms()->updateOrCreate(
-                        ['room_type_id' => $roomType->id],
-                        [
-                            'room_id' => $assignedRoom->id,
-                            'quantity' => $requestedRooms,
+                    // Replace all booking_room rows for this type (guest may have changed qty)
+                    $existingBooking->bookingRooms()->where('room_type_id', $roomType->id)->delete();
+                    foreach ($assignedRooms as $aRoom) {
+                        $existingBooking->bookingRooms()->create([
+                            'room_type_id'     => $roomType->id,
+                            'room_id'          => $aRoom->id,
+                            'quantity'         => 1,
                             'price_at_booking' => $lockedRoomType->price_per_night,
-                        ]
-                    );
+                        ]);
+                    }
 
                     // Check for existing pending transaction
                     $transaction = $existingBooking->transactions()
@@ -262,23 +310,30 @@ class RoomController extends Controller
                         ->latest()
                         ->first();
 
-                    if ($transaction) {
-                        // Clear any stale payment lock from a prior page visit
-                        // (e.g. guest visited the QR page, went back within 1 min, and changed tier)
-                        $transaction->update([
-                            'amount_paid'             => $depositAmount,
-                            'payment_method'          => $validated['payment_method'],
-                            'payment_locked_at'       => null,
-                            'payment_lock_expires_at' => null,
-                        ]);
+                    if ($depositAmount == 0) {
+                        $existingBooking->update(['booking_status' => Booking::STATUS_BOOKED]);
+                        if ($transaction) {
+                            $transaction->delete();
+                        }
                     } else {
-                        Transaction::create([
-                            'booking_id'     => $existingBooking->id,
-                            'amount_paid'    => $depositAmount,
-                            'payment_for'    => Transaction::FOR_BOOKING,
-                            'payment_method' => $validated['payment_method'],
-                            'payment_status' => Transaction::STATUS_PENDING,
-                        ]);
+                        if ($transaction) {
+                            // Clear any stale payment lock from a prior page visit
+                            // (e.g. guest visited the QR page, went back within 1 min, and changed tier)
+                            $transaction->update([
+                                'amount_paid'             => $depositAmount,
+                                'payment_method'          => $validated['payment_method'],
+                                'payment_locked_at'       => null,
+                                'payment_lock_expires_at' => null,
+                            ]);
+                        } else {
+                            Transaction::create([
+                                'booking_id'     => $existingBooking->id,
+                                'amount_paid'    => $depositAmount,
+                                'payment_for'    => Transaction::FOR_BOOKING,
+                                'payment_method' => $validated['payment_method'],
+                                'payment_status' => Transaction::STATUS_PENDING,
+                            ]);
+                        }
                     }
 
                     return $existingBooking;
@@ -287,12 +342,12 @@ class RoomController extends Controller
                 // Create the booking in 'pending' status — confirmed after payment.
                 $booking = Booking::create([
                     'guest_id'         => $guestId,
-                    'room_id'          => $assignedRoom->id,
+                    'room_id'          => $primaryRoom?->id,
                     'check_in_date'    => $validated['check_in_date'],
                     'check_out_date'   => $validated['check_out_date'],
                     'total_price'      => $total,
                     'payment_tier'     => $requestedTier,
-                    'booking_status'   => Booking::STATUS_PENDING,
+                    'booking_status'   => ($depositAmount > 0) ? Booking::STATUS_PENDING : Booking::STATUS_BOOKED,
                     'booking_origin'       => Booking::ORIGIN_USER,
                     'special_requests' => $validated['special_requests'] ?? null,
                     'bed_type'         => $validated['bed_type'] ?? null,
@@ -300,22 +355,26 @@ class RoomController extends Controller
                     'view_preference'  => $validated['view_preference'] ?? null,
                 ]);
 
-                // Create the booking_room pivot record
-                $booking->bookingRooms()->create([
-                    'room_type_id' => $roomType->id,
-                    'room_id' => $assignedRoom->id,
-                    'quantity' => $requestedRooms,
-                    'price_at_booking' => $lockedRoomType->price_per_night,
-                ]);
+                // Create one booking_room row per assigned physical room (quantity always 1).
+                foreach ($assignedRooms as $aRoom) {
+                    $booking->bookingRooms()->create([
+                        'room_type_id'     => $roomType->id,
+                        'room_id'          => $aRoom->id,
+                        'quantity'         => 1,
+                        'price_at_booking' => $lockedRoomType->price_per_night,
+                    ]);
+                }
 
                 // Create a pending transaction with the deposit amount.
-                Transaction::create([
-                    'booking_id'     => $booking->id,
-                    'amount_paid'    => $depositAmount,
-                    'payment_for'    => Transaction::FOR_BOOKING,
-                    'payment_method' => $validated['payment_method'],
-                    'payment_status' => Transaction::STATUS_PENDING,
-                ]);
+                if ($depositAmount > 0) {
+                    Transaction::create([
+                        'booking_id'     => $booking->id,
+                        'amount_paid'    => $depositAmount,
+                        'payment_for'    => Transaction::FOR_BOOKING,
+                        'payment_method' => $validated['payment_method'],
+                        'payment_status' => Transaction::STATUS_PENDING,
+                    ]);
+                }
 
                 return $booking;
             });
@@ -336,6 +395,12 @@ class RoomController extends Controller
             throw $e;
         }
 
+        if ($booking->booking_status === Booking::STATUS_BOOKED) {
+            return redirect()
+                ->route('guest.booking.show', $booking->id)
+                ->with('success', 'Booking confirmed! We look forward to your stay.');
+        }
+
         return redirect()
             ->route('payment.show', $booking->id)
             ->with('success', 'Booking created! Please complete payment to confirm your reservation.');
@@ -351,7 +416,7 @@ class RoomController extends Controller
 
         abort_if($booking->guest_id !== $guestId, 403);
 
-        $booking->load(['room.roomType', 'transactions']);
+        $booking->load(['room.roomType', 'transactions', 'bookingRooms.roomType']);
 
         $catalogItems = ItemsCatalog::orderBy('category')->get();
         $roomServices = RoomService::where('booking_id', $booking->id)
@@ -570,7 +635,7 @@ class RoomController extends Controller
             abort(403, 'Invoice not available yet.');
         }
 
-        $booking->load(['room', 'guest', 'transactions', 'roomServices.requestedItems.catalog']);
+        $booking->load(['room.roomType', 'guest', 'transactions', 'roomServices.requestedItems.catalog', 'bookingRooms.roomType']);
 
         return view('guest.invoice', compact('booking'));
     }
@@ -700,7 +765,31 @@ class RoomController extends Controller
         $nights = max(1, (int) Carbon::parse($checkin)->diffInDays(Carbon::parse($checkout)));
         $totalPrice = $totalPricePerNight * $nights;
 
-        return view('guest.multi-room-checkout', compact('cartItems', 'checkin', 'checkout', 'nights', 'totalPrice', 'cartJson'));
+        // All visible room types so the checkout page can render the "Add Room" panel.
+        $allRoomTypes = RoomType::where('is_visible', true)->orderBy('price_per_night')->get();
+
+        foreach ($allRoomTypes as $rt) {
+            $rt->availableBeds = $rt->rooms()->whereNotNull('bed_configuration')->distinct()->pluck('bed_configuration');
+            $rt->availableViews = $rt->rooms()->whereNotNull('view_type')->distinct()->pluck('view_type');
+            $rt->availableFloors = $rt->rooms()
+                ->get()
+                ->map(fn($r) => $r->floor) // uses getFloorAttribute on Room model
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values();
+        }
+
+        // Live exchange rate for the KHR equivalent display.
+        $exchangeRate = \App\Models\ExchangeRate::usdToKhr()->value('rate') ?? 4100;
+
+        $guestId = \Illuminate\Support\Facades\Auth::user()?->guest_id;
+        $hasNoDepositBooking = $guestId ? \App\Models\Booking::where('guest_id', $guestId)
+            ->where('payment_tier', 0)
+            ->whereIn('booking_status', [\App\Models\Booking::STATUS_PENDING, \App\Models\Booking::STATUS_BOOKED, \App\Models\Booking::STATUS_CHECKED_IN])
+            ->exists() : false;
+
+        return view('guest.multi-room-checkout', compact('cartItems', 'checkin', 'checkout', 'nights', 'totalPrice', 'cartJson', 'allRoomTypes', 'exchangeRate', 'hasNoDepositBooking'));
     }
 
     /**
@@ -718,6 +807,7 @@ class RoomController extends Controller
             'bed_type'         => 'nullable|array',
             'floor_preference' => 'nullable|array',
             'view_preference'  => 'nullable|array',
+            'phone_number'     => 'nullable|string|max:50',
         ]);
 
         $cart = json_decode($validated['cart_json'], true);
@@ -727,6 +817,32 @@ class RoomController extends Controller
 
         $guestId = Auth::user()->guest_id;
         $requestedTier = (int) $validated['payment_tier'];
+
+        // Group booking policy: No Deposit is not allowed for 3 or more rooms total.
+        $totalCartRooms = array_sum(array_column($cart, 'qty'));
+        if ($requestedTier === 0 && $totalCartRooms > 2) {
+            return back()->withInput()->with('error', 'A deposit is required for group bookings of 3 or more rooms. Please select a payment option.');
+        }
+
+        // Anti-circumvention: Prevent multiple No Deposit bookings
+        if ($requestedTier === 0) {
+            $hasNoDepositBooking = \App\Models\Booking::where('guest_id', $guestId)
+                ->where('payment_tier', 0)
+                ->whereIn('booking_status', [\App\Models\Booking::STATUS_PENDING, \App\Models\Booking::STATUS_BOOKED, \App\Models\Booking::STATUS_CHECKED_IN])
+                ->exists();
+
+            if ($hasNoDepositBooking) {
+                return back()->withInput()->with('error', 'You already have an active No Deposit booking. Please pay a deposit to confirm additional rooms.');
+            }
+        }
+
+        // Save phone number if provided
+        if (!empty($validated['phone_number'])) {
+            $guest = \App\Models\Guest::find($guestId);
+            if ($guest && !$guest->phones()->where('phone_number', $validated['phone_number'])->exists()) {
+                $guest->phones()->create(['phone_number' => $validated['phone_number']]);
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -766,21 +882,37 @@ class RoomController extends Controller
                     throw new \Exception('CAPACITY_EXHAUSTED_' . $lockedRoomType->name);
                 }
 
-                $assignedRoom = $lockedRoomType->pickAvailableRoom(
+                // Preferences for this specific room type come in as arrays keyed by room_type_id.
+                $bedPref   = $validated['bed_type'][$lockedRoomType->id] ?? null;
+                $viewPref  = $validated['view_preference'][$lockedRoomType->id] ?? null;
+                $floorPref = $validated['floor_preference'][$lockedRoomType->id] ?? null;
+
+                // Auto-assign one distinct physical room per quantity requested.
+                $assignedRooms = $lockedRoomType->pickAvailableRooms(
                     $validated['check_in_date'],
                     $validated['check_out_date'],
-                    $requestedTier
+                    $qty,
+                    $requestedTier,
+                    $bedPref,
+                    $viewPref,
+                    $floorPref,
                 );
 
-                if (!$assignedRoom) {
-                    $assignedRoom = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+                // Fallback padding (overbooking edge case: fewer physical rooms than qty).
+                while ($assignedRooms->count() < $qty) {
+                    $fallback = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')
+                        ->whereNotIn('id', $assignedRooms->pluck('id')->toArray())
+                        ->first()
+                        ?? $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->first();
+                    if (!$fallback) break;
+                    $assignedRooms->push($fallback);
                 }
 
-                if (!$primaryRoomId && $assignedRoom) {
-                    $primaryRoomId = $assignedRoom->id;
-                    $primaryBedType = $validated['bed_type'][$lockedRoomType->id] ?? null;
-                    $primaryFloor = $validated['floor_preference'][$lockedRoomType->id] ?? null;
-                    $primaryView = $validated['view_preference'][$lockedRoomType->id] ?? null;
+                if (!$primaryRoomId && $assignedRooms->isNotEmpty()) {
+                    $primaryRoomId = $assignedRooms->first()->id;
+                    $primaryBedType = $bedPref;
+                    $primaryFloor = $floorPref;
+                    $primaryView = $viewPref;
                 }
 
                 $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
@@ -788,12 +920,15 @@ class RoomController extends Controller
 
                 $total += $nights * (float) $lockedRoomType->price_per_night * $qty;
 
-                $bookingRoomsData[] = [
-                    'room_type_id' => $lockedRoomType->id,
-                    'room_id' => $assignedRoom ? $assignedRoom->id : null,
-                    'quantity' => $qty,
-                    'price_at_booking' => $lockedRoomType->price_per_night,
-                ];
+                // Build one row per physical room assigned (quantity always 1).
+                foreach ($assignedRooms as $aRoom) {
+                    $bookingRoomsData[] = [
+                        'room_type_id'     => $lockedRoomType->id,
+                        'room_id'          => $aRoom->id,
+                        'quantity'         => 1,
+                        'price_at_booking' => $lockedRoomType->price_per_night,
+                    ];
+                }
             }
 
             if (empty($bookingRoomsData)) {
@@ -826,7 +961,7 @@ class RoomController extends Controller
                 'check_out_date'   => $validated['check_out_date'],
                 'total_price'      => $total,
                 'payment_tier'     => $requestedTier,
-                'booking_status'   => Booking::STATUS_PENDING,
+                'booking_status'   => ($depositAmount > 0) ? Booking::STATUS_PENDING : Booking::STATUS_BOOKED,
                 'booking_origin'   => Booking::ORIGIN_USER,
                 'special_requests' => $validated['special_requests'] ?? null,
                 'bed_type'         => $primaryBedType,
@@ -834,21 +969,29 @@ class RoomController extends Controller
                 'view_preference'  => $primaryView,
             ]);
 
-            // Create pivot records
+            // Create one booking_room row per assigned physical room.
             foreach ($bookingRoomsData as $data) {
                 $booking->bookingRooms()->create($data);
             }
 
             // Create pending transaction
-            Transaction::create([
-                'booking_id'     => $booking->id,
-                'amount_paid'    => $depositAmount,
-                'payment_for'    => Transaction::FOR_BOOKING,
-                'payment_method' => $validated['payment_method'],
-                'payment_status' => Transaction::STATUS_PENDING,
-            ]);
+            if ($depositAmount > 0) {
+                Transaction::create([
+                    'booking_id'     => $booking->id,
+                    'amount_paid'    => $depositAmount,
+                    'payment_for'    => Transaction::FOR_BOOKING,
+                    'payment_method' => $validated['payment_method'],
+                    'payment_status' => Transaction::STATUS_PENDING,
+                ]);
+            }
 
             DB::commit();
+
+            if ($booking->booking_status === Booking::STATUS_BOOKED) {
+                return redirect()
+                    ->route('guest.booking.show', $booking->id)
+                    ->with('success', 'Multi-room booking reserved successfully! We look forward to your stay.');
+            }
 
             return redirect()
                 ->route('payment.show', $booking->id)

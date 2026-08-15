@@ -465,4 +465,37 @@ class Booking extends Model
     {
         return self::STATUS_LABELS[$this->booking_status] ?? ucfirst($this->booking_status);
     }
+
+    /**
+     * Returns a human-readable summary of the rooms in this booking.
+     *
+     * For multi-type bookings it lists each room type with its quantity,
+     * e.g. "Standard Room ×2, Deluxe Room ×1".
+     *
+     * Falls back to the primary room's displayType() for simple single-room
+     * bookings where the booking_room pivot may not be loaded.
+     */
+    public function displayRooms(): string
+    {
+        // Try the booking_room pivot first (multi-room aware).
+        // Group by room_type_id because the new schema stores one row per physical
+        // room (quantity=1), so the same type may have multiple rows.
+        $lines = $this->bookingRooms;
+        if ($lines && $lines->isNotEmpty()) {
+            return $lines
+                ->groupBy('room_type_id')
+                ->map(function ($rows) {
+                    $first = $rows->first();
+                    $name  = $first->roomType?->display_name ?? $first->roomType?->name ?? 'Room';
+                    $count = $rows->sum('quantity'); // sums to total rooms of this type
+                    return $count > 1 ? "{$name} ×{$count}" : $name;
+                })
+                ->values()
+                ->join(', ');
+        }
+
+        // Fallback: single-room booking (no pivot rows)
+        return $this->room?->displayType() ?? 'Room';
+    }
 }
+

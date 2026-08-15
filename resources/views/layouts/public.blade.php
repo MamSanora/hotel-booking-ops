@@ -64,7 +64,7 @@
 
         $logoutRoute = 'guest.logout';
         if ($currentGuard === 'admin') $logoutRoute = 'admin.logout';
-        if ($currentGuard === 'staff')  $logoutRoute = 'reception.logout';
+        if ($currentGuard === 'staff')  $logoutRoute = 'staff.logout';
     @endphp
 
     <!-- ==========================================

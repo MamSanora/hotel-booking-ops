@@ -56,6 +56,7 @@ class StoreBookingRequest extends FormRequest
             'bed_type'         => ['nullable', 'string', 'max:50'],
             'floor_preference' => ['nullable', 'string', 'max:50'],
             'view_preference'  => ['nullable', 'string', 'max:50'],
+            'phone_number'     => ['nullable', 'string', 'max:50'],
         ];
     }
 

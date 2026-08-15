@@ -227,7 +227,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Room</span>
-                        <span class="font-semibold text-hotel-dark">{{ $booking->room->name ?? '—' }}</span>
+                        <span class="font-semibold text-hotel-dark">{{ $booking->displayRooms() }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Check-in</span>

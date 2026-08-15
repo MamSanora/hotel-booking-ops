@@ -52,11 +52,20 @@ class ReceptionDashboardController extends Controller
             'actual_check_in_at' => now(),
         ]);
 
-        // Mark the room as occupied so it won't show as available.
-        $booking->room?->update([
-            'current_status'    => \App\Models\Room::STATUS_OCCUPIED,
-            'status_updated_at' => now(),
-        ]);
+        // Mark all assigned rooms as occupied so they won't show as available.
+        if ($booking->bookingRooms->isNotEmpty()) {
+            foreach ($booking->bookingRooms as $bRoom) {
+                $bRoom->room?->update([
+                    'current_status'    => \App\Models\Room::STATUS_OCCUPIED,
+                    'status_updated_at' => now(),
+                ]);
+            }
+        } else {
+            $booking->room?->update([
+                'current_status'    => \App\Models\Room::STATUS_OCCUPIED,
+                'status_updated_at' => now(),
+            ]);
+        }
 
         $guestName = $booking->guest?->full_name ?? 'Guest';
 
@@ -70,10 +79,49 @@ class ReceptionDashboardController extends Controller
      * Returns the room to available status.
      * Blocks if there is an outstanding (non-full) payment.
      */
-    public function checkout(Booking $booking): RedirectResponse
+    public function checkout(Request $request, Booking $booking): RedirectResponse
     {
         if (! $booking->canCheckOut()) {
             return back()->with('error', 'Only checked-in guests can be checked out.');
+        }
+
+        // If payment data was submitted from the checkout modal, record it first.
+        if ($request->filled('payment_method') && $request->filled('amount_paid')) {
+            $validated = $request->validate([
+                'payment_method'    => ['required', 'in:cash,khqr,khqr_aba'],
+                'amount_paid'       => ['required', 'numeric', 'min:0.01'],
+                'payment_for'       => ['nullable', 'in:booking,stay_extension'],
+                'payment_reference' => ['required_unless:payment_method,cash', 'nullable', 'string', 'max:255'],
+            ]);
+
+            $alreadyPaid = $booking->transactions()
+                ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
+                ->sum('amount_paid');
+            $paymentStatus = (($alreadyPaid + (float) $validated['amount_paid'] + 0.01) >= (float) $booking->total_price)
+                ? Transaction::STATUS_FULL
+                : Transaction::STATUS_PARTIAL;
+
+            $paymentReference = $validated['payment_reference'] ?? null;
+            if ($validated['payment_method'] === 'cash' && empty($paymentReference)) {
+                $paymentReference = 'Cash — collected at check-out';
+            }
+
+            $transaction = Transaction::create([
+                'booking_id'            => $booking->id,
+                'amount_paid'           => $validated['amount_paid'],
+                'payment_for'           => $validated['payment_for'] ?? 'booking',
+                'payment_method'        => $validated['payment_method'],
+                'payment_status'        => $paymentStatus,
+                'payment_reference'     => $paymentReference,
+                'processed_by_staff_id' => Auth::guard('staff')->id(),
+            ]);
+
+            \App\Models\IncidentalCharge::where('booking_id', $booking->id)
+                ->whereNull('transaction_id')
+                ->update(['transaction_id' => $transaction->id]);
+
+            // Refresh to pick up the new transaction in the balance check below.
+            $booking->refresh();
         }
 
         // Verify the booking balance has been fully settled (total paid >= total price)
@@ -90,15 +138,26 @@ class ReceptionDashboardController extends Controller
             'actual_check_out_at' => now(),
         ]);
 
-        // Return the room to cleaning so housekeeping can clean it.
-        $booking->room?->update([
-            'current_status'    => \App\Models\Room::STATUS_CLEANING,
-            'status_updated_at' => now(),
-        ]);
+        // Return all booked rooms to cleaning so housekeeping can clean them.
+        if ($booking->bookingRooms->isNotEmpty()) {
+            foreach ($booking->bookingRooms as $bRoom) {
+                $bRoom->room?->update([
+                    'current_status'    => \App\Models\Room::STATUS_CLEANING,
+                    'status_updated_at' => now(),
+                ]);
+            }
+        } else {
+            $booking->room?->update([
+                'current_status'    => \App\Models\Room::STATUS_CLEANING,
+                'status_updated_at' => now(),
+            ]);
+        }
 
         $guestName = $booking->guest?->full_name ?? 'Guest';
 
-        return back()->with('success', "{$guestName} has been checked out successfully.");
+        return back()
+            ->with('success', "{$guestName} has been checked out successfully.")
+            ->with('print_receipt', route('reception.receipt', $booking->id));
     }
 
     /**
@@ -137,10 +196,24 @@ class ReceptionDashboardController extends Controller
             $booking->increment('total_price', $total);
         });
 
+        // Refresh to get the updated total_price
+        $booking = $booking->fresh();
+        
+        // Generate new QR code for the updated remaining balance
+        $remaining = max(0, (float) $booking->total_price - $booking->totalPaid());
+        $qrDataUri = '';
+        if ($remaining > 0) {
+            $qrString = $booking->room?->roomType?->use_mam_sanora_qr
+                ? \App\Services\KhqrGenerator::forMamSanora($remaining, $booking->referenceNumber())
+                : \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
+            $qrDataUri = (new \chillerlan\QRCode\QRCode)->render($qrString);
+        }
+
         return response()->json([
             'message'      => 'Charge added.',
             'charge_total' => $total,
-            'booking_total'=> (float) $booking->fresh()->total_price,
+            'booking_total'=> (float) $booking->total_price,
+            'qrDataUri'    => $qrDataUri,
         ]);
     }
 
@@ -195,12 +268,13 @@ class ReceptionDashboardController extends Controller
         }
 
         Transaction::create([
-            'booking_id'        => $booking->id,
-            'amount_paid'       => $validated['amount_paid'],
-            'payment_for'       => $validated['payment_for'],
-            'payment_method'    => $validated['payment_method'],
-            'payment_status'    => $paymentStatus,
-            'payment_reference' => $paymentReference,
+            'booking_id'            => $booking->id,
+            'amount_paid'           => $validated['amount_paid'],
+            'payment_for'           => $validated['payment_for'],
+            'payment_method'        => $validated['payment_method'],
+            'payment_status'        => $paymentStatus,
+            'payment_reference'     => $paymentReference,
+            'processed_by_staff_id' => Auth::guard('staff')->id(),
         ]);
 
         return back()->with('success', "Payment of \${$validated['amount_paid']} recorded for {$booking->referenceNumber()}.");
@@ -273,11 +347,12 @@ class ReceptionDashboardController extends Controller
 
             // Record full payment collected on the spot by the receptionist.
             Transaction::create([
-                'booking_id'     => $booking->id,
-                'amount_paid'    => $extraCost,
-                'payment_for'    => Transaction::FOR_STAY_EXTENSION,
-                'payment_method' => $validated['payment_method'],
-                'payment_status' => Transaction::STATUS_FULL,
+                'booking_id'            => $booking->id,
+                'amount_paid'           => $extraCost,
+                'payment_for'           => Transaction::FOR_STAY_EXTENSION,
+                'payment_method'        => $validated['payment_method'],
+                'payment_status'        => Transaction::STATUS_FULL,
+                'processed_by_staff_id' => Auth::guard('staff')->id(),
             ]);
         });
 

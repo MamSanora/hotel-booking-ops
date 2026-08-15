@@ -16,15 +16,19 @@
         @page { margin: 0; size: 80mm auto; }
         body { background-color: #f3f4f6; font-family: 'Courier New', Courier, monospace; color: #000; }
         
-        /* Conformed to exactly 604px with 30px padding (simulating 192 DPI thermal print) */
+        /* Conformed to exactly 604px with 30px padding (simulating 192 DPI thermal print)         *
+         * Font scale: 1pt = 2.67px at 192 DPI                                                    *
+         *   - Hotel name / grand total: 12pt = 32px                                              *
+         *   - Body text (items, labels): 9.75pt = 26px  (industry standard Font A ≈ 9–10pt)     *
+         *   - Sub-text (address, rate):  9pt    = 24px                                           */
         .thermal-paper {
             width: 604px;
             margin: 2rem auto;
             background: white;
             padding: 30px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            font-size: 24px;
-            line-height: 1.4;
+            font-size: 26px;   /* body base = 9.75pt */
+            line-height: 1.5;
         }
         .dashed-line { border-top: 2px dashed #000; margin: 20px 0; }
     </style>
@@ -46,9 +50,11 @@
 
         <!-- Hotel Header — pulled from config/env, NOT hardcoded -->
         <div class="text-center mb-6">
-            <h1 class="font-bold text-3xl uppercase">{{ config('app.hotel_name', 'Dara Meas Hotel') }}</h1>
-            <p class="text-[20px] mt-2">{{ config('app.hotel_address', 'Phnom Penh, Cambodia') }}</p>
-            <p class="text-[20px] mt-1">{{ config('app.hotel_phone', '') }}{{ config('app.hotel_email') ? ' | ' . config('app.hotel_email') : '' }}</p>
+            <img src="{{ asset('images/logo.png') }}" alt="{{ config('app.hotel_name', 'Dara Meas Hotel') }} Logo"
+                 style="max-height: 80px; width: auto; margin: 0 auto 12px; display: block;">
+            <h1 class="font-bold text-[32px] uppercase">{{ config('app.hotel_name', 'Dara Meas Hotel') }}</h1>
+            <p class="text-[24px] mt-2">{{ config('app.hotel_address', 'Phnom Penh, Cambodia') }}</p>
+            <p class="text-[24px] mt-1">{{ config('app.hotel_phone', '') }}{{ config('app.hotel_email') ? ' | ' . config('app.hotel_email') : '' }}</p>
         </div>
 
         <div class="dashed-line"></div>
@@ -69,13 +75,13 @@
                 : ($booking->check_out_date ? $booking->check_out_date->format('d M Y') . ' 12:00' : 'N/A');
         @endphp
 
-        <div class="mb-4 text-[22px]">
+        <div class="mb-4">
             <div class="mb-1"><strong>Guest Name:</strong> {{ $booking->guest?->full_name ?? 'Walk-in Guest' }}</div>
             {{-- Receipt number is static and derived from the booking ID — never changes on refresh --}}
             <div class="mb-1"><strong>Receipt No:</strong> RE-{{ $booking->referenceNumber() }}</div>
             <div class="mb-1"><strong>Room:</strong>
-                @if($booking->bookingRooms->count() > 1)
-                    Multiple Rooms
+                @if($booking->bookingRooms->isNotEmpty())
+                    {{ $booking->bookingRooms->map(fn($br) => $br->room?->room_number ?? 'TBA')->implode(', ') }}
                 @else
                     {{ $booking->room?->room_number ?? 'N/A' }}
                     ({{ $booking->room?->roomType?->display_name ?? $booking->room?->roomType?->name ?? 'N/A' }})
@@ -98,7 +104,7 @@
             $nightlyCost  = $nightsLabel > 0 ? $roomTotal / $nightsLabel : $roomTotal;
         @endphp
 
-        <table class="w-full text-left mb-4 text-[22px]">
+        <table class="w-full text-left mb-4">
             <thead>
                 <tr class="border-b-2 border-black">
                     <th class="w-2/3 pb-2">Item</th>
@@ -111,7 +117,7 @@
                     @foreach($booking->bookingRooms as $bRoom)
                         <tr>
                             <td class="pt-2">
-                                {{ $bRoom->roomType->name }} ({{ $bRoom->quantity }} room{{ $bRoom->quantity > 1 ? 's' : '' }}, {{ $nightsLabel }} night{{ $nightsLabel > 1 ? 's' : '' }} @ ${{ number_format($bRoom->price_at_booking, 2) }}/night)
+                                {{ $bRoom->roomType->name }} - Rm {{ $bRoom->room?->room_number ?? 'TBA' }} ({{ $nightsLabel }} night{{ $nightsLabel > 1 ? 's' : '' }} @ ${{ number_format($bRoom->price_at_booking, 2) }}/night)
                             </td>
                             <td class="text-right pt-2 align-top">${{ number_format($bRoom->quantity * $bRoom->price_at_booking * $nightsLabel, 2) }}</td>
                         </tr>
@@ -154,22 +160,22 @@
             $khrRate = $exchangeRate ?? 4100;
         @endphp
 
-        <div class="flex justify-between font-bold text-[24px] mt-4">
+        <div class="flex justify-between font-bold text-[32px] mt-4">
             <span>Grand Total (USD):</span>
             <span>${{ number_format($booking->total_price, 2) }}</span>
         </div>
-        <div class="flex justify-between font-bold text-[22px] mb-4">
+        <div class="flex justify-between font-bold text-[26px] mb-4">
             <span>Grand Total (KHR):</span>
             <span>៛{{ number_format($booking->total_price * $khrRate, 0) }}</span>
         </div>
 
-        <div class="flex justify-between text-[22px] mb-2">
+        <div class="flex justify-between mb-2">
             <span>Payment Method:</span>
             <span>{{ $paymentMethodStr }}</span>
         </div>
 
         @if($balance > 0)
-        <div class="flex justify-between text-[22px] mb-2 text-red-700 font-bold">
+        <div class="flex justify-between mb-2 text-red-700 font-bold">
             <span>Balance Due:</span>
             <span>${{ number_format($balance, 2) }}</span>
         </div>
@@ -179,9 +185,9 @@
 
         <!-- Footer -->
         <div class="text-center mt-6">
-            <p class="mb-2 font-bold text-[24px]">Thank you for your stay!</p>
-            <p class="text-[20px]">Please come again.</p>
-            <p class="text-[20px] mt-4">Rate: 1 USD = {{ number_format($khrRate, 0) }} KHR</p>
+            <p class="mb-2 font-bold text-[26px]">Thank you for your stay!</p>
+            <p class="text-[24px]">Please come again.</p>
+            <p class="text-[24px] mt-4">Rate: 1 USD = {{ number_format($khrRate, 0) }} KHR</p>
         </div>
     </div>
 

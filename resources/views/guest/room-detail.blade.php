@@ -229,7 +229,11 @@
 
                 @auth('web')
                     {{-- Guest info preview (read-only) --}}
-                    @php $guestProfile = Auth::guard('web')->user()->guest; @endphp
+                    @php 
+                        $guestProfile = Auth::guard('web')->user()->guest;
+                        $guestPhones = $guestProfile ? $guestProfile->phones->pluck('phone_number') : collect();
+                        $primaryPhone = $guestPhones->first();
+                    @endphp
                     @if($guestProfile)
                         <div class="bg-hotel-light rounded-xl p-4 mb-5 flex items-center gap-3 border border-[#e8e0d0]">
                             <i class="bi bi-person-check-fill text-hotel-gold text-xl"></i>
@@ -244,9 +248,46 @@
                     <form action="{{ route('booking.store', $roomType) }}" method="POST" id="bookingForm" class="space-y-4">
                         @csrf
 
+                        {{-- Phone & Rooms --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {{-- Phone Number --}}
+                            <div>
+                                <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">Phone Number</label>
+                                <input type="text" name="phone_number" id="phone_number" list="phone_numbers"
+                                       value="{{ old('phone_number', $primaryPhone) }}"
+                                       placeholder="Enter your phone number"
+                                       class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
+                                <datalist id="phone_numbers">
+                                    @foreach($guestPhones as $phone)
+                                        <option value="{{ $phone }}"></option>
+                                    @endforeach
+                                </datalist>
+                            </div>
+
+                            {{-- Number of Rooms --}}
+                            <div>
+                                <label for="rooms" class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">
+                                    Number of Rooms
+                                </label>
+                                <input type="number"
+                                       name="rooms"
+                                       id="rooms"
+                                       min="1"
+                                       max="10"
+                                       value="{{ old('rooms', max(1, (int) request('rooms', 1))) }}"
+                                       required
+                                       class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
+                                <p class="text-[0.72rem] text-gray-400 mt-1">
+                                    <i class="bi bi-info-circle"></i> Max {{ $roomType->adult_capacity }} Adults, {{ $roomType->child_capacity }} Children / room.
+                                </p>
+                                @error('rooms')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
 
                         {{-- Dates --}}
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">Check-In Date</label>
                                 <input type="date" name="check_in_date" id="check_in_date"
@@ -260,27 +301,6 @@
                                        value="{{ old('check_out_date', request('checkout')) }}" required
                                        class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
                             </div>
-                        </div>
-
-                        {{-- Number of Rooms --}}
-                        <div>
-                            <label for="rooms" class="block font-semibold text-[0.8rem] uppercase text-gray-500 tracking-wider mb-1.5">
-                                Number of Rooms
-                            </label>
-                            <input type="number"
-                                   name="rooms"
-                                   id="rooms"
-                                   min="1"
-                                   max="10"
-                                   value="{{ old('rooms', max(1, (int) request('rooms', 1))) }}"
-                                   required
-                                   class="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-2.5 text-[0.95rem] focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white">
-                            <p class="text-[0.72rem] text-gray-400 mt-1">
-                                <i class="bi bi-info-circle"></i> Each room accommodates up to {{ $roomType->adult_capacity }} Adults and {{ $roomType->child_capacity }} Children.
-                            </p>
-                            @error('rooms')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
 
                         {{-- Special Requests --}}
@@ -438,18 +458,31 @@
                                     ['value' => 20,  'label' => '20% Deposit',      'desc'  => 'Pay 20% now to hold your reservation, balance due at check-in.'],
                                     ['value' => 0,   'label' => 'No Deposit',       'desc'  => 'Secure your room now and pay the full amount upon arrival.'],
                                 ] as $tier)
-                                    <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 cursor-pointer transition-all border-gray-200 hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]">
+                                    @php
+                                        $isDisabled = ($tier['value'] == 0 && $hasNoDepositBooking);
+                                    @endphp
+                                    <label class="flex items-start gap-3 border-[1.5px] rounded-xl px-4 py-3.5 transition-all border-gray-200 {{ $isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:bg-[#fffbf0]' }}">
                                         <input type="radio"
                                                name="payment_tier"
                                                value="{{ $tier['value'] }}"
                                                id="tier_{{ $tier['value'] }}"
-                                               {{ old('payment_tier', 100) == $tier['value'] ? 'checked' : '' }}
-                                               class="mt-0.5 accent-hotel-gold shrink-0 tier-radio">
+                                               {{ old('payment_tier', 100) == $tier['value'] && !$isDisabled ? 'checked' : '' }}
+                                               {{ $isDisabled ? 'disabled' : '' }}
+                                               class="mt-0.5 accent-hotel-gold shrink-0 tier-radio {{ $isDisabled ? 'cursor-not-allowed' : '' }}">
                                         <div class="flex-1">
                                             <div class="flex items-center gap-2">
                                                 <span class="font-semibold text-hotel-dark text-[0.9rem]">{{ $tier['label'] }}</span>
+                                                @if($isDisabled)
+                                                    <span class="text-[0.6rem] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Unavailable</span>
+                                                @endif
                                             </div>
-                                            <p class="text-[0.78rem] text-gray-500 mt-0.5">{{ $tier['desc'] }}</p>
+                                            <p class="text-[0.78rem] text-gray-500 mt-0.5">
+                                                @if($isDisabled)
+                                                    You already have an active No Deposit booking.
+                                                @else
+                                                    {{ $tier['desc'] }}
+                                                @endif
+                                            </p>
                                         </div>
                                     </label>
                                 @endforeach
@@ -504,6 +537,7 @@
 @push('scripts')
 <script>
     const pricePerNight = {{ $roomType->price_per_night ?? 0 }};
+    const khrRate = {{ $exchangeRate ?? 4100 }};
     const checkInEl   = document.getElementById('check_in_date');
     const checkOutEl  = document.getElementById('check_out_date');
     const roomsEl     = document.getElementById('rooms');
@@ -535,7 +569,7 @@
         if (checkInEl.value && checkOutEl.value && co > ci) {
             const nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
             const total  = nights * pricePerNight * rooms;
-            const khrTotal = Math.round(total * 4100);
+            const khrTotal = Math.round(total * khrRate);
             const tier   = getSelectedTier();
             const deposit = Math.round(total * tier) / 100;
             const balance = total - deposit;
@@ -559,6 +593,27 @@
             if (khrEl) khrEl.textContent = '—';
             depositRow.style.setProperty('display', 'none', 'important');
             balanceRow.style.setProperty('display', 'none', 'important');
+        }
+
+        // Group booking policy: Disable "No Deposit" (tier_0) if rooms > 2
+        const tier0 = document.getElementById('tier_0');
+        if (tier0) {
+            const label = tier0.closest('label');
+            if (rooms > 2) {
+                tier0.disabled = true;
+                label.classList.add('opacity-50', 'cursor-not-allowed');
+                label.title = 'A deposit is required for 3 or more rooms';
+                if (tier0.checked) {
+                    const tier20 = document.getElementById('tier_20');
+                    if (tier20) tier20.checked = true;
+                    // Recalculate with new tier
+                    calculatePrice();
+                }
+            } else {
+                tier0.disabled = false;
+                label.classList.remove('opacity-50', 'cursor-not-allowed');
+                label.title = '';
+            }
         }
     }
 

@@ -428,6 +428,7 @@
                            @input="setQty('{{ $rt->slug }}', $event.target.value, {{ $maxQty2 }}, {{ (float)$rt->price_per_night }})"
                            :class="errors['{{ $rt->slug }}'] ? 'border-red-500' : 'border-white/20'"
                            id="pkg-input-{{ $rt->slug }}"
+                           data-price="{{ (float)$rt->price_per_night }}"
                            class="w-20 text-center bg-white/10 disabled:bg-white/5 border rounded-lg px-2 py-1.5 text-white font-bold text-base focus:outline-none focus:ring-2 focus:ring-hotel-gold/50 disabled:text-white/30 disabled:cursor-not-allowed">
                     <span x-show="errors['{{ $rt->slug }}']" x-cloak
                           class="text-red-400 text-[0.65rem]"
@@ -571,10 +572,11 @@
             },
 
             init() {
-                // Seed quantities/prices from DOM inputs
+                // Seed quantities/prices from DOM inputs (in case browser restores values on back/refresh)
                 document.querySelectorAll('[id^="pkg-input-"]').forEach(el => {
                     const slug = el.id.replace('pkg-input-', '');
-                    this.quantities[slug] = 0;
+                    this.quantities[slug] = parseInt(el.value, 10) || 0;
+                    this.prices[slug] = parseFloat(el.getAttribute('data-price')) || 0;
                 });
             },
 

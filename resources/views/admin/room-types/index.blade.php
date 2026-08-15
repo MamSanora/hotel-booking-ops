@@ -64,7 +64,7 @@
                 <template x-for="id in selected" :key="id">
                     <input type="hidden" name="ids[]" :value="id">
                 </template>
-                <button type="button" @click="$dispatch('open-confirm', { message: 'Permanently delete ' + selected.length + ' room types? This cannot be undone and will only succeed for types without assigned rooms.', action: () => $el.closest('form').submit() })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center shadow-sm">
+                <button type="button" @click="$dispatch('open-confirm', { message: 'Permanently delete ' + selected.length + ' room types? This cannot be undone and will only succeed for types without assigned rooms.', action: (function(f) { return () => f.submit(); })($el.closest('form')) })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center shadow-sm">
                     <i class="bi bi-trash mr-2"></i>Delete Selected
                 </button>
             </form>
@@ -121,7 +121,7 @@
                                 </a>
                                 <form action="{{ route('admin.room-types.destroy', $type) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Delete room type \'{{ addslashes($type->display_name) }}\'? This is only possible if no rooms are assigned to it.', action: () => $el.closest('form').submit() })"
+                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Delete room type \'{{ addslashes($type->display_name) }}\'? This is only possible if no rooms are assigned to it.', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-md text-xs font-semibold transition-colors border border-red-100" title="Delete Room Type">
                                         <i class="bi bi-trash"></i>
                                     </button>

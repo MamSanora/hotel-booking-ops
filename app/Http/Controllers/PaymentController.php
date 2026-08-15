@@ -54,7 +54,7 @@ class PaymentController extends Controller
     {
         $this->authorizeBookingAccess($booking);
 
-        $booking->load('room');
+        $booking->load(['room.roomType', 'bookingRooms.roomType']);
 
         $transaction = $booking->transactions()
             ->where('payment_status', Transaction::STATUS_PENDING)

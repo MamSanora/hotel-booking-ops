@@ -63,7 +63,7 @@
                             </div>
                             <div class="text-right">
                                 <div class="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">Room</div>
-                                <div class="text-sm font-bold text-gray-800 mt-0.5">{{ $booking->room?->displayType() ?? 'Reserved' }}</div>
+                                <div class="text-sm font-bold text-gray-800 mt-0.5">{{ $booking->displayRooms() }}</div>
                             </div>
                         </div>
                     </div>
@@ -136,7 +136,7 @@
 
                 <div class="mt-2 w-full max-w-[340px]">
                     <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                          x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO MODE: Simulate a successful payment?', action: () => $el.submit() })">
+                          x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO MODE: Simulate a successful payment?', action: (function(f) { return () => f.submit(); })($el) })">
                         @csrf
                         <button type="submit"
                                 class="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold border border-emerald-300 rounded-xl py-2.5 text-xs transition-all shadow-sm">
@@ -183,7 +183,7 @@
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Room Type</span>
-                            <span class="font-semibold text-gray-900">{{ $booking->room?->displayType() ?? 'Room' }}</span>
+                            <span class="font-semibold text-gray-900">{{ $booking->displayRooms() }}</span>
                         </div>
                         <div class="py-2.5 flex justify-between items-center">
                             <span class="text-gray-500">Check-in</span>

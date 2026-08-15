@@ -29,74 +29,13 @@ class BookingController extends Controller
      */
     public function index(\Illuminate\Http\Request $request): View
     {
-        $query = Booking::with(['guest', 'room', 'handledBy', 'transactions']);
-
-        // 1. Search by Booking Reference or Guest Name/Email/Phone
-        if ($search = $request->input('search')) {
-            $query->where(function($q) use ($search) {
-                // Since referenceNumber is a method that formats the ID, we search by ID for reference
-                $numericSearch = preg_replace('/[^0-9]/', '', $search);
-                if (!empty($numericSearch)) {
-                    $q->where('id', 'like', "%{$numericSearch}%");
-                }
-                
-                $q->orWhereHas('guest', function($g) use ($search) {
-                    $g->where('full_name', 'like', "%{$search}%")
-                      ->orWhereHas('guestAuth', function($ga) use ($search) {
-                          $ga->where('email', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('phones', function($p) use ($search) {
-                          $p->where('phone_number', 'like', "%{$search}%");
-                      });
-                })
-                ->orWhereHas('transactions', function($t) use ($search) {
-                    $t->where('payment_reference', 'like', "%{$search}%");
-                });
-            });
-        }
-
-        // 2. Filter by Status
-        if ($status = $request->input('status')) {
-            $query->where('booking_status', $status);
-        }
-
-        // 3. Filter by Date Range (Check-in Dates)
-        if ($dateFrom = $request->input('date_from')) {
-            $query->whereDate('check_in_date', '>=', $dateFrom);
-        }
-        if ($dateTo = $request->input('date_to')) {
-            $query->whereDate('check_in_date', '<=', $dateTo);
-        }
-
-        // 4. Filter by Booking Origin
-        if ($bookingOrigin = $request->input('booking_origin')) {
-            $query->where('booking_origin', $bookingOrigin);
-        }
-
-        // 5. Sorting
-        $sort = $request->input('sort', 'latest_booking');
-        match ($sort) {
-            'earliest_booking' => $query->orderBy('bookings.id', 'asc'),
-            'check_in_asc'     => $query->orderBy('bookings.check_in_date', 'asc'),
-            'check_in_desc'    => $query->orderBy('bookings.check_in_date', 'desc'),
-            'check_out_asc'    => $query->orderBy('bookings.check_out_date', 'asc'),
-            'check_out_desc'   => $query->orderBy('bookings.check_out_date', 'desc'),
-            'guest_asc'        => $query->join('guests', 'bookings.guest_id', '=', 'guests.id')->orderBy('guests.full_name', 'asc')->select('bookings.*'),
-            'guest_desc'       => $query->join('guests', 'bookings.guest_id', '=', 'guests.id')->orderBy('guests.full_name', 'desc')->select('bookings.*'),
-            'price_high'       => $query->orderBy('bookings.total_price', 'desc'),
-            'price_low'        => $query->orderBy('bookings.total_price', 'asc'),
-            default            => $query->orderBy('bookings.id', 'desc'), // latest_booking
-        };
-
-        $bookings = $query->paginate(20)->withQueryString();
-
         // Count cancelled bookings whose transactions were explicitly flagged
         // as refund_pending by the cancel() controller
         $pendingRefundCount = Booking::where('booking_status', Booking::STATUS_CANCELLED)
             ->whereHas('transactions', fn ($q) => $q->where('payment_status', Transaction::STATUS_REFUND_PENDING))
             ->count();
 
-        return view('admin.bookings.index', compact('bookings', 'pendingRefundCount'));
+        return view('admin.bookings.index', compact('pendingRefundCount'));
     }
 
     /**
@@ -104,8 +43,18 @@ class BookingController extends Controller
      */
     public function receipt(Booking $booking): View
     {
-        $latestTxn = $booking->transactions()->latest()->first();
-        return view('admin.bookings.receipt', compact('booking', 'latestTxn'));
+        $booking->load([
+            'guest',
+            'room.roomType',
+            'transactions',
+            'bookingRooms.roomType',
+            'incidentalCharges',
+        ]);
+
+        $latestTxn    = $booking->transactions->sortByDesc('created_at')->first();
+        $exchangeRate = \App\Models\ExchangeRate::usdToKhr()->value('rate') ?? 4100;
+
+        return view('admin.bookings.receipt', compact('booking', 'latestTxn', 'exchangeRate'));
     }
 
     /**
@@ -143,12 +92,18 @@ class BookingController extends Controller
             $query->where('booking_status', $status);
         }
 
-        // 3. Filter by Date Range (Check-in Dates)
+        // 3. Filter by Date Range
+        $dateType = $request->input('date_type', 'check_in_date');
+        $validDateTypes = ['check_in_date', 'check_out_date', 'created_at'];
+        if (!in_array($dateType, $validDateTypes)) {
+            $dateType = 'check_in_date';
+        }
+
         if ($dateFrom = $request->input('date_from')) {
-            $query->whereDate('check_in_date', '>=', $dateFrom);
+            $query->whereDate("bookings.{$dateType}", '>=', $dateFrom);
         }
         if ($dateTo = $request->input('date_to')) {
-            $query->whereDate('check_in_date', '<=', $dateTo);
+            $query->whereDate("bookings.{$dateType}", '<=', $dateTo);
         }
 
         // 4. Filter by Booking Origin
@@ -156,11 +111,55 @@ class BookingController extends Controller
             $query->where('booking_origin', $bookingOrigin);
         }
 
-        $query->orderByDesc('created_at');
+        // 5. Sorting
+        $sort = $request->input('sort', 'latest_booking');
+        match ($sort) {
+            'earliest_booking' => $query->orderBy('bookings.id', 'asc'),
+            'check_in_asc'     => $query->orderBy('bookings.check_in_date', 'asc'),
+            'check_in_desc'    => $query->orderBy('bookings.check_in_date', 'desc'),
+            'check_out_asc'    => $query->orderBy('bookings.check_out_date', 'asc'),
+            'check_out_desc'   => $query->orderBy('bookings.check_out_date', 'desc'),
+            'guest_asc'        => $query->join('guests', 'bookings.guest_id', '=', 'guests.id')->orderBy('guests.full_name', 'asc')->select('bookings.*'),
+            'guest_desc'       => $query->join('guests', 'bookings.guest_id', '=', 'guests.id')->orderBy('guests.full_name', 'desc')->select('bookings.*'),
+            'price_high'       => $query->orderBy('bookings.total_price', 'desc'),
+            'price_low'        => $query->orderBy('bookings.total_price', 'asc'),
+            default            => $query->orderBy('bookings.id', 'desc'),
+        };
+
+        $reportPrefix = match($dateType) {
+            'check_in_date' => 'arrivals_report',
+            'check_out_date' => 'departures_report',
+            'created_at' => 'sales_report',
+            default => 'bookings_report',
+        };
+
+        $filename = $reportPrefix;
+        if ($dateFrom && $dateTo) {
+            $start = \Carbon\Carbon::parse($dateFrom);
+            $end = \Carbon\Carbon::parse($dateTo);
+            
+            if ($start->isSameDay($end)) {
+                $filename .= '_daily_' . $start->format('Y-m-d');
+            } elseif ($start->copy()->startOfMonth()->isSameDay($start) && $end->copy()->endOfMonth()->isSameDay($end) && $start->isSameMonth($end)) {
+                $filename .= '_monthly_' . $start->format('M_Y');
+            } elseif ($start->copy()->startOfYear()->isSameDay($start) && $end->copy()->endOfYear()->isSameDay($end) && $start->isSameYear($end)) {
+                $filename .= '_yearly_' . $start->format('Y');
+            } else {
+                $filename .= '_from_' . $start->format('Y-m-d') . '_to_' . $end->format('Y-m-d');
+            }
+        } elseif ($dateFrom) {
+            $filename .= '_from_' . \Carbon\Carbon::parse($dateFrom)->format('Y-m-d');
+        } elseif ($dateTo) {
+            $filename .= '_until_' . \Carbon\Carbon::parse($dateTo)->format('Y-m-d');
+        } else {
+            $filename .= '_all_time';
+        }
+
+        $filename .= '_' . now()->format('His') . '.xlsx';
 
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\BookingsExport($query),
-            'bookings_report_' . now()->format('Y-m-d_His') . '.xlsx'
+            $filename
         );
     }
 
@@ -198,7 +197,20 @@ class BookingController extends Controller
             ->whereIn('payment_status', [Transaction::STATUS_FULL, Transaction::STATUS_PARTIAL])
             ->exists();
 
-        $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+        DB::transaction(function () use ($booking) {
+            // Release any physically assigned rooms back to available status.
+            foreach ($booking->bookingRooms()->with('room')->get() as $bookingRoom) {
+                if ($bookingRoom->room) {
+                    $bookingRoom->room->update(['current_status' => 'available']);
+                }
+            }
+            // Also release the primary room on the booking record itself.
+            if ($booking->room) {
+                $booking->room->update(['current_status' => 'available']);
+            }
+
+            $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
+        });
 
         $message = "Booking {$booking->referenceNumber()} cancelled.";
 

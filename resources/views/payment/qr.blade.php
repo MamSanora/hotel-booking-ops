@@ -223,7 +223,7 @@
                             </div>
                             <div class="text-right">
                                 <p class="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-0.5">Room</p>
-                                <p class="text-sm font-extrabold text-gray-800">{{ $booking->room?->displayType() ?? 'Reserved' }}</p>
+                                <p class="text-sm font-extrabold text-gray-800">{{ $booking->displayRooms() }}</p>
                             </div>
                         </div>
                     </div>
@@ -278,7 +278,7 @@
 
                     @if(! app()->isProduction())
                     <form method="POST" action="{{ route('payment.simulate', $booking) }}"
-                          x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO: Simulate a successful Bakong payment?', action: () => $el.submit() })">
+                          x-data @submit.prevent="$dispatch('open-confirm', { message: 'DEMO: Simulate a successful Bakong payment?', action: (function(f) { return () => f.submit(); })($el) })">
                         @csrf
                         <button type="submit"
                                 class="w-full flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 font-bold rounded-xl py-2.5 text-xs transition-all">
@@ -374,7 +374,7 @@
                         @endif
                         <div class="flex justify-between py-2.5">
                             <span class="text-gray-400 font-medium">Room</span>
-                            <span class="font-bold text-gray-800">{{ $booking->room?->displayType() ?? 'Room' }}</span>
+                            <span class="font-bold text-gray-800">{{ $booking->displayRooms() }}</span>
                         </div>
                         <div class="flex justify-between py-2.5">
                             <span class="text-gray-400 font-medium">Check-in</span>

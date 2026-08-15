@@ -125,7 +125,7 @@
             </div>
 
             <div class="flex gap-4">
-                <button type="button" id="confirm-btn" x-data @click.prevent="$dispatch('open-confirm', { message: 'Confirm relocation? The guest will be moved immediately and the original room will be freed.', action: () => $el.closest('form').submit() })"
+                <button type="button" id="confirm-btn" x-data @click.prevent="$dispatch('open-confirm', { message: 'Confirm relocation? The guest will be moved immediately and the original room will be freed.', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
                     disabled
                     class="opacity-50 cursor-not-allowed bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2">
                     <i class="bi bi-arrow-repeat"></i>

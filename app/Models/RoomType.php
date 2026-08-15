@@ -84,7 +84,17 @@ class RoomType extends Model
         ];
     }
 
-    // ── Relationships ──────────────────────────────────────────────────────
+    /**
+     * Alias accessor so that `->name` resolves to `display_name`.
+     * The DB column is `display_name`; keeping this accessor prevents
+     * blank labels wherever old code uses `$roomType->name`.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->display_name ?? '';
+    }
+
+
 
     /**
      * All physical rooms of this type.
@@ -239,11 +249,21 @@ class RoomType extends Model
         $tierBookingLimit = $bookingLimits[$requestedTier] ?? $virtualCapacity;
 
         // Count ALL active room quantities for this type on the overlapping date range.
+        // OVERSTAY FAILSAFE: A booking that is currently Checked In always blocks capacity
+        // regardless of its check_out_date. This prevents double-booking rooms occupied by
+        // guests who have overstayed their scheduled departure.
         $totalActiveBookings = (int) \App\Models\BookingRoom::where('room_type_id', $this->id)
             ->whereHas('booking', function ($q) use ($checkIn, $checkOut, $excludeBookingId) {
                 $q->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
-                  ->where('check_in_date', '<', $checkOut)
-                  ->where('check_out_date', '>', $checkIn)
+                  ->where(function ($date) use ($checkIn, $checkOut) {
+                      $date
+                          // Standard date-range overlap
+                          ->where(fn ($s) => $s->where('check_in_date', '<', $checkOut)
+                                              ->where('check_out_date', '>', $checkIn))
+                          // Overstay: guest is checked in right now — always blocked
+                          ->orWhere(fn ($s) => $s->where('booking_status', Booking::STATUS_CHECKED_IN)
+                                               ->where('check_in_date', '<=', now()->toDateString()));
+                  })
                   ->when($excludeBookingId, fn ($q2) => $q2->where('id', '!=', $excludeBookingId));
             })
             ->sum('quantity');
@@ -273,38 +293,117 @@ class RoomType extends Model
     public function pickAvailableRoom(
         string $checkIn,
         string $checkOut,
-        int $requestedTier = Booking::TIER_FULL
+        int $requestedTier = Booking::TIER_FULL,
+        ?string $bedType = null,
+        ?string $viewPreference = null,
+        ?string $floorPreference = null,
+        array $excludeIds = [],
     ): ?Room {
         $activeStatuses = [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING];
 
-        // Prefer a completely empty room (no conflicting bookings at any tier).
-        $emptyRoom = $this->rooms()
+        $scoreRoom = function(Room $room) use ($bedType, $viewPreference, $floorPreference) {
+            $score = 0;
+            if ($bedType && $room->bed_configuration === $bedType) $score++;
+            if ($viewPreference && $room->view_type === $viewPreference) $score++;
+            if ($floorPreference && (string)$room->floor === (string)$floorPreference) $score++;
+            return $score;
+        };
+
+        // ── Pass 1: Find a completely free room, sorted by best preference match ──
+        $freeRooms = $this->rooms()
             ->available()
+            ->when(!empty($excludeIds), fn($q) => $q->whereNotIn('id', $excludeIds))
             ->whereDoesntHave('bookings', fn ($q) => $q
                 ->whereIn('booking_status', $activeStatuses)
                 ->where('check_in_date', '<', $checkOut)
                 ->where('check_out_date', '>', $checkIn)
             )
-            ->first();
+            ->get()
+            ->map(function ($room) use ($scoreRoom) {
+                $room->pref_score = $scoreRoom($room);
+                return $room;
+            });
 
-        if ($emptyRoom) {
-            return $emptyRoom;
+        if ($freeRooms->isNotEmpty()) {
+            return $freeRooms->sortByDesc('pref_score')->first();
         }
 
-        // Overbooking buffer slot: every physical room has at least one booking.
-        // Return the least-loaded room (fewest conflicts) — this gives the best
-        // statistical chance of resolution via a no-show at check-in.
-        // Front-desk staff handle physical re-assignment if needed.
-        return $this->rooms()
+        // ── Pass 2 (Overbooking buffer): Find least-loaded room, tie-broken by best preference match ──
+        $overbookedRooms = $this->rooms()
             ->available()
+            ->when(!empty($excludeIds), fn($q) => $q->whereNotIn('id', $excludeIds))
             ->withCount(['bookings as conflict_count' => fn ($q) => $q
                 ->whereIn('booking_status', $activeStatuses)
                 ->where('check_in_date', '<', $checkOut)
                 ->where('check_out_date', '>', $checkIn)
             ])
-            ->orderBy('conflict_count', 'asc')
-            ->first();
+            ->get()
+            ->map(function ($room) use ($scoreRoom) {
+                $room->pref_score = $scoreRoom($room);
+                return $room;
+            });
+
+        if ($overbookedRooms->isNotEmpty()) {
+            return $overbookedRooms->sortBy([
+                ['conflict_count', 'asc'],
+                ['pref_score', 'desc'],
+            ])->first();
+        }
+
+        return null;
     }
+
+    /**
+     * Pick N distinct available physical rooms for a multi-room booking.
+     *
+     * Iterates the same preference-aware scoring logic as pickAvailableRoom(),
+     * but collects $count unique rooms, excluding IDs already selected in the
+     * same booking to prevent assigning the same room number twice.
+     *
+     * Returns a Collection<Room>. The collection may have fewer than $count
+     * items if there are not enough non-maintenance rooms (overbooking buffer
+     * case). The caller must handle this gracefully.
+     *
+     * @param  int  $count          How many rooms to pick.
+     * @param  array<int>  $exclude Room IDs already assigned (to avoid duplicates).
+     */
+    public function pickAvailableRooms(
+        string $checkIn,
+        string $checkOut,
+        int $count = 1,
+        int $requestedTier = Booking::TIER_FULL,
+        ?string $bedType = null,
+        ?string $viewPreference = null,
+        ?string $floorPreference = null,
+        array $exclude = [],
+    ): \Illuminate\Support\Collection {
+        $picked = collect();
+
+        for ($i = 0; $i < $count; $i++) {
+            $alreadyPicked = $picked->pluck('id')->toArray();
+            $allExcludes = array_merge($exclude, $alreadyPicked);
+
+            $room = $this->pickAvailableRoom(
+                $checkIn,
+                $checkOut,
+                $requestedTier,
+                $bedType,
+                $viewPreference,
+                $floorPreference,
+                $allExcludes
+            );
+
+            // If no room was found at all (all slots exhausted), stop.
+            if (!$room) {
+                break;
+            }
+
+            $picked->push($room);
+        }
+
+        return $picked;
+    }
+
 
     /**
      * Compute remaining available physical rooms count for a given date range (or today if null).
@@ -319,8 +418,15 @@ class RoomType extends Model
         $activeBookings = (int) \App\Models\BookingRoom::where('room_type_id', $this->id)
             ->whereHas('booking', function ($q) use ($checkIn, $checkOut) {
                 $q->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
-                  ->where('check_in_date', '<', $checkOut)
-                  ->where('check_out_date', '>', $checkIn);
+                  ->where(function ($date) use ($checkIn, $checkOut) {
+                      $date
+                          // Standard date-range overlap
+                          ->where(fn ($s) => $s->where('check_in_date', '<', $checkOut)
+                                              ->where('check_out_date', '>', $checkIn))
+                          // Overstay failsafe: physically checked-in guests always block the room
+                          ->orWhere(fn ($s) => $s->where('booking_status', Booking::STATUS_CHECKED_IN)
+                                               ->where('check_in_date', '<=', now()->toDateString()));
+                  });
             })
             ->sum('quantity');
 

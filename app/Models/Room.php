@@ -253,4 +253,23 @@ class Room extends Model
             default   => 'Not specified',
         };
     }
+
+    /**
+     * Automatically derives the floor number from the room number.
+     * Assumes standard hotel numbering (e.g., 501 -> floor 5, 1001 -> floor 10).
+     */
+    public function getFloorAttribute(): ?string
+    {
+        if (!$this->room_number) {
+            return null;
+        }
+
+        // If it's a numeric room number with at least 3 digits (like 501 or 1205)
+        // the floor is everything except the last two digits.
+        if (preg_match('/^(\d+)\d{2}$/', $this->room_number, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
 }
