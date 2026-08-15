@@ -1,0 +1,8 @@
+# Project Rules
+
+- **Userbot Bridge**: Do NOT automatically or autonomously run `userbot_bridge.py` in the background when interacting with this project. The user runs this script manually via their `start_hotel_system.bat` file, and running it in the background causes SQLite database lock collisions on the `hotel_bridge.session` file. Only run it if the user explicitly orders you to do so for testing.
+- **Editing userbot_bridge.py**: Do NOT make any code edits or modifications to `userbot_bridge.py` under any circumstances, unless the user explicitly and directly asks you to edit this specific file.
+- **Telegram Housekeepers Feature**: Unless explicitly mentioned, ignore the Telegram housekeepers feature from now on when developing.
+- **System Architecture Assessment**: Before writing code or proposing solutions, always take a thorough look at the system architecture first to ensure changes don't break existing features or UX.
+- **Industrial Standards**: Always compare proposed features against hospitality and tech industry standards, and offer industrial standard advice and best practices when planning or implementing features.
+- **Dynamic Over Hardcoding**: Stop hardcoding data (e.g., images, dropdown options, prices) that should be dynamic. Always check database schemas and models to utilize existing JSON columns, relationships, or enums before resorting to hardcoded blade arrays or HTML options.

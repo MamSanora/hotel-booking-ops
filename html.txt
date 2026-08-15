@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="kOfZlbH7ahZohDVTGyNEMiubBXqnvYcS5KcIAGMC">
+
+    <title>Our Rooms — Phnom Penh, Cambodia</title>
+    <meta name="description" content="Browse all available rooms at Dara Meas Hotel — Standard Room, Deluxe Room, and Family Triple Room.">
+
+    <!-- Fonts: Inter and Playfair Display -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons (We keep these as they are just an icon font library) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Tailwind CSS (via Vite) -->
+    <link rel="preload" as="style" href="https://darameashotel.ngrok.dev/build/assets/app-DdpL7M_l.css" /><link rel="modulepreload" as="script" href="https://darameashotel.ngrok.dev/build/assets/app-C2DUHA_m.js" /><link rel="stylesheet" href="https://darameashotel.ngrok.dev/build/assets/app-DdpL7M_l.css" data-navigate-track="reload" /><script type="module" src="https://darameashotel.ngrok.dev/build/assets/app-C2DUHA_m.js" data-navigate-track="reload"></script>
+    <!-- Additional Custom Styles injected by individual views -->
+        
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        }
+    </script>
+</head>
+<body class="font-sans antialiased text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900 transition-colors duration-200 flex flex-col min-h-screen">
+
+    
+    <!-- ==========================================
+         NAVBAR
+         ========================================== -->
+    <nav x-data="{ mobileMenuOpen: false }" class="sticky top-0 z-50 backdrop-blur-md bg-gradient-to-r from-hotel-dark/95 to-hotel-accent/95 border-b border-white/10 shadow-lg py-3">
+        <div class="container mx-auto px-4 md:px-6">
+            <div class="flex items-center justify-between">
+                
+                <!-- Brand Logo -->
+                <a href="https://darameashotel.ngrok.dev" class="flex items-center gap-2">
+                    <img src="https://darameashotel.ngrok.dev/images/logo.png" alt="Dara Meas Hotel" class="h-10 w-auto object-contain">
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <div class="hidden lg:flex items-center space-x-2 xl:space-x-4">
+                    <a href="https://darameashotel.ngrok.dev" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10">
+                        <i class="bi bi-house mr-1"></i>
+                        <span data-en="Home" data-km="ទំព័រដើម">Home</span>
+                    </a>
+                    <a href="https://darameashotel.ngrok.dev/rooms" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-hotel-gold bg-hotel-gold/10">
+                        <i class="bi bi-door-open mr-1"></i>
+                        <span data-en="Rooms" data-km="បន្ទប់">Rooms</span>
+                    </a>
+                    <a href="https://darameashotel.ngrok.dev/gallery" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10">
+                        <i class="bi bi-images mr-1"></i>
+                        <span data-en="Gallery" data-km="វិចិត្រសាល">Gallery</span>
+                    </a>
+                    <a href="https://darameashotel.ngrok.dev/about" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10">
+                        <i class="bi bi-info-circle mr-1"></i>
+                        <span data-en="About" data-km="អំពីយើង">About</span>
+                    </a>
+                    <a href="https://darameashotel.ngrok.dev/contact" class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-white/85 hover:text-hotel-gold hover:bg-hotel-gold/10">
+                        <i class="bi bi-envelope mr-1"></i>
+                        <span data-en="Contact" data-km="ទំនាក់ទំនង">Contact</span>
+                    </a>
+                    
+                    
+                    <div id="locale-pill" class="hidden xl:flex items-center gap-0 text-[0.72rem] bg-white/10 border border-white/20 rounded-full overflow-hidden ml-2 shadow-inner">
+                        
+                        <button
+                            onclick="dmhToggleLang()"
+                            title="Switch language"
+                            class="flex items-center gap-1.5 px-3 py-1.5 text-white/85 hover:bg-white/15 hover:text-white transition-all duration-200 font-medium cursor-pointer"
+                        >
+                            <i class="bi bi-globe2 text-hotel-gold"></i>
+                            <span id="pill-lang-active" class="font-semibold">EN</span>
+                        </button>
+                        
+                    </div>
+                </div>
+
+                <!-- Desktop Auth Section -->
+                <div class="hidden lg:flex items-center space-x-3">
+                    
+                    <button onclick="toggleDarkMode()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/85 flex items-center justify-center transition-colors">
+                        <i class="bi bi-moon-stars-fill block dark:hidden text-sm"></i>
+                        <i class="bi bi-sun-fill hidden dark:block text-hotel-gold text-sm"></i>
+                    </button>
+
+                                            <a href="https://darameashotel.ngrok.dev/guest/login" class="px-4 py-1.5 rounded-full border-[1.5px] border-hotel-gold text-hotel-gold text-sm font-medium hover:bg-hotel-gold hover:text-hotel-dark transition-colors duration-200">
+                            <i class="bi bi-box-arrow-in-right mr-1"></i> Login
+                        </a>
+                                                    <a href="https://darameashotel.ngrok.dev/guest/register" class="px-4 py-1.5 rounded-full bg-hotel-gold text-hotel-dark text-sm font-bold hover:bg-hotel-gold-hover transition-colors duration-200">
+                                <i class="bi bi-person-plus mr-1"></i> Register
+                            </a>
+                                                            </div>
+
+                <!-- Mobile Menu Button -->
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden text-hotel-gold p-2 focus:outline-none">
+                    <i class="bi" :class="mobileMenuOpen ? 'bi-x-lg text-xl' : 'bi-list text-2xl'"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu (Collapsible) -->
+        <div x-show="mobileMenuOpen" x-transition.opacity class="lg:hidden bg-hotel-accent border-t border-white/10 mt-3" style="display: none;">
+            <div class="px-4 py-4 space-y-2">
+                <a href="https://darameashotel.ngrok.dev" class="block px-3 py-2 rounded-md text-base font-medium text-white/85">Home</a>
+                <a href="https://darameashotel.ngrok.dev/rooms" class="block px-3 py-2 rounded-md text-base font-medium text-hotel-gold bg-white/5">Rooms</a>
+                <a href="https://darameashotel.ngrok.dev/gallery" class="block px-3 py-2 rounded-md text-base font-medium text-white/85">Gallery</a>
+                <a href="https://darameashotel.ngrok.dev/about" class="block px-3 py-2 rounded-md text-base font-medium text-white/85">About</a>
+                <a href="https://darameashotel.ngrok.dev/contact" class="block px-3 py-2 rounded-md text-base font-medium text-white/85">Contact</a>
+
+                <button onclick="toggleDarkMode()" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-white/85 flex items-center justify-between hover:bg-white/5 transition-colors">
+                    <span class="block dark:hidden">Dark Mode</span>
+                    <span class="hidden dark:block">Light Mode</span>
+                    <i class="bi bi-moon-stars-fill block dark:hidden"></i>
+                    <i class="bi bi-sun-fill hidden dark:block text-hotel-gold"></i>
+                </button>
+
+                <hr class="border-white/10 my-3">
+
+                                    <div class="flex flex-col space-y-2 pt-2">
+                        <a href="https://darameashotel.ngrok.dev/guest/login" class="text-center px-4 py-2 rounded-md border border-hotel-gold text-hotel-gold font-medium">Login</a>
+                                                    <a href="https://darameashotel.ngrok.dev/guest/register" class="text-center px-4 py-2 rounded-md bg-hotel-gold text-hotel-dark font-bold">Register</a>
+                                            </div>
+                            </div>
+        </div>
+    </nav>
+
+    <!-- ==========================================
+         FLASH MESSAGES
+         ========================================== -->
+    
+    <!-- ==========================================
+         MAIN PAGE CONTENT
+         ========================================== -->
+    <main class="flex-grow">
+        
+
+<div class="relative bg-gradient-to-br from-hotel-dark to-hotel-accent py-14 lg:py-20 overflow-hidden">
+    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1600&q=60')] bg-cover bg-center opacity-[0.08]"></div>
+
+    <div class="container mx-auto px-4 relative z-10">
+        <h1 class="font-playfair text-4xl lg:text-5xl font-bold text-white mb-4">
+            <i class="bi bi-door-open mr-3 text-hotel-gold"></i>Our Rooms
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="flex space-x-2 text-sm text-white/60">
+                <li><a href="https://darameashotel.ngrok.dev" class="hover:text-white transition-colors">Home</a></li>
+                <li class="text-white/30">/</li>
+                <li class="text-hotel-gold" aria-current="page">Rooms</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-12">
+
+    
+    <div class="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-6 lg:p-8 mb-8">
+        <form method="GET" action="https://darameashotel.ngrok.dev/rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+
+            <div>
+                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Check-In</label>
+                <input type="date" name="checkin"
+                       min="2026-07-31"
+                       value="2026-08-10"
+                       class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none">
+            </div>
+
+            <div>
+                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Check-Out</label>
+                <input type="date" name="checkout"
+                       value="2026-08-12"
+                       class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none">
+            </div>
+
+            
+            <div>
+                <label class="block font-semibold text-[0.75rem] uppercase text-gray-500 tracking-wider mb-2">Guests</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <div>
+                            <div class="text-[0.65rem] text-gray-500 font-semibold uppercase tracking-wider">Adults</div>
+                            <div class="text-gray-800 text-sm font-bold" id="adults-display-rooms">1</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="adjustRoomCount('adults', -1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                            <button type="button" onclick="adjustRoomCount('adults', 1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                        </div>
+                        <input type="hidden" name="adults" id="adults-value-rooms" value="1">
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <div>
+                            <div class="text-[0.65rem] text-gray-500 font-semibold uppercase tracking-wider">Children</div>
+                            <div class="text-gray-800 text-sm font-bold" id="children-display-rooms">0</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="adjustRoomCount('children', -1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                            <button type="button" onclick="adjustRoomCount('children', 1)"
+                                    class="w-6 h-6 rounded-full bg-gray-200 hover:bg-hotel-gold hover:text-white text-gray-700 font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                        </div>
+                        <input type="hidden" name="children" id="children-value-rooms" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="w-full bg-hotel-dark hover:bg-hotel-accent text-white font-semibold rounded-lg px-4 py-2.5 transition-colors duration-200">
+                    <i class="bi bi-search mr-2"></i>Search Rooms
+                </button>
+            </div>
+        </form>
+    </div>
+
+    
+    <div class="flex flex-wrap gap-2 mb-6">
+        <a href="https://darameashotel.ngrok.dev/rooms?checkin=2026-08-10&amp;checkout=2026-08-12"
+           class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
+                  bg-hotel-dark border-hotel-dark text-white">
+            All Types (5)
+        </a>
+                    <a href="https://darameashotel.ngrok.dev/rooms?checkin=2026-08-10&amp;checkout=2026-08-12&amp;type=standard_twin"
+               class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
+                      border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white">
+                Standard Twin
+            </a>
+                    <a href="https://darameashotel.ngrok.dev/rooms?checkin=2026-08-10&amp;checkout=2026-08-12&amp;type=standard_double"
+               class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
+                      border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white">
+                Standard Double
+            </a>
+                    <a href="https://darameashotel.ngrok.dev/rooms?checkin=2026-08-10&amp;checkout=2026-08-12&amp;type=deluxe_double"
+               class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
+                      border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white">
+                Deluxe Double
+            </a>
+                    <a href="https://darameashotel.ngrok.dev/rooms?checkin=2026-08-10&amp;checkout=2026-08-12&amp;type=family_room"
+               class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
+                      border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white">
+                Family Room
+            </a>
+                    <a href="https://darameashotel.ngrok.dev/rooms?checkin=2026-08-10&amp;checkout=2026-08-12&amp;type=suite"
+               class="border-[1.5px] rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200
+                      border-gray-200 bg-white text-gray-600 hover:bg-hotel-dark hover:border-hotel-dark hover:text-white">
+                Suite
+            </a>
+            </div>
+
+    
+    <p class="text-gray-500 text-sm mb-8">
+        <i class="bi bi-grid mr-1"></i>
+        Showing <strong class="text-gray-800">5</strong> room type(s)
+                    available between
+            <strong class="text-gray-800">Aug 10, 2026</strong> and
+            <strong class="text-gray-800">Aug 12, 2026</strong>
+            </p>
+
+    
+    <div class="bg-gradient-to-r from-hotel-dark via-[#24243e] to-hotel-dark rounded-2xl p-5 md:p-6 text-white shadow-[0_8px_25px_rgba(26,26,46,0.15)] border border-white/10 mb-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-center divide-y sm:divide-y-0 sm:divide-x divide-white/10 text-center sm:text-left">
+            
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-qr-code"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">KHQR &amp; ABA Pay</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Instant Bakong scan &amp; pay accepted.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0 sm:pl-5">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">No Hidden Fees</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">All room taxes & amenities included.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0 lg:pl-5">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">Instant Confirmation</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Direct SMS & email receipt.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2 sm:pt-0 lg:pl-5">
+                <div class="w-10 h-10 rounded-xl bg-hotel-gold/20 border border-hotel-gold/30 text-hotel-gold flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
+                    <i class="bi bi-award"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-white text-xs">Best Rate Guarantee</h5>
+                    <p class="text-white/60 text-[0.72rem] mt-0.5">Direct rates starting at $30/night.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    
+    
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                            <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+
+                    
+                                            
+                        <div class="relative overflow-hidden h-[220px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div class="text-center text-gray-400">
+                                <i class="bi bi-door-closed text-5xl block mb-2"></i>
+                                <span class="text-xs font-medium">Test Room</span>
+                            </div>
+                        </div>
+                    
+                    <div class="p-6 flex flex-col flex-grow">
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
+                                <i class="bi bi-people mr-1"></i>Up to 2 guests
+                            </span>
+                            <div class="font-playfair text-2xl font-bold text-hotel-gold">
+                                <span data-price-usd="35.00">$35</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
+                            </div>
+                        </div>
+
+                        <h5 class="font-bold text-xl text-hotel-dark mb-1">Standard Twin</h5>
+                                                <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
+                            A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.
+                        </p>
+
+                        
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-wifi mr-1"></i>Wi-Fi
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-snow mr-1"></i>A/C
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-tv mr-1"></i>TV
+                            </span>
+                        </div>
+
+                        
+                        <div>
+                                                                                                <a href="https://darameashotel.ngrok.dev/rooms/1?checkin=2026-08-10&amp;checkout=2026-08-12"
+                                       class="w-full block text-center bg-gradient-to-br from-hotel-gold to-[#b8935a] hover:from-[#b8935a] hover:to-[#a07840] text-white font-semibold py-2.5 rounded-lg transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_4px_15px_rgba(200,169,110,0.4)]">
+                                        <i class="bi bi-calendar-plus mr-1"></i>Book Now
+                                    </a>
+                                                                                    </div>
+                    </div>
+                </div>
+                                            <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+
+                    
+                                            
+                        <div class="relative overflow-hidden h-[220px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div class="text-center text-gray-400">
+                                <i class="bi bi-door-closed text-5xl block mb-2"></i>
+                                <span class="text-xs font-medium">Test Room</span>
+                            </div>
+                        </div>
+                    
+                    <div class="p-6 flex flex-col flex-grow">
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
+                                <i class="bi bi-people mr-1"></i>Up to 2 guests
+                            </span>
+                            <div class="font-playfair text-2xl font-bold text-hotel-gold">
+                                <span data-price-usd="50.00">$50</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
+                            </div>
+                        </div>
+
+                        <h5 class="font-bold text-xl text-hotel-dark mb-1">Standard Double</h5>
+                                                <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
+                            A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.
+                        </p>
+
+                        
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-wifi mr-1"></i>Wi-Fi
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-snow mr-1"></i>A/C
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-tv mr-1"></i>TV
+                            </span>
+                        </div>
+
+                        
+                        <div>
+                                                    </div>
+                    </div>
+                </div>
+                                            <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+
+                    
+                                            
+                        <div class="relative overflow-hidden h-[220px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div class="text-center text-gray-400">
+                                <i class="bi bi-door-closed text-5xl block mb-2"></i>
+                                <span class="text-xs font-medium">Test Room</span>
+                            </div>
+                        </div>
+                    
+                    <div class="p-6 flex flex-col flex-grow">
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
+                                <i class="bi bi-people mr-1"></i>Up to 3 guests
+                            </span>
+                            <div class="font-playfair text-2xl font-bold text-hotel-gold">
+                                <span data-price-usd="80.00">$80</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
+                            </div>
+                        </div>
+
+                        <h5 class="font-bold text-xl text-hotel-dark mb-1">Deluxe Double</h5>
+                                                <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
+                            A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.
+                        </p>
+
+                        
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-wifi mr-1"></i>Wi-Fi
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-snow mr-1"></i>A/C
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-tv mr-1"></i>TV
+                            </span>
+                        </div>
+
+                        
+                        <div>
+                                                    </div>
+                    </div>
+                </div>
+                                            <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+
+                    
+                                            
+                        <div class="relative overflow-hidden h-[220px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div class="text-center text-gray-400">
+                                <i class="bi bi-door-closed text-5xl block mb-2"></i>
+                                <span class="text-xs font-medium">Test Room</span>
+                            </div>
+                        </div>
+                    
+                    <div class="p-6 flex flex-col flex-grow">
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
+                                <i class="bi bi-people mr-1"></i>Up to 4 guests
+                            </span>
+                            <div class="font-playfair text-2xl font-bold text-hotel-gold">
+                                <span data-price-usd="120.00">$120</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
+                            </div>
+                        </div>
+
+                        <h5 class="font-bold text-xl text-hotel-dark mb-1">Family Room</h5>
+                                                <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
+                            A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.
+                        </p>
+
+                        
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-wifi mr-1"></i>Wi-Fi
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-snow mr-1"></i>A/C
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-tv mr-1"></i>TV
+                            </span>
+                        </div>
+
+                        
+                        <div>
+                                                    </div>
+                    </div>
+                </div>
+                                            <div class="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.13)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+
+                    
+                                            
+                        <div class="relative overflow-hidden h-[220px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div class="text-center text-gray-400">
+                                <i class="bi bi-door-closed text-5xl block mb-2"></i>
+                                <span class="text-xs font-medium">Test Room</span>
+                            </div>
+                        </div>
+                    
+                    <div class="p-6 flex flex-col flex-grow">
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.75rem] px-2.5 py-1 rounded font-medium">
+                                <i class="bi bi-people mr-1"></i>Up to 4 guests
+                            </span>
+                            <div class="font-playfair text-2xl font-bold text-hotel-gold">
+                                <span data-price-usd="180.00">$180</span><span class="text-[0.8rem] text-gray-400 font-sans font-normal" data-night-label data-night-label-km="/យប់">/night</span>
+                            </div>
+                        </div>
+
+                        <h5 class="font-bold text-xl text-hotel-dark mb-1">Suite</h5>
+                                                <p class="text-gray-500 text-[0.88rem] leading-[1.6] mb-5 flex-grow">
+                            A comfortable and well-appointed room at Dara Meas Hotel, Phnom Penh.
+                        </p>
+
+                        
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-wifi mr-1"></i>Wi-Fi
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-snow mr-1"></i>A/C
+                            </span>
+                            <span class="bg-gray-50 text-gray-700 border border-gray-200 text-[0.72rem] px-2.5 py-1 rounded">
+                                <i class="bi bi-tv mr-1"></i>TV
+                            </span>
+                        </div>
+
+                        
+                        <div>
+                                                    </div>
+                    </div>
+                </div>
+                    </div>
+    
+</div>
+
+    </main>
+
+    <!-- ==========================================
+         FOOTER
+         ========================================== -->
+    <footer class="bg-hotel-dark text-white/75 pt-12 pb-6 border-t border-white/10">
+        <div class="container mx-auto px-4 md:px-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-6">
+                
+                <!-- Hotel Info -->
+                <div class="lg:col-span-4">
+                    <h5 class="text-hotel-gold font-playfair font-semibold text-lg mb-4 flex items-center">
+                        <i class="bi bi-building mr-2"></i> Dara Meas Hotel
+                    </h5>
+                    <p class="text-sm leading-relaxed mb-6">
+                        A comfortable 2-star hotel in Sen Sok, Phnom Penh, Cambodia.<br>
+                        Established 2019. 41 rooms across 4 floors.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-white/65 hover:text-hotel-gold transition-colors text-xl"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="text-white/65 hover:text-hotel-gold transition-colors text-xl"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="text-white/65 hover:text-hotel-gold transition-colors text-xl"><i class="bi bi-telegram"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="lg:col-span-2 md:col-span-1">
+                    <h5 class="text-hotel-gold font-playfair font-semibold text-lg mb-4">Quick Links</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="https://darameashotel.ngrok.dev" class="hover:text-hotel-gold transition-colors">Home</a></li>
+                        <li><a href="https://darameashotel.ngrok.dev/rooms" class="hover:text-hotel-gold transition-colors">Our Rooms</a></li>
+                        <li><a href="https://darameashotel.ngrok.dev/about" class="hover:text-hotel-gold transition-colors">About Us</a></li>
+                        <li><a href="https://darameashotel.ngrok.dev/contact" class="hover:text-hotel-gold transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Room Types -->
+                <div class="lg:col-span-2 md:col-span-1">
+                    <h5 class="text-hotel-gold font-playfair font-semibold text-lg mb-4">Room Types</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="https://darameashotel.ngrok.dev/rooms?type=standard_room" class="hover:text-hotel-gold transition-colors">Standard Room</a></li>
+                        <li><a href="https://darameashotel.ngrok.dev/rooms?type=deluxe_room" class="hover:text-hotel-gold transition-colors">Deluxe Room</a></li>
+                        <li><a href="https://darameashotel.ngrok.dev/rooms?type=family_triple_room" class="hover:text-hotel-gold transition-colors">Family Triple Room</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="lg:col-span-4">
+                    <h5 class="text-hotel-gold font-playfair font-semibold text-lg mb-4">Contact Us</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-start">
+                            <i class="bi bi-geo-alt text-hotel-gold mr-3 mt-0.5"></i> 
+                            <span>#40E Street 2004, Sangkat Tuek Thla, Khan Sen Sok, Phnom Penh, Cambodia</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="bi bi-telephone text-hotel-gold mr-3 mt-0.5"></i> 
+                            <span>+855 23 456 789</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="bi bi-envelope text-hotel-gold mr-3 mt-0.5"></i> 
+                            <span>info@darameashotel.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="bi bi-clock text-hotel-gold mr-3 mt-0.5"></i> 
+                            <span>24/7 Front Desk</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <hr class="border-white/10 mt-10 mb-6">
+            
+            <p class="text-center text-white/40 text-sm">
+                &copy; 2026 Dara Meas Hotel. All rights reserved. <span class="mx-2">&middot;</span> Phnom Penh, Cambodia
+            </p>
+        </div>
+    </footer>
+
+    <!-- Any extra JS scripts injected by views -->
+    <script>
+    const checkinEl  = document.querySelector('input[name="checkin"]');
+    const checkoutEl = document.querySelector('input[name="checkout"]');
+    if (checkinEl && checkoutEl) {
+        checkinEl.addEventListener('change', function () {
+            checkoutEl.min = this.value;
+            if (checkoutEl.value && checkoutEl.value <= this.value) {
+                const d = new Date(this.value);
+                d.setDate(d.getDate() + 1);
+                checkoutEl.value = d.toISOString().split('T')[0];
+            }
+        });
+    }
+
+    function adjustRoomCount(field, delta) {
+        const valEl  = document.getElementById(field + '-value-rooms');
+        const dispEl = document.getElementById(field + '-display-rooms');
+        if (!valEl || !dispEl) return;
+        const min = field === 'adults' ? 1 : 0;
+        const max = field === 'adults' ? 2 : 2;
+        let cur = parseInt(valEl.value, 10);
+        cur = Math.min(max, Math.max(min, cur + delta));
+        valEl.value    = cur;
+        dispEl.textContent = cur;
+    }
+</script>
+    <div x-data="{
+        isOpen: false,
+        message: '',
+        title: 'Confirm Action',
+        action: null,
+        confirm() {
+            if (this.action) {
+                this.action();
+            }
+            this.isOpen = false;
+        },
+        cancel() {
+            this.isOpen = false;
+        }
+    }"
+    @open-confirm.window="
+        message = $event.detail.message || 'Are you sure?';
+        title = $event.detail.title || 'Confirm Action';
+        action = $event.detail.action;
+        isOpen = true;
+    "
+    x-show="isOpen"
+    x-cloak
+    style="display: none;"
+    class="relative z-[9999]"
+    aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    
+    <!-- Backdrop -->
+    <div x-show="isOpen"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <!-- Modal Panel -->
+            <div x-show="isOpen"
+                 @click.away="cancel()"
+                 @keydown.escape.window="cancel()"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-gray-100 dark:border-gray-700">
+                
+                <div class="bg-white dark:bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 sm:mx-0 sm:h-10 sm:w-10 border border-amber-200 dark:border-amber-800/50">
+                            <i class="bi bi-exclamation-triangle text-amber-600 dark:text-amber-500 text-lg"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100" id="modal-title" x-text="title"></h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-html="message.replace(/\n/g, '<br>')"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-4 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100 dark:border-gray-700/50">
+                    <button type="button" @click="confirm()" class="inline-flex w-full justify-center rounded-xl bg-hotel-dark hover:bg-black text-white px-4 py-2.5 text-sm font-semibold shadow-sm sm:ml-3 sm:w-auto transition-colors">
+                        Confirm
+                    </button>
+                    <button type="button" @click="cancel()" class="mt-3 inline-flex w-full justify-center rounded-xl bg-white dark:bg-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 sm:mt-0 sm:w-auto transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

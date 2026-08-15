@@ -1,0 +1,146 @@
+--- REACT ---
+.៣.៥. Laravel Framework៣១ ២.៣.៦. Node.js៣១ ២.៣.៧. React JS៣២ ២.៣.៨. Static Website៣៣ ២.៣.៩. Postman៣៣ ២.៣
+Laravel៣១ រូបភាពទី ២.១៣: Node JS៣២ រូបភាពទី ២.១៤: React JS៣៣ រូបភាពទី ២.១៥: POSTMAN៣៤ រូបភាពទី ២.១៦: Visu
+ របស់អ្នកប្រើប្រាស់។ ប្រព័ន្ធនេះបានប្រើប្រាស់ភាសា React.js, Tailwind CSS, និង MySQL សម្រាប់ការគ្រប់គ្រងទិ
+es ក្នុង Database។ Home Page: ទំព័រដើមនៃប្រព័ន្ធ។ React JS: ភាសា/បច្ចេកវិទ្យាសម្រាប់បង្កើត Web Pages (Fro
+--- BOOTSTRAP ---
+l="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"> </hea
+/cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"> </head> <body class="min-h-screen
+--- APACHE ---
+ខ្លួន (Localhost)។ កញ្ចប់កម្មវិធីនេះមានផ្ទុកទៅដោយ Apache (Web server), MySQL (Database server), PHP និង Pe
+ អ្នកប្រើប្រាស់ត្រូវចូលទៅកាន់គេហទំព័រផ្លូវការរបស់ Apache Friends តាមរយៈការចុចលើតំណភ្ជាប់៖ https://www.apac
+ប្រព័ន្ធ។ XAMPP: ឧបករណ៍សម្រាប់ដំឡើង Local Server (Apache, MySQL, PHP)។ Git: ប្រព័ន្ធគ្រប់គ្រងកំណែកូដ។ ឧបសម
+ សូមចុចលើប៊ូតុង "Start" ដែលស្ថិតនៅចំពីមុខសេវាកម្ម Apache និង MySQL ដើម្បីអនុញ្ញាតឱ្យ XAMPP Server អាចចាប់ផ
+ Systems analysis and design (10th ed.). Pearson. Apache Friends. (2026). Download XAMPP.https://www.apach
+--- LIVEWIRE ---
+លប់មកវិញ Controller នឹងបញ្ជូនវាទៅកាន់ View (Blade/Livewire) ដើម្បីបង្ហាញលទ្ធផលត្រលប់ទៅកាន់អេក្រង់របស់អ្នកប្រ
+ទាញនិង Responsive, រួមជាមួយ Alpine.js និង Laravel Livewire ដើម្បីបង្កើតទំនាក់ទំនង (Interactivity) និងការផ្លា
+--- ALPINE ---
+ុខ (Frontend Dependencies) ដូចជា Tailwind CSS និង Alpine.js ដែលជាតម្រូវការចាំបាច់សម្រាប់រចនាចំណុចប្រទាក់អ្
+Styling) ឲ្យមានភាពទាក់ទាញនិង Responsive, រួមជាមួយ Alpine.js និង Laravel Livewire ដើម្បីបង្កើតទំនាក់ទំនង (I
+--- TAILWIND ---
+បណ្ណាល័យផ្នែកខាងមុខ (Frontend Dependencies) ដូចជា Tailwind CSS និង Alpine.js ដែលជាតម្រូវការចាំបាច់សម្រាប់រចន
+្រើប្រាស់។ ប្រព័ន្ធនេះបានប្រើប្រាស់ភាសា React.js, Tailwind CSS, និង MySQL សម្រាប់ការគ្រប់គ្រងទិន្នន័យ (Datab
+r Interface ត្រូវបានអភិវឌ្ឍឡើងដោយប្រើប្រាស់ HTML, Tailwind CSS សម្រាប់រៀបចំរចនាប័ទ្ម (Styling) ឲ្យមានភាពទាក់
+សេរកូដ (Programming Language) គឺរួមមាន HTML, CSS, Tailwind CSS, Laravel 11 + PHP, MySQL, XAMPP, Git/GitHub។ 
+--- LARAVEL ---
+mming Language) គឺរួមមាន HTML, CSS, Tailwind CSS, Laravel 11 + PHP, MySQL, XAMPP, Git/GitHub។ ខាងក្រោមនេះជា
+្យាដែលនឹងប្រើប្រាស់ ភាសាកម្មវិធី PhP, JavaScript, Laravel ប្រព័ន្ធទិន្នន័យ MySQL ការរចនាតាម Figma ប្រព័ន្ធប
+nternet) និងបញ្ជូនលទ្ធផលត្រលប់ទៅវិញ។ MVC Pattern (Laravel Framework): Controller: ទទួលសំណើពីអ្នកប្រើប្រាស់ 
+ាត់ប្រាក់។ មូលដ្ឋានទិន្នន័យនេះត្រូវបានភ្ជាប់ជាមួយ Laravel តាមរយៈការកំណត់នៅក្នុងឯកសារ (.env)។   រូបភាពទី ៤.១
+ឿន និងសុវត្ថិភាពរបស់វា។ រូបភាពទី ២.១១: PhP ២.៣.៥. Laravel Framework Laravel គឺជា Framework សម្រាប់អភិវឌ្ឍកម
+តតាមគំរូស្ថាបត្យកម្ម MVC (Model-View-Controller)។ Laravel មានគោលបំណងធ្វើឱ្យការងារទូទៅក្នុងការបង្កើតគេហទំព័រ
+វិធី Node.js ទោះបីជាប្រព័ន្ធរបស់យើងប្រើប្រាស់គំរូ Laravel Framework (PHP) ជាភាសាគោលសម្រាប់គ្រប់គ្រងទិន្នន័យ
+ំណើ HTTP ទៅកាន់ Web Server (Hostinger)។ បន្ទាប់មក Laravel (Controller) នឹងទទួលយកសំណើនោះ រួចស្នើសុំទិន្នន័យព
+ប្រព័ន្ធគ្រប់គ្រងទិន្នន័យ (DBMS) ដែលប្រើជាមួយ PHP/Laravel។ Password: ពាក្យសម្ងាត់សម្រាប់ការចូលប្រើប្រាស់ (L
+ដាក់ដំណើរការ Deployment បង្ហោះឯកសារកូដនៃប្រព័ន្ធ (Laravel Project) ទៅកាន់ File Manager របស់ Hostinger ឬប្រើ
+.២. CSS២៨ ២.៣.៣. JavaScript២៩ ២.៣.៤. PhP៣០ ២.៣.៥. Laravel Framework៣១ ២.៣.៦. Node.js៣១ ២.៣.៧. React JS៣២ ២.
+ស់វា។ រូបភាពទី ២.១១: PhP ២.៣.៥. Laravel Framework Laravel គឺជា Framework សម្រាប់អភិវឌ្ឍកម្មវិធី Web ដែលត្រូ
+ឧបករណ៍ ឬបច្ចេកវិទ្យាក្នុងដំណើរការផលិតដូចជា MySQL, Laravel, និងឧបករណ៍ផ្សេងបន្ថែមទៀត ដើម្បីធានាបាននូវស្ថិរភាព
+)។ Backup/Restore: ការបម្រុងទុក និងស្តារទិន្នន័យ។ Laravel + PHP: បច្ចេកវិទ្យា Backend សម្រាប់ប្រព័ន្ធ។ XAMP
+ication) ការគ្រប់គ្រង និងទំនាក់ទំនងជាមួយ Database Laravel ផ្តល់នូវ Syntax ដែលសាមញ្ញ ស្អាត និងងាយស្រួលយល់។ F
+ធ្វើបានលឿន និងមានប្រសិទ្ធភាពខ្ពស់។ រូបភាពទី ២.១២: Laravel ២.៣.៦. Node.js Node.js គឺជាវេទិកាសម្រាប់ដំណើរការ 
+នភាពទាក់ទាញនិង Responsive, រួមជាមួយ Alpine.js និង Laravel Livewire ដើម្បីបង្កើតទំនាក់ទំនង (Interactivity) ន
+្រាស់គំរូ MVC (Model-View-Controller) ដែលផ្តល់ដោយ Laravel Framework។ ស្ថាបត្យកម្មនៃប្រព័ន្ធនេះត្រូវបានបែងចែ
+--- PHP ---
+tps://logos-world.net/javascript-logo/ ២.៣.៤. PhP PHP ឬពាក្យពេញជា Hypertext Preprocessor គឺជាភាសា Scrip
+Restore: ការបម្រុងទុក និងស្តារទិន្នន័យ។ Laravel + PHP: បច្ចេកវិទ្យា Backend សម្រាប់ប្រព័ន្ធ។ XAMPP: ឧបក
+ដោយ Apache (Web server), MySQL (Database server), PHP និង Perl។ ការដំឡើង XAMPP ទៅលើ Server គឺជារឿងចាំបា
+បំផុតសម្រាប់ការដំណើរការគេហទំព័រដែលសរសេរឡើងដោយភាសា PHP និងការចាត់ចែងទិន្នន័យនៅក្នុង MySQL។ វាបានជួយសម្រួ
+វការ ៥. បច្ចេកវិទ្យាដែលនឹងប្រើប្រាស់ ភាសាកម្មវិធី PhP, JavaScript, Laravel ប្រព័ន្ធទិន្នន័យ MySQL ការរច
+ាប្រព័ន្ធរបស់យើងប្រើប្រាស់គំរូ Laravel Framework (PHP) ជាភាសាគោលសម្រាប់គ្រប់គ្រងទិន្នន័យនៅផ្នែកខាងម៉ាស៊
+: ឧបករណ៍សម្រាប់ដំឡើង Local Server (Apache, MySQL, PHP)។ Git: ប្រព័ន្ធគ្រប់គ្រងកំណែកូដ។ ឧបសម្ព័ន្ធ ក Sou
+តិ។ ការមាន Composer នៅលើ Server នឹងធានាថា Project PHP របស់យើងមានសមាសធាតុចាំបាច់គ្រប់គ្រាន់ និងងាយស្រួលក
+======================================= --}}     @php         $roomImages = [             'standard_twi
+េរកូដបង្កើតប្រព័ន្ធ។ ក្រុមការងារបានប្រើប្រាស់ភាសា PHP សម្រាប់បង្កើត Logic គ្រប់គ្រងផ្នែក Backend និងការ
+សម្រាប់ភាសា PHP។ នៅក្នុងការបង្កើតគម្រោង (Project) PHP ខ្នាតធំ យើងតែងតែត្រូវការប្រើប្រាស់បណ្ណាល័យកូដ (Li
+ <div class="flex flex-wrap gap-2 mb-6">         @php             $typeLabels = [                 'stan
+ធី (Programming Language) ដូចជា JavaScript, Java, Php, C, C++, Visual Basic ...។ បន្ទាប់មកទៀតត្រូវធ្វើក
+t https://logos-world.net/javascript-logo/ ២.៣.៤. PhP PHP ឬពាក្យពេញជា Hypertext Preprocessor គឺជាភាសា S
+ peaceful stay in Phnom Penh.</p>     </div>     @php         $roomImages = [             'standard_twi
+e) គឺរួមមាន HTML, CSS, Tailwind CSS, Laravel 11 + PHP, MySQL, XAMPP, Git/GitHub។ ខាងក្រោមនេះជាដំណាក់កាល
+ប់អភិវឌ្ឍកម្មវិធី Web ដែលត្រូវបានបង្កើតឡើងដោយប្រើ PHP។ វាផ្តល់នូវឧបករណ៍ និងរចនាសម្ព័ន្ធសម្រាប់អភិវឌ្ឍ W
+QL: ប្រព័ន្ធគ្រប់គ្រងទិន្នន័យ (DBMS) ដែលប្រើជាមួយ PHP/Laravel។ Password: ពាក្យសម្ងាត់សម្រាប់ការចូលប្រើប
+សម្រាប់គ្រប់គ្រង Dependencies ដ៏សំខាន់សម្រាប់ភាសា PHP។ នៅក្នុងការបង្កើតគម្រោង (Project) PHP ខ្នាតធំ យើង
+ពបត់បែន ល្បឿន និងសុវត្ថិភាពរបស់វា។ រូបភាពទី ២.១១: PhP ២.៣.៥. Laravel Framework Laravel គឺជា Framework ស
+       @foreach($rooms as $room)                 @php                     $img = $roomImages[$room->roo
+--- JAVASCRIPT ---
+៥. បច្ចេកវិទ្យាដែលនឹងប្រើប្រាស់ ភាសាកម្មវិធី PhP, JavaScript, Laravel ប្រព័ន្ធទិន្នន័យ MySQL ការរចនាតាម Figma 
+ារចងក្រង (Compile) និងបង្រួម (Minify) កូដ CSS និង JavaScript ទាំងអស់ទៅជាឯកសារតូចៗ (Build) ធ្វើឱ្យគេហទំព័រដំណើរ
+rehansaeed.com/css-general-rules-of-thumb/ ២.៣.៣. JavaScript JavaScript គឺជាភាសាសរសេរកម្មវិធីដែលត្រូវបានប្រើប្
+្ខណៈចម្រុះភាពងាយស្រួល និងសហគមន៍អ្នកអភិវឌ្ឍដ៏ធំធេង JavaScript បានក្លាយជាភាសាសរសេរកម្មវិធីដ៏ពេញនិយមបំផុតមួយសម្រា
+ម្រាប់បង្កើតកម្មវិធី (Programming Language) ដូចជា JavaScript, Java, Php, C, C++, Visual Basic ...។ បន្ទាប់មកទៀ
+ន្តរកម្ម និងមុខងារដ៏សម្បូរបែបដល់អ៊ិនធឺណិត។ តាមរយៈ JavaScript អ្នកអភិវឌ្ឍអាចបង្កើតបទពិសោធន៍ដែលជាជាមួយនិងការឆ្លើ
+នមេដោយមិនចាំបាច់ផ្ទុកទំព័រទាំងមូលវិញ។ លើសពីនេះទៀត JavaScript ក៏ត្រូវបានប្រើប្រាស់នៅលើផ្នែកម៉ាស៊ីនមេ (server-si
+com/css-general-rules-of-thumb/ ២.៣.៣. JavaScript JavaScript គឺជាភាសាសរសេរកម្មវិធីដែលត្រូវបានប្រើប្រាស់យ៉ាងទូល
+ឍគេហទំព័រ និងកម្មវិធីទូរស័ព្ទចល័ត។ រូបភាពទី ២.១០: JavaScript https://logos-world.net/javascript-logo/ ២.៣.៤. P
+rontend) គឺត្រូវបានរៀបចំឡើងដោយប្រើ HTML, CSS, និង JavaScript ដើម្បីឱ្យមានភាពទាក់ទាញ និងងាយស្រួលប្រើប្រាស់។ ជាម
+) ។ វាប្រើ V8 Engine របស់ Google ដើម្បីអនុវត្តកូដ JavaScript លឿន និងមានប្រសិទ្ធភាព។ Node.js ត្រូវបានគេប្រើប្រា
+រូបភាពទី ២.១០: JavaScript https://logos-world.net/javascript-logo/ ២.៣.៤. PhP PHP ឬពាក្យពេញជា Hypertext Prepro
+ ២.៣.៦. Node.js Node.js គឺជាវេទិកាសម្រាប់ដំណើរការ JavaScript នៅក្រៅបរិវេណ Browser (ដូចជាលើ Server) ។ វាប្រើ V8
+ម្មវិធីរុករករបស់អ្នកប្រើប្រាស់ ជំនួសឱ្យម៉ាស៊ីនមេ។ JavaScript អាចធ្វើការជាមួយ HTML និង CSS ដើម្បីកែប្រែរចនាសម្ព
+--- HTML ---
+អត្ថបទផ្សេង។ ហើយកែប្រែ Extension ទៅជា File.js ឬក៏ html បាននោះទេ ព្រោះវាមិនបានផ្តល់នូវភាពងាយស្រួលដល់ការសរ
+</div> </body> </html> គ. Register Page <!DOCTYPE html> <html lang="en"> <head>     <meta charset="UTF-8
+</div>         </div>     </div> </div> </body> </html> គ. Register Page <!DOCTYPE html> <html lang="en"
+ាស់ ជំនួសឱ្យម៉ាស៊ីនមេ។ JavaScript អាចធ្វើការជាមួយ HTML និង CSS ដើម្បីកែប្រែរចនាសម្ព័ន្ធនិងរចនាប័ទ្មទំព័រ
+load XAMPP.https://www.apachefriends.org/download.html GeeksforGeeks. (2026). Introduction of ER Model. 
+មវិធីដែលត្រូវប្រើប្រាស់ទាំងអស់រួមមាន៖ ២.៣.១. HTML HTML (HyperText Markup Language) គឺជាភាសាស្តង់ដារដែលត្
+</div> </div> @endsection ខ. Login Page <!DOCTYPE html> <html lang="en"> <head>     <meta charset="UTF-8
+រស់រវើក មានមុខងារពេញលេញ។ លក្ខណៈពិសេសដ៏សំខាន់មួយនៃ HTML គឺភាពអាចខាតមិនថា ដែលមានន័យថាវាជាដំណើរការលើប្រព័ន្
+ ដោយមិនចាំបាច់មានការកែប្រែពិសេសឡើយ។ រូបភាពទី ២.៨: HTML https://pixelmechanics.com.sg/web-development/htm
+ of Relationship https://flylib.com/books/2/581/1/html/2/images/0596005431/figs/wda2_ae06.gif One-to-One
+។ រីឯភាសាសរសេរកូដ (Programming Language) គឺរួមមាន HTML, CSS, Tailwind CSS, Laravel 11 + PHP, MySQL, XAMP
+តំណភ្ជាប់៖ https://www.apachefriends.org/download.html ជំហានបន្ទាប់៖ នៅលើទំព័រវេបសាយនោះ អ្នកនឹងឃើញមានប៊ូ
+ើយកម្មវិធីដែលត្រូវប្រើប្រាស់ទាំងអស់រួមមាន៖ ២.៣.១. HTML HTML (HyperText Markup Language) គឺជាភាសាស្តង់ដារ
+  </p>         </div>     </div> </div> </body> </html> ឃ. Room Page @extends('layouts.public') @section
+ប្រាស់មើលឃើញ (Frontend) គឺត្រូវបានរៀបចំឡើងដោយប្រើ HTML, CSS, និង JavaScript ដើម្បីឱ្យមានភាពទាក់ទាញ និងងា
+): User Interface ត្រូវបានអភិវឌ្ឍឡើងដោយប្រើប្រាស់ HTML, Tailwind CSS សម្រាប់រៀបចំរចនាប័ទ្ម (Styling) ឲ្យ
+</body> </html> គ. Register Page <!DOCTYPE html> <html lang="en"> <head>     <meta charset="UTF-8">     
+TML https://pixelmechanics.com.sg/web-development/html-guide-for-beginners-to-learn ២.៣.២. CSS Cascading
+</div> @endsection ខ. Login Page <!DOCTYPE html> <html lang="en"> <head>     <meta charset="UTF-8">     
+--- CSS ---
+្យអ្នកសរសេរកម្មវិធីមានភាពងាយស្រួលក្នុងការជ្រើសរើស CSS មកប្រើប្រាស់បានតាមតម្រូវការនៃការរចនាគេហទំព័រ។ ឧទា
+។ ប្រព័ន្ធនេះបានប្រើប្រាស់ភាសា React.js, Tailwind CSS, និង MySQL សម្រាប់ការគ្រប់គ្រងទិន្នន័យ (Database)
+nners-to-learn ២.៣.២. CSS Cascading Style Sheets (CSS) គឺជា Style Sheet Language មួយប្រើសម្រាប់រចនាគេហទ
+ាសាសរសេរកូដ (Programming Language) គឺរួមមាន HTML, CSS, Tailwind CSS, Laravel 11 + PHP, MySQL, XAMPP, Gi
+elopment/html-guide-for-beginners-to-learn ២.៣.២. CSS Cascading Style Sheets (CSS) គឺជា Style Sheet Lan
+over នៅលើវា នោះវានឹងផ្លាស់ប្តូរពណ៌។ រូបភាពទី ២.៩: CSS https://rehansaeed.com/css-general-rules-of-thumb
+្នែកខាងមុខ (Frontend Dependencies) ដូចជា Tailwind CSS និង Alpine.js ដែលជាតម្រូវការចាំបាច់សម្រាប់រចនាចំណ
+ាប់រចនាគេហទំព័រឱ្យកាន់តែមានភាពរស់រវើក និងទាក់ទាញ។ CSS មានច្រើនប្រភេទដែលអាចឱ្យអ្នកសរសេរកម្មវិធីមានភាពងាយ
+្តូរពណ៌។ រូបភាពទី ២.៩: CSS https://rehansaeed.com/css-general-rules-of-thumb/ ២.៣.៣. JavaScript JavaScr
+ to manage your bookings.">     @vite(['resources/css/app.css', 'resources/js/app.js'])     <link rel="
+មើលឃើញ (Frontend) គឺត្រូវបានរៀបចំឡើងដោយប្រើ HTML, CSS, និង JavaScript ដើម្បីឱ្យមានភាពទាក់ទាញ និងងាយស្រួ
+ook rooms online.">     @vite(['resources/css/app.css', 'resources/js/app.js'])     <link rel="preconne
+rogramming Language) គឺរួមមាន HTML, CSS, Tailwind CSS, Laravel 11 + PHP, MySQL, XAMPP, Git/GitHub។ ខាងក
+្បីធ្វើការចងក្រង (Compile) និងបង្រួម (Minify) កូដ CSS និង JavaScript ទាំងអស់ទៅជាឯកសារតូចៗ (Build) ធ្វើឱ
+ce ត្រូវបានអភិវឌ្ឍឡើងដោយប្រើប្រាស់ HTML, Tailwind CSS សម្រាប់រៀបចំរចនាប័ទ្ម (Styling) ឲ្យមានភាពទាក់ទាញន
+ឱ្យម៉ាស៊ីនមេ។ JavaScript អាចធ្វើការជាមួយ HTML និង CSS ដើម្បីកែប្រែរចនាសម្ព័ន្ធនិងរចនាប័ទ្មទំព័រត្រូវបាន
+tel to book rooms online.">     @vite(['resources/css/app.css', 'resources/js/app.js'])     <link rel="
+ge your bookings.">     @vite(['resources/css/app.css', 'resources/js/app.js'])     <link rel="preconne
+m/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"> </head> <body class="min-h-screen bg-gray-50 fo
+--- NODE ---
+ឱ្យយើងអនុវត្តទៅតាមការណែនាំរបស់ផ្ទាំងកម្មវិធីដំឡើង Node.js ដោយចុចលើប៊ូតុង "Next" ជាបន្តបន្ទាប់ រហូតទាល់តែ
+ម្ព័ន្ធ ងៈ ការដំឡើង Gitង-១ ឧបសម្ព័ន្ធ ចៈ ការដំឡើង Node.JSច-១ ឧបសម្ព័ន្ធ ឆៈ ការដំឡើង MySQLឆ-១ ឧបសម្ព័ន្ធ 
+ដំឡើងប្រព័ន្ធ Git៨១ ៤.៣.១.៤. ការដាក់ដំឡើងកម្មវិធី Node.js៨១ ៤.៣.១.៥. ការរៀបចំប្រព័ន្ធទិន្នន័យ MySQL៨២ ៤.
+ងបង្អស់ យើងចាំបាច់ត្រូវធ្វើការទាញយកកញ្ចប់កម្មវិធី Node.js ពីគេហទំព័រផ្លូវការតាមរយៈតំណភ្ជាប់ខាងក្រោម៖ លីង
+រួតពិនិត្យ និងផ្ទៀងផ្ទាត់មើលថា តើការដំឡើងកម្មវិធី Node.js របស់យើងទទួលបានជោគជ័យត្រឹមត្រូវហើយឬនៅ។ ឧបសម្ព័ន
+/software-development-lifecycle-sdlc-ba4c6c018d60 Node.js Foundation. (2026). Download Node.js. https://
+សម្ព័ន្ធ ច ការដំឡើង Node.js ឧបសម្ព័ន្ធ ចៈការដំឡើង Node.JS ១. របៀបនិងជំហាននៃការដំឡើង Node.js ការទាញយកឯកសា
+អភិវឌ្ឍន៍ (Development Process)។ នៅក្នុងគម្រោងនេះ Node.js ត្រូវបានប្រើប្រាស់ក្នុងគោលបំណងចម្បងពីរគឺ៖ NPM 
+្នន័យនៅផ្នែកខាងម៉ាស៊ីនមេ (Backend) ក៏ដោយ ការដំឡើង Node.js គឺនៅតែមានសារៈសំខាន់បំផុតសម្រាប់ដំណើរការអភិវឌ្ឍ
+្ធភាពខ្ពស់។ រូបភាពទី ២.១២: Laravel ២.៣.៦. Node.js Node.js គឺជាវេទិកាសម្រាប់ដំណើរការ JavaScript នៅក្រៅបរិ
+js ត្រូវបានប្រើប្រាស់ក្នុងគោលបំណងចម្បងពីរគឺ៖ NPM (Node Package Manager): ប្រើសម្រាប់ទាញយក និងគ្រប់គ្រងកញ
+ំណុចប្រទាក់អ្នកប្រើប្រាស់។ Asset Bundling (Vite): Node.js ដើរតួនាទីជាម៉ាស៊ីនដំណើរការឧបករណ៍ Vite ដើម្បីធ្
+ាក់ដូចមានបង្ហាញក្នុងរូបភាព។ ឧបសម្ព័ន្ធ ច ការដំឡើង Node.js ឧបសម្ព័ន្ធ ចៈការដំឡើង Node.JS ១. របៀបនិងជំហានន
+ប្រើប្រាស់នៅលើផ្នែកម៉ាស៊ីនមេ (server-side) តាមរយៈ Node.js ដែលអនុញ្ញាតឱ្យអភិវឌ្ឍកម្មវិធីពេញលេញដោយប្រើភាសា
+១១: PhP៣០ រូបភាពទី ២.១២: Laravel៣១ រូបភាពទី ២.១៣: Node JS៣២ រូបភាពទី ២.១៤: React JS៣៣ រូបភាពទី ២.១៥: POS
+័ន្ធ ចៈការដំឡើង Node.JS ១. របៀបនិងជំហាននៃការដំឡើង Node.js ការទាញយកឯកសារដំឡើង៖ ជាកិច្ចការចាប់ផ្ដើមដំបូងបង
+ក្នុង ឧបសម្ព័ន្ធ ង។ ៤.៣.១.៤. ការដាក់ដំឡើងកម្មវិធី Node.js ទោះបីជាប្រព័ន្ធរបស់យើងប្រើប្រាស់គំរូ Laravel F
+ba4c6c018d60 Node.js Foundation. (2026). Download Node.js. https://nodejs.org/en/download OVHcloud. (202
+២៩ ២.៣.៤. PhP៣០ ២.៣.៥. Laravel Framework៣១ ២.៣.៦. Node.js៣១ ២.៣.៧. React JS៣២ ២.៣.៨. Static Website៣៣ ២.
+ើម្បីអនុវត្តកូដ JavaScript លឿន និងមានប្រសិទ្ធភាព។ Node.js ត្រូវបានគេប្រើប្រាស់យ៉ាងទូលំទូលាយសម្រាប់ការអភិ
+ក់ឱ្យប្រើប្រាស់ជាផ្លូវការ (Production)។ របៀបដំឡើង Node.js ត្រូវបានបង្ហាញយ៉ាងលម្អិតនៅក្នុង ឧបសម្ព័ន្ធ ច។ 
+ានប្រសិទ្ធភាពខ្ពស់។ រូបភាពទី ២.១២: Laravel ២.៣.៦. Node.js Node.js គឺជាវេទិកាសម្រាប់ដំណើរការ JavaScript ន
+ Prompt រួចហើយវាយបញ្ចូលនូវពាក្យបញ្ជា (Command) ថា node --version ដើម្បីធ្វើការត្រួតពិនិត្យ និងផ្ទៀងផ្ទាត
+icroservices ការភ្ជាប់នឹង Database រូបភាពទី ២.១៣: Node JS https://techicons.dev/icons/nodejs ២.៣.១០. Vis
