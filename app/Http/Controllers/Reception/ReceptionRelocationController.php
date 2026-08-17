@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reception;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -49,7 +50,7 @@ class ReceptionRelocationController extends Controller
                 ->with('error', 'Only checked-in guests can be relocated.');
         }
 
-        $currentRoom = $booking->room;
+        $currentRoom = $booking->bookingRooms->first()?->room;
 
         if (! $currentRoom) {
             return redirect()->route('reception.dashboard')
@@ -58,15 +59,17 @@ class ReceptionRelocationController extends Controller
 
         // Check that a relocation is actually necessary — i.e., the extension IS blocked
         $newCheckout = $booking->check_out_date->addDay(); // at minimum 1 extra night
-        $conflictExists = Booking::where('room_id', $currentRoom->id)
-            ->where('id', '!=', $booking->id)
-            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
-            ->where('check_in_date', '<=', $booking->check_out_date->toDateString())
-            ->where('check_out_date', '>', $booking->check_out_date->toDateString())
+        $conflictExists = BookingRoom::where('room_id', $currentRoom->id)
+            ->whereHas('booking', function ($q) use ($booking) {
+                $q->where('id', '!=', $booking->id)
+                  ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+                  ->where('check_in_date', '<=', $booking->check_out_date->toDateString())
+                  ->where('check_out_date', '>', $booking->check_out_date->toDateString());
+            })
             ->exists();
 
         // Find the next check-in date on this room (that's the "deadline")
-        $nextBooking = Booking::where('room_id', $currentRoom->id)
+        $nextBooking = Booking::whereHas('bookingRooms', fn($q) => $q->where('room_id', $currentRoom->id))
             ->where('id', '!=', $booking->id)
             ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
             ->where('check_in_date', '>=', $booking->check_out_date->toDateString())
@@ -133,7 +136,7 @@ class ReceptionRelocationController extends Controller
 
         $staffId     = Auth::guard('staff')->id();
         $guestName   = $booking->guest?->full_name ?? 'Guest';
-        $oldRoomNum  = $booking->room?->room_number ?? '?';
+        $oldRoomNum  = $booking->bookingRooms->first()?->room?->room_number ?? '?';
         $newRoomNum  = $newRoom->room_number;
         $newBooking  = null;
 
@@ -141,15 +144,22 @@ class ReceptionRelocationController extends Controller
             // 1. Create the new booking for the new room (immediately checked-in)
             $newBooking = Booking::create([
                 'guest_id'               => $booking->guest_id,
-                'room_id'                => $newRoom->id,
                 'handled_by_staff_id'    => $staffId,
                 'check_in_date'          => today()->toDateString(),
                 'check_out_date'         => $booking->check_out_date->toDateString(),
-                'number_of_stay_extension' => 0,
+
                 'total_price'            => $booking->total_price, // carry over; no extra charge
                 'booking_status'         => Booking::STATUS_CHECKED_IN,
                 'booking_origin'             => $booking->booking_origin ?? Booking::ORIGIN_WALKIN,
                 'special_requests'       => $booking->special_requests,
+            ]);
+
+            // 1b. Create booking_room row for the new booking
+            BookingRoom::create([
+                'booking_id'       => $newBooking->id,
+                'room_type_id'     => $newRoom->room_type_id,
+                'room_id'          => $newRoom->id,
+                'price_at_booking' => $newRoom->roomType->price_per_night,
             ]);
 
             // 2. Mark the original booking as relocated and link it to the new one
@@ -158,11 +168,13 @@ class ReceptionRelocationController extends Controller
                 'relocated_to_booking_id' => $newBooking->id,
             ]);
 
-            // 3. Free the original room (needs cleaning)
-            $booking->room?->update([
-                'current_status' => \App\Models\Room::STATUS_CLEANING,
-                'status_updated_at' => now(),
-            ]);
+            // 3. Free all original rooms (need cleaning)
+            foreach ($booking->bookingRooms as $bRoom) {
+                $bRoom->room?->update([
+                    'current_status' => \App\Models\Room::STATUS_CLEANING,
+                    'status_updated_at' => now(),
+                ]);
+            }
 
             // 4. Occupy the new room
             $newRoom->update([

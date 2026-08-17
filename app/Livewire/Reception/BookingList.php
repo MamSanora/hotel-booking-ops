@@ -21,7 +21,7 @@ class BookingList extends Component
 
     public function render()
     {
-        $baseQuery = Booking::with(['guest', 'room.roomType'])
+        $baseQuery = Booking::with(['guest', 'bookingRooms.roomType'])
             ->whereIn('booking_origin', ['walk-in', 'phone', 'other'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {

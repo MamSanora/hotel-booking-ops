@@ -16,6 +16,7 @@ use function Pest\Laravel\post;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    $this->seed();
     $this->guest = Guest::create(['full_name' => 'Test Guest', 'phone_number' => '012345678']);
     $this->guestAuth = GuestAuth::create([
         'guest_id'     => $this->guest->id,
@@ -23,17 +24,10 @@ beforeEach(function () {
         'passwordhash' => Hash::make('Password123!'),
     ]);
 
-    $roomType = RoomType::where('slug', 'deluxe_double')->first()
-        ?? RoomType::create([
-            'slug'            => 'deluxe_double',
-            'display_name'    => 'Deluxe Double',
-            'adult_capacity'  => 2,
-            'child_capacity'  => 0,
-            'price_per_night' => 80.00,
-        ]);
+    $roomType = RoomType::where('slug', 'deluxe_room')->first();
 
     $this->room = Room::create([
-        'room_number'    => '501',
+        'room_number'    => '999',
         'room_type_id'   => $roomType->id,
         'current_status' => Room::STATUS_OCCUPIED,
     ]);
@@ -58,7 +52,7 @@ it('loads booking detail page successfully with eager loaded room type', functio
 
     get('/guest/bookings/' . $this->booking->id)
         ->assertSuccessful()
-        ->assertSee('Deluxe Double')
+        ->assertSee('Deluxe Room')
         ->assertSee('$240.00');
 });
 

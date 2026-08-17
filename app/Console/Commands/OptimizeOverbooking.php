@@ -63,7 +63,7 @@ class OptimizeOverbooking extends Command
             // Fetch all bookings for this room type whose check-in was yesterday.
             // By now ProcessNightAudit has already converted missed check-ins to STATUS_NO_SHOW.
             $yesterdayBookings = Booking::whereHas(
-                    'room',
+                    'bookingRooms',
                     fn ($q) => $q->where('room_type_id', $roomType->id)
                 )
                 ->whereDate('check_in_date', $yesterday)

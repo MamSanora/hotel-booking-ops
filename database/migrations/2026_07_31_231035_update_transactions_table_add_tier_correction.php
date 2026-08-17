@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         // Add tier_correction to payment_for
-        DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_for ENUM('booking', 'stay_extension', 'modification_charge', 'modification_refund', 'tier_correction') NOT NULL");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_for ENUM('booking', 'stay_extension', 'modification_charge', 'modification_refund', 'tier_correction') NOT NULL");
+        }
     }
 
     /**
@@ -21,6 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         // Revert to previous enum
-        DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_for ENUM('booking', 'stay_extension', 'modification_charge', 'modification_refund') NOT NULL");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_for ENUM('booking', 'stay_extension', 'modification_charge', 'modification_refund') NOT NULL");
+        }
     }
 };

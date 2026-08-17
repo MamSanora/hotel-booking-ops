@@ -15,18 +15,19 @@ use function Pest\Laravel\post;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    // Get seeded Standard Twin room type and clear any existing rooms for exact capacity test
-    $this->twinType = RoomType::where('slug', 'standard_twin')->first();
+    $this->seed();
+    // Get seeded Standard Room room type and clear any existing rooms for exact capacity test
+    $this->twinType = RoomType::where('slug', 'standard_room')->first();
     $this->twinType->rooms()->delete();
 
     // Create exactly 2 physical rooms (Virtual capacity = floor(2 * 1.10) = 2)
     $this->room1 = Room::create([
-        'room_number'    => '101',
+        'room_number'    => '911',
         'room_type_id'   => $this->twinType->id,
         'current_status' => Room::STATUS_AVAILABLE,
     ]);
     $this->room2 = Room::create([
-        'room_number'    => '102',
+        'room_number'    => '912',
         'room_type_id'   => $this->twinType->id,
         'current_status' => Room::STATUS_AVAILABLE,
     ]);
@@ -39,14 +40,13 @@ beforeEach(function () {
     ]);
 });
 
-it('shows Standard Twin as Available when under virtual capacity', function () {
+it('shows Standard Room as Available when under virtual capacity', function () {
     $checkIn = now()->addDays(10)->format('Y-m-d');
     $checkOut = now()->addDays(12)->format('Y-m-d');
 
     // Create 1 booking (under capacity of 2)
-    Booking::create([
+    $b1 = Booking::create([
         'guest_id'       => $this->guest->id,
-        'room_id'        => $this->room1->id,
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
         'total_price'    => 70.00,
@@ -54,23 +54,23 @@ it('shows Standard Twin as Available when under virtual capacity', function () {
         'payment_tier'   => Booking::TIER_FULL,
         'booking_origin'     => Booking::ORIGIN_USER,
     ]);
+    $b1->bookingRooms()->create(['room_id' => $this->room1->id, 'room_type_id' => $this->room1->room_type_id, 'price_at_booking' => 35.00]);
 
     $response = get('/rooms?checkin=' . $checkIn . '&checkout=' . $checkOut);
     
     $response->assertSuccessful()
-        ->assertSee('Standard Twin')
+        ->assertSee('Standard Room')
         ->assertDontSee('Fully Booked')
         ->assertSee('Book Now');
 });
 
-it('shows Standard Twin as Fully Booked on the listing page when all virtual capacity slots are taken', function () {
+it('shows Standard Room as Fully Booked on the listing page when all virtual capacity slots are taken', function () {
     $checkIn = now()->addDays(10)->format('Y-m-d');
     $checkOut = now()->addDays(12)->format('Y-m-d');
 
     // Fill all 2 virtual slots
-    Booking::create([
+    $b1 = Booking::create([
         'guest_id'       => $this->guest->id,
-        'room_id'        => $this->room1->id,
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
         'total_price'    => 70.00,
@@ -78,9 +78,10 @@ it('shows Standard Twin as Fully Booked on the listing page when all virtual cap
         'payment_tier'   => Booking::TIER_FULL,
         'booking_origin'     => Booking::ORIGIN_USER,
     ]);
-    Booking::create([
+    $b1->bookingRooms()->create(['room_id' => $this->room1->id, 'room_type_id' => $this->room1->room_type_id, 'price_at_booking' => 35.00]);
+    
+    $b2 = Booking::create([
         'guest_id'       => $this->guest->id,
-        'room_id'        => $this->room2->id,
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
         'total_price'    => 70.00,
@@ -88,22 +89,22 @@ it('shows Standard Twin as Fully Booked on the listing page when all virtual cap
         'payment_tier'   => Booking::TIER_FULL,
         'booking_origin'     => Booking::ORIGIN_USER,
     ]);
+    $b2->bookingRooms()->create(['room_id' => $this->room2->id, 'room_type_id' => $this->room2->room_type_id, 'price_at_booking' => 35.00]);
 
     get('/rooms?checkin=' . $checkIn . '&checkout=' . $checkOut)
         ->assertSuccessful()
-        ->assertSee('Standard Twin')
+        ->assertSee('Standard Room')
         ->assertSee('Fully Booked')
         ->assertDontSeeHtml('<i class="bi bi-calendar-plus mr-1"></i>Book');
 });
 
-it('blocks booking submission and returns check_in_date error when Standard Twin is fully booked', function () {
+it('blocks booking submission and returns check_in_date error when Standard Room is fully booked', function () {
     $checkIn = now()->addDays(10)->format('Y-m-d');
     $checkOut = now()->addDays(12)->format('Y-m-d');
 
     // Fill all 2 virtual slots
-    Booking::create([
+    $b1 = Booking::create([
         'guest_id'       => $this->guest->id,
-        'room_id'        => $this->room1->id,
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
         'total_price'    => 70.00,
@@ -111,9 +112,10 @@ it('blocks booking submission and returns check_in_date error when Standard Twin
         'payment_tier'   => Booking::TIER_FULL,
         'booking_origin'     => Booking::ORIGIN_USER,
     ]);
-    Booking::create([
+    $b1->bookingRooms()->create(['room_id' => $this->room1->id, 'room_type_id' => $this->room1->room_type_id, 'price_at_booking' => 35.00]);
+    
+    $b2 = Booking::create([
         'guest_id'       => $this->guest->id,
-        'room_id'        => $this->room2->id,
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
         'total_price'    => 70.00,
@@ -121,13 +123,15 @@ it('blocks booking submission and returns check_in_date error when Standard Twin
         'payment_tier'   => Booking::TIER_FULL,
         'booking_origin'     => Booking::ORIGIN_USER,
     ]);
+    $b2->bookingRooms()->create(['room_id' => $this->room2->id, 'room_type_id' => $this->room2->room_type_id, 'price_at_booking' => 35.00]);
 
     actingAs($this->guestAuth, 'web');
 
     // Attempt to book a 3rd room of this type for the exact same dates
-    $response = post('/rooms/' . $this->room1->id . '/book', [
+    $response = post('/rooms/standard_room/book', [
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
+        'rooms'          => 1,
         'payment_method' => Transaction::METHOD_KHQR,
         'payment_tier'   => Booking::TIER_FULL,
     ]);

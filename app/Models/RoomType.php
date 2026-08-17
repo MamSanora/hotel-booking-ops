@@ -266,7 +266,7 @@ class RoomType extends Model
                   })
                   ->when($excludeBookingId, fn ($q2) => $q2->where('id', '!=', $excludeBookingId));
             })
-            ->sum('quantity');
+            ->count();
 
         return $totalActiveBookings < $tierBookingLimit;
     }
@@ -428,7 +428,7 @@ class RoomType extends Model
                                                ->where('check_in_date', '<=', now()->toDateString()));
                   });
             })
-            ->sum('quantity');
+            ->count();
 
         $remaining = $physicalCount - $activeBookings;
         if ($this->hasAvailableVirtualCapacity($checkIn, $checkOut)) {

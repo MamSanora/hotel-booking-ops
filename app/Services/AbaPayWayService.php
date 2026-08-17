@@ -143,10 +143,12 @@ class AbaPayWayService implements PaymentGatewayInterface
 
         // Items payload encoded in base64.
         // displayType() returns the human-readable room type label.
-        $roomLabel = $booking->room ? $booking->room->displayType() : 'Hotel Reservation';
+        $firstRoom = $booking->bookingRooms->first();
+        $roomLabel = $firstRoom?->roomType?->display_name ?? 'Hotel Reservation';
+        $roomNumber = $firstRoom?->room?->room_number;
         $itemsArr = [
             [
-                'name'     => "Room {$booking->room?->room_number} – {$roomLabel}",
+                'name'     => $roomNumber ? "Room {$roomNumber} – {$roomLabel}" : $roomLabel,
                 'quantity' => '1',
                 'price'    => $formattedAmount,
             ],
@@ -261,10 +263,12 @@ class AbaPayWayService implements PaymentGatewayInterface
         $continueSuccessUrl = route('payment.success', $booking->id);
         $cancelUrl          = route('payment.show', $booking->id);
 
-        $roomLabel = $booking->room ? $booking->room->displayType() : 'Hotel Reservation';
+        $firstRoom = $booking->bookingRooms->first();
+        $roomLabel = $firstRoom?->roomType?->display_name ?? 'Hotel Reservation';
+        $roomNumber = $firstRoom?->room?->room_number;
         $itemsArr  = [
             [
-                'name'     => "Room {$booking->room?->room_number} – {$roomLabel}",
+                'name'     => $roomNumber ? "Room {$roomNumber} – {$roomLabel}" : $roomLabel,
                 'quantity' => '1',
                 'price'    => $formattedAmount,
             ],

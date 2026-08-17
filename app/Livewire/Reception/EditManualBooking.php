@@ -75,7 +75,7 @@ class EditManualBooking extends Component
         
         $this->checkInDate = \Carbon\Carbon::parse($booking->check_in_date)->toDateString();
         $this->checkOutDate = \Carbon\Carbon::parse($booking->check_out_date)->toDateString();
-        $this->selectedRoomId = $booking->room_id;
+        $this->selectedRoomId = $booking->bookingRooms()->value('room_id');
         
         // Calculate the original payment tier percentage to default the radio buttons
         if ($booking->total_price > 0) {

@@ -245,9 +245,9 @@
                                             </div>
                                         @endforeach
                                     @else
-                                        <div class="text-gray-800 font-medium text-[0.95rem]">{{ $booking->room?->displayType() ?? 'N/A' }}</div>
+                                        <div class="text-gray-800 font-medium text-[0.95rem]">N/A</div>
                                         <div class="text-gray-500 text-[0.8rem] mt-0.5 pl-2 border-l-2 border-gray-100">
-                                            Room {{ $booking->room?->room_number ?? 'TBA' }}
+                                            Room TBA
                                         </div>
                                     @endif
                                 </td>

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Booking;
+use App\Models\BookingRoom;
 use App\Models\Guest;
 use App\Models\GuestAuth;
 use App\Models\ItemsCatalog;
@@ -41,15 +42,20 @@ class DemoDataSeeder extends Seeder
         $this->command->info('');
         $this->command->info('🏨  Dropping existing operational data...');
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         RequestedItem::truncate();
         RoomService::truncate();
         Transaction::truncate();
+        DB::table('booking_room')->truncate();
         Booking::truncate();
         Phone::truncate();
         GuestAuth::truncate();
         Guest::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         $this->command->info('🏨  Generating Dara Meas Hotel demo data (1 month)...');
 
@@ -293,7 +299,17 @@ class DemoDataSeeder extends Seeder
                 }
                 if (!$roomId) continue;
 
-                $this->markRoomBooked($roomId, $checkIn, $checkOut, $roomBookedDates);
+                // ── Determine multi-room (5% of bookings) ────────────────
+                $isMultiRoom = (rand(1, 100) <= 5);
+                $secondRoomId = null;
+
+                if ($isMultiRoom) {
+                    // Try to get a second room of the same type
+                    $secondRoomId = $this->findAvailableRoom($type, $checkIn, $checkOut, $roomBookedDates, $allRooms, excludeId: $roomId);
+                    if ($secondRoomId) {
+                        $this->markRoomBooked($secondRoomId, $checkIn, $checkOut, $roomBookedDates);
+                    }
+                }
 
                 $basePrice = $allRooms[$roomId]->roomType->price_per_night ?? 40.0;
                 
@@ -303,7 +319,8 @@ class DemoDataSeeder extends Seeder
                 $seasonModifier = $isHighSeason ? 1.15 : 1.0; // 15% pricier in high season
                 
                 $pricePerNight = round($basePrice * $yearModifier * $seasonModifier, 2);
-                $totalPrice    = $nights * $pricePerNight;
+                $roomCount     = $secondRoomId ? 2 : 1;
+                $totalPrice    = $nights * $pricePerNight * $roomCount;
                 $extensions    = ($month === 4 && $i < 3) ? rand(1, 2) : 0;
                 
                 $seederTime->addMinutes(rand(30, 90));
@@ -313,17 +330,39 @@ class DemoDataSeeder extends Seeder
 
                 $booking = Booking::create([
                     'guest_id'                 => $guest->id,
-                    'room_id'                  => $roomId,
                     'handled_by_staff_id'      => in_array($bookingOrigin, ['walk-in','phone','other','agoda']) ? $staffId : null,
                     'check_in_date'            => $checkIn->toDateString(),
                     'check_out_date'           => $checkOut->toDateString(),
-                    'number_of_stay_extension' => $extensions,
+
                     'total_price'              => $totalPrice,
                     'booking_status'           => $status,
                     'booking_origin'           => $bookingOrigin,
                     'created_at'               => $bookedAt,
                     'updated_at'               => $bookedAt,
                 ]);
+
+                // Create booking_room row(s) — one per physical room
+                $room = $allRooms[$roomId];
+                BookingRoom::create([
+                    'booking_id'       => $booking->id,
+                    'room_type_id'     => $room->room_type_id,
+                    'room_id'          => $roomId,
+                    'price_at_booking' => $pricePerNight,
+                    'created_at'       => $bookedAt,
+                    'updated_at'       => $bookedAt,
+                ]);
+
+                if ($secondRoomId) {
+                    $room2 = $allRooms[$secondRoomId];
+                    BookingRoom::create([
+                        'booking_id'       => $booking->id,
+                        'room_type_id'     => $room2->room_type_id,
+                        'room_id'          => $secondRoomId,
+                        'price_at_booking' => $pricePerNight,
+                        'created_at'       => $bookedAt,
+                        'updated_at'       => $bookedAt,
+                    ]);
+                }
 
                 // Transaction
                 if (!in_array($status, ['cancelled', 'no_show', 'pending'])) {
@@ -427,16 +466,26 @@ class DemoDataSeeder extends Seeder
 
             $booking = Booking::create([
                 'guest_id'                 => $guest->id,
-                'room_id'                  => $roomId,
                 'handled_by_staff_id'      => $isStaff ? $staffId : null,
                 'check_in_date'            => $checkIn->toDateString(),
                 'check_out_date'           => $checkOut->toDateString(),
-                'number_of_stay_extension' => 0,
+
                 'total_price'              => $totalPrice,
                 'booking_status'           => 'checked-in',
                 'booking_origin'           => $w['bookingOrigin'],
                 'created_at'               => $bookedAt,
                 'updated_at'               => $checkIn,
+            ]);
+
+            // Create booking_room pivot row
+            $room = $allRooms[$roomId];
+            BookingRoom::create([
+                'booking_id'       => $booking->id,
+                'room_type_id'     => $room->room_type_id,
+                'room_id'          => $roomId,
+                'price_at_booking' => $pricePerNight,
+                'created_at'       => $bookedAt,
+                'updated_at'       => $bookedAt,
             ]);
 
             $paymentReference = in_array($w['method'], ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
@@ -460,9 +509,16 @@ class DemoDataSeeder extends Seeder
         }
 
         // Ensure room statuses are set to occupied for all checked-in bookings
-        \App\Models\Room::whereHas('bookings', function($q) {
-            $q->where('booking_status', 'checked-in');
-        })->update(['current_status' => 'occupied']);
+        $checkedInRoomIds = DB::table('booking_room')
+            ->join('bookings', 'bookings.id', '=', 'booking_room.booking_id')
+            ->where('bookings.booking_status', 'checked-in')
+            ->pluck('booking_room.room_id')
+            ->unique()
+            ->all();
+
+        if (!empty($checkedInRoomIds)) {
+            Room::whereIn('id', $checkedInRoomIds)->update(['current_status' => 'occupied']);
+        }
 
         $checkedInCount = Booking::where('booking_status', 'checked-in')->count();
         $this->command->info("     ✓ {$checkedInCount} rooms currently occupied");
@@ -475,11 +531,16 @@ class DemoDataSeeder extends Seeder
         Carbon $in,
         Carbon $out,
         array &$booked,
-        \Illuminate\Support\Collection $rooms
+        \Illuminate\Support\Collection $rooms,
+        ?int $excludeId = null
     ): ?int {
         $candidates = $rooms->filter(fn($r) => $r->roomType && $r->roomType->slug === $type)->pluck('id')->toArray();
         if (empty($candidates)) {
             $candidates = $rooms->pluck('id')->toArray();
+        }
+        // Exclude a specific room (used for multi-room same-type selection)
+        if ($excludeId !== null) {
+            $candidates = array_values(array_diff($candidates, [$excludeId]));
         }
         $candidates = array_values(array_unique($candidates));
         shuffle($candidates);

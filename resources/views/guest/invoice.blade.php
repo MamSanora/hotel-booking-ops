@@ -100,9 +100,9 @@
                                     <p class="font-semibold text-gray-900">{{ $bRoom->roomType->name }}</p>
                                     <p class="text-gray-500 text-xs mt-1">From {{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d') }} to {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d') }}</p>
                                 </td>
-                                <td class="py-5 px-4 text-center">{{ $bRoom->quantity }} room(s) × {{ $booking->nightCount() }} night(s)</td>
+                                <td class="py-5 px-4 text-center">Rm {{ $bRoom->room?->room_number ?? 'TBA' }} × {{ $booking->nightCount() }} night(s)</td>
                                 <td class="py-5 px-4 text-right">${{ number_format($bRoom->price_at_booking, 2) }}</td>
-                                <td class="py-5 px-4 text-right font-semibold text-gray-900">${{ number_format($bRoom->price_at_booking * $bRoom->quantity * $booking->nightCount(), 2) }}</td>
+                                <td class="py-5 px-4 text-right font-semibold text-gray-900">${{ number_format($bRoom->price_at_booking * $booking->nightCount(), 2) }}</td>
                             </tr>
                         @endforeach
                     @else

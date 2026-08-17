@@ -137,7 +137,7 @@
                                 <td class="px-5 py-4">
                                     <div class="font-semibold text-[0.9rem] text-hotel-dark">
                                         @if($booking->bookingRooms->isNotEmpty())
-                                            {{ $booking->bookingRooms->map(fn($br) => ($br->roomType->display_name ?? '?') . ($br->quantity > 1 ? ' ×'.$br->quantity : ''))->join(' + ') }}
+                                            {{ $booking->bookingRooms->groupBy('room_type_id')->map(fn($rows) => ($rows->first()->roomType->display_name ?? '?') . (count($rows) > 1 ? ' ×'.count($rows) : ''))->join(' + ') }}
                                         @else
                                             {{ $booking->room?->displayType() ?? 'Unassigned Room' }}
                                         @endif
@@ -263,7 +263,7 @@
                                 </td>
                                 <td class="px-5 py-4 text-[0.9rem] text-gray-600">
                                     @if($booking->bookingRooms->isNotEmpty())
-                                        {{ $booking->bookingRooms->map(fn($br) => ($br->roomType->display_name ?? '?') . ($br->quantity > 1 ? ' ×'.$br->quantity : ''))->join(' + ') }}
+                                        {{ $booking->bookingRooms->groupBy('room_type_id')->map(fn($rows) => ($rows->first()->roomType->display_name ?? '?') . (count($rows) > 1 ? ' ×'.count($rows) : ''))->join(' + ') }}
                                     @else
                                         {{ $booking->room?->displayType() ?? 'Unassigned Room' }}
                                     @endif

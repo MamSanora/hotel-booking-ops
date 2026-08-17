@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Reception;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreManualBookingRequest;
 use App\Models\Booking;
+use App\Models\BookingRoom;
 use App\Models\Guest;
 use App\Models\Room;
 use App\Models\RoomType;
@@ -97,11 +98,10 @@ class ManualBookingController extends Controller
                 );
             }
 
-            // Step 3: Create the booking.
+            // Step 3: Create the booking (no room_id — room is tracked in booking_room).
             // Walk-in bookings default to 'booked' since payment is handled at desk.
             $booking = Booking::create([
                 'guest_id'            => $guest->id,
-                'room_id'             => $room->id,
                 'handled_by_staff_id' => Auth::guard('staff')->id(),
                 'check_in_date'       => $validated['check_in_date'],
                 'check_out_date'      => $validated['check_out_date'],
@@ -110,6 +110,14 @@ class ManualBookingController extends Controller
                 'booking_status'      => Booking::STATUS_BOOKED,
                 'booking_origin'          => $validated['booking_origin'],
                 'special_requests'    => $validated['special_requests'] ?? null,
+            ]);
+
+            // Step 3b: Link the physical room via booking_room pivot.
+            BookingRoom::create([
+                'booking_id'       => $booking->id,
+                'room_type_id'     => $room->room_type_id,
+                'room_id'          => $room->id,
+                'price_at_booking' => (float) $room->roomType->price_per_night,
             ]);
 
             // Step 4: Record the payment transaction.

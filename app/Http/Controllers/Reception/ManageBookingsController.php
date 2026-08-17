@@ -14,7 +14,7 @@ class ManageBookingsController extends Controller
 
     public function edit($bookingId)
     {
-        $booking = \App\Models\Booking::with(['guest', 'room', 'transactions', 'bookingRooms'])->findOrFail($bookingId);
+        $booking = \App\Models\Booking::with(['guest', 'transactions', 'bookingRooms'])->findOrFail($bookingId);
         
         // Ensure it's a manual booking (not a registered user's booking)
         if (!in_array($booking->booking_origin, ['walk-in', 'phone', 'other'])) {
@@ -83,14 +83,23 @@ class ManageBookingsController extends Controller
                 $paymentReference = 'Cash note';
             }
 
-            // Update Booking
+            // Update Booking (no room_id — rooms tracked in booking_room)
             $booking->update([
                 'check_in_date'  => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
-                'room_id'        => $validated['room_id'],
                 'total_price'    => $newTotal,
                 'payment_tier'   => $validated['payment_tier'],
             ]);
+
+            // Update the booking_room row to the newly selected room
+            $booking->bookingRooms()->updateOrCreate(
+                ['booking_id' => $booking->id],
+                [
+                    'room_type_id'     => $room->room_type_id,
+                    'room_id'          => $room->id,
+                    'price_at_booking' => (float) $room->roomType->price_per_night,
+                ]
+            );
 
             // Handle Financial Changes
             if ($paymentDifference > 0) {

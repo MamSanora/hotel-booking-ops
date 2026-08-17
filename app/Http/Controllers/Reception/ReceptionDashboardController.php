@@ -53,15 +53,8 @@ class ReceptionDashboardController extends Controller
         ]);
 
         // Mark all assigned rooms as occupied so they won't show as available.
-        if ($booking->bookingRooms->isNotEmpty()) {
-            foreach ($booking->bookingRooms as $bRoom) {
-                $bRoom->room?->update([
-                    'current_status'    => \App\Models\Room::STATUS_OCCUPIED,
-                    'status_updated_at' => now(),
-                ]);
-            }
-        } else {
-            $booking->room?->update([
+        foreach ($booking->bookingRooms as $bRoom) {
+            $bRoom->room?->update([
                 'current_status'    => \App\Models\Room::STATUS_OCCUPIED,
                 'status_updated_at' => now(),
             ]);
@@ -139,15 +132,8 @@ class ReceptionDashboardController extends Controller
         ]);
 
         // Return all booked rooms to cleaning so housekeeping can clean them.
-        if ($booking->bookingRooms->isNotEmpty()) {
-            foreach ($booking->bookingRooms as $bRoom) {
-                $bRoom->room?->update([
-                    'current_status'    => \App\Models\Room::STATUS_CLEANING,
-                    'status_updated_at' => now(),
-                ]);
-            }
-        } else {
-            $booking->room?->update([
+        foreach ($booking->bookingRooms as $bRoom) {
+            $bRoom->room?->update([
                 'current_status'    => \App\Models\Room::STATUS_CLEANING,
                 'status_updated_at' => now(),
             ]);
@@ -203,7 +189,8 @@ class ReceptionDashboardController extends Controller
         $remaining = max(0, (float) $booking->total_price - $booking->totalPaid());
         $qrDataUri = '';
         if ($remaining > 0) {
-            $qrString = $booking->room?->roomType?->use_mam_sanora_qr
+            $useMamSanora = $booking->bookingRooms->first()?->roomType?->use_mam_sanora_qr;
+            $qrString = $useMamSanora
                 ? \App\Services\KhqrGenerator::forMamSanora($remaining, $booking->referenceNumber())
                 : \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
             $qrDataUri = (new \chillerlan\QRCode\QRCode)->render($qrString);
@@ -224,9 +211,9 @@ class ReceptionDashboardController extends Controller
     {
         $booking->load([
             'guest',
-            'room.roomType',
             'transactions',
             'roomServices.requestedItems',
+            'bookingRooms.room.roomType',
             'bookingRooms.roomType',
             'incidentalCharges',
         ]);
@@ -312,37 +299,41 @@ class ReceptionDashboardController extends Controller
             'payment_method' => ['required', 'in:cash,khqr'],
         ]);
 
-        $extraNights = (int) $validated['extra_nights'];
-        $room        = $booking->room;
+        $extraNights   = (int) $validated['extra_nights'];
+        $primaryBrRoom = $booking->bookingRooms->first();
+        $room          = $primaryBrRoom?->room;
 
         if (! $room) {
             return back()->with('error', 'No room is assigned to this booking.');
         }
 
-        // Conflict check — look for any other active booking on the same room
-        // that overlaps with the new extended checkout date.
+        // Conflict check — look for any other active booking that has any of
+        // this booking's rooms and overlaps with the new extended checkout date.
         $newCheckout = $booking->check_out_date->addDays($extraNights);
+        $bookedRoomIds = $booking->bookingRooms->pluck('room_id')->filter()->all();
 
-        $conflict = Booking::where('room_id', $room->id)
-            ->where('id', '!=', $booking->id)
-            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
-            ->where('check_in_date', '<', $newCheckout->toDateString())
-            ->where('check_out_date', '>', $booking->check_out_date->toDateString())
+        $conflict = \App\Models\BookingRoom::whereIn('room_id', $bookedRoomIds)
+            ->whereHas('booking', function ($q) use ($booking, $newCheckout) {
+                $q->where('id', '!=', $booking->id)
+                  ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+                  ->where('check_in_date', '<', $newCheckout->toDateString())
+                  ->where('check_out_date', '>', $booking->check_out_date->toDateString());
+            })
             ->exists();
 
         if ($conflict) {
             return back()->with('error',
-                'Cannot extend — the room is already reserved by another guest during that period.'
+                'Cannot extend — one or more rooms are already reserved by another guest during that period.'
             );
         }
 
-        $extraCost = $extraNights * (float) $room->roomType->price_per_night;
+        $pricePerNight = $booking->bookingRooms->sum('price_at_booking');
+        $extraCost = $extraNights * $pricePerNight;
 
         DB::transaction(function () use ($booking, $extraNights, $newCheckout, $extraCost, $validated) {
             $booking->update([
                 'check_out_date'           => $newCheckout->toDateString(),
                 'total_price'              => $booking->total_price + $extraCost,
-                'number_of_stay_extension' => $booking->number_of_stay_extension + 1,
             ]);
 
             // Record full payment collected on the spot by the receptionist.
@@ -380,11 +371,13 @@ class ReceptionDashboardController extends Controller
 
         $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
 
-        // Return the room to available so it can be cleaned and re-assigned.
-        $booking->room?->update([
-            'current_status'    => \App\Models\Room::STATUS_AVAILABLE,
-            'status_updated_at' => now(),
-        ]);
+        // Return all rooms to available so they can be re-assigned.
+        foreach ($booking->bookingRooms as $bRoom) {
+            $bRoom->room?->update([
+                'current_status'    => \App\Models\Room::STATUS_AVAILABLE,
+                'status_updated_at' => now(),
+            ]);
+        }
 
         return back()->with('success', "Booking {$booking->referenceNumber()} marked as no-show and room released.");
     }
@@ -403,9 +396,9 @@ class ReceptionDashboardController extends Controller
 
         $booking->update(['booking_status' => Booking::STATUS_RELOCATED]);
 
-        // Release the room if it was assigned
-        if ($booking->room) {
-            $booking->room->update([
+        // Release all assigned rooms
+        foreach ($booking->bookingRooms as $bRoom) {
+            $bRoom->room?->update([
                 'current_status'    => \App\Models\Room::STATUS_AVAILABLE,
                 'status_updated_at' => now(),
             ]);

@@ -15,7 +15,7 @@ class HousekeepingRequestsList extends Component
 
     public function render()
     {
-        $pendingRoomServices = RoomService::with(['booking.room', 'booking.guest', 'requestedItems.catalog'])
+        $pendingRoomServices = RoomService::with(['booking.bookingRooms.room', 'booking.guest', 'requestedItems.catalog'])
             ->pending()
             ->latest()
             ->get();

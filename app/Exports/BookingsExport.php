@@ -27,7 +27,7 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
 
     public function query()
     {
-        return $this->query->with(['guest', 'room.roomType', 'transactions', 'bookingRooms.roomType']);
+        return $this->query->with(['guest', 'bookingRooms.roomType', 'transactions', 'bookingRooms.roomType']);
     }
 
     public function headings(): array
@@ -64,10 +64,10 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
                     ->map(function ($rows) {
                         $type = $rows->first()->roomType->display_name ?? $rows->first()->roomType->name;
                         $roomNumbers = $rows->map(fn($br) => $br->room?->room_number ?? 'TBA')->implode(', ');
-                        return ($rows->sum('quantity') > 1 ? $rows->sum('quantity') . 'x ' : '') . $type . ' (Rm ' . $roomNumbers . ')';
+                        return count($rows) > 1 ? count($rows) . 'x ' . $type . ' (Rm ' . $roomNumbers . ')' : $type . ' (Rm ' . $roomNumbers . ')';
                     })
                     ->implode(', ')
-                : ($booking->room ? ($booking->room->displayType() . ' (Rm ' . $booking->room->room_number . ')') : 'N/A'),
+                : 'N/A',
             $booking->check_in_date?->format('Y-m-d'),
             $booking->check_out_date?->format('Y-m-d'),
             (float) $booking->total_price,

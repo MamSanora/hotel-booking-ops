@@ -95,7 +95,7 @@
 
         <!-- Items Table -->
         @php
-            $nights       = $booking->nightCount() + $booking->number_of_stay_extension;
+            $nights       = $booking->nightCount();
             $nightsLabel  = max(1, $nights);
             // Incidental charges total (ad-hoc checkout charges)
             $incidentalTotal = $booking->incidentalCharges->sum('total_amount');
@@ -119,15 +119,12 @@
                             <td class="pt-2">
                                 {{ $bRoom->roomType->name }} - Rm {{ $bRoom->room?->room_number ?? 'TBA' }} ({{ $nightsLabel }} night{{ $nightsLabel > 1 ? 's' : '' }} @ ${{ number_format($bRoom->price_at_booking, 2) }}/night)
                             </td>
-                            <td class="text-right pt-2 align-top">${{ number_format($bRoom->quantity * $bRoom->price_at_booking * $nightsLabel, 2) }}</td>
+                            <td class="text-right pt-2 align-top">${{ number_format($bRoom->price_at_booking * $nightsLabel, 2) }}</td>
                         </tr>
                     @endforeach
                 @else
                     <tr>
-                        <td class="pt-2">
-                            Room Rate ({{ $nightsLabel }} Night{{ $nightsLabel > 1 ? 's' : '' }}
-                            @ ${{ number_format($nightlyCost, 2) }}/night)
-                        </td>
+                        <td class="pt-2">Room Rate ({{ $nightsLabel }} Night{{ $nightsLabel > 1 ? 's' : '' }})</td>
                         <td class="text-right pt-2 align-top">${{ number_format($roomTotal, 2) }}</td>
                     </tr>
                 @endif

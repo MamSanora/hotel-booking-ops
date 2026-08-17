@@ -75,9 +75,9 @@ class RoomCheck extends Component
         $cleaningRooms = Room::with('roomType')->cleaning()->orderBy('room_number')->get();
         $maintenanceRooms = Room::with('roomType')->maintenance()->orderBy('room_number')->get();
         $availableRooms = Room::with('roomType')->available()->orderBy('room_number')->get();
-        $occupiedRooms = Room::with(['roomType', 'activeBooking.guest'])->occupied()->orderBy('room_number')->get();
+        $occupiedRooms = Room::with(['roomType', 'activeBookings.guest'])->occupied()->orderBy('room_number')->get();
 
-        $boardRoomsQuery = Room::with(['roomType', 'activeBooking.guest']);
+        $boardRoomsQuery = Room::with(['roomType', 'activeBookings.guest']);
 
         if (!empty($this->status)) {
             $boardRoomsQuery->where('current_status', $this->status);

@@ -54,7 +54,7 @@ class PaymentController extends Controller
     {
         $this->authorizeBookingAccess($booking);
 
-        $booking->load(['room.roomType', 'bookingRooms.roomType']);
+        $booking->load(['bookingRooms.roomType']);
 
         $transaction = $booking->transactions()
             ->where('payment_status', Transaction::STATUS_PENDING)
@@ -77,7 +77,7 @@ class PaymentController extends Controller
         Transaction::acquireLock($transaction->id);
         // ----------------------------------------------------------------
 
-        if ($booking->room->roomType->use_mam_sanora_qr) {
+        if ($booking->bookingRooms->first()?->roomType?->use_mam_sanora_qr) {
             return $this->showMamSanoraStatic($booking, $transaction);
         }
 
@@ -153,7 +153,7 @@ class PaymentController extends Controller
         $reference        = $booking->referenceNumber();
         $khqrString       = null;
 
-        if ($booking->room->roomType->use_mam_sanora_qr) {
+        if ($booking->bookingRooms->first()?->roomType?->use_mam_sanora_qr) {
             $amount = $transaction->amount_paid > 0
                 ? $transaction->amount_paid
                 : $booking->depositAmount();

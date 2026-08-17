@@ -270,7 +270,8 @@ class AbaTelegramService implements PaymentGatewayInterface
      */
     public function promoteBookingAfterPayment(\App\Models\Booking $booking): void
     {
-        $room = \App\Models\Room::find($booking->room_id);
+        $bookingRoom = $booking->bookingRooms()->with('room')->first();
+        $room = $bookingRoom?->room;
 
         $roomIsAvailable = $room && $room->isAvailableForDates(
             $booking->check_in_date,
@@ -285,18 +286,18 @@ class AbaTelegramService implements PaymentGatewayInterface
 
             Log::info('AbaTelegramService: booking promoted to booked', [
                 'booking_id' => $booking->id,
-                'room_id'    => $booking->room_id,
+                'room_id'    => $room?->id,
             ]);
             return;
         }
 
         // The assigned room was snatched. Try to find another of the same type.
-        $roomTypeId    = $room?->room_type_id ?? null;
+        $roomTypeId    = $room?->room_type_id ?? $bookingRoom?->room_type_id ?? null;
         $alternateRoom = null;
 
         if ($roomTypeId) {
             $alternateRoom = \App\Models\Room::where('room_type_id', $roomTypeId)
-                ->where('id', '!=', $booking->room_id)
+                ->where('id', '!=', $room?->id)
                 ->availableForDates(
                     $booking->check_in_date,
                     $booking->check_out_date,
@@ -308,10 +309,18 @@ class AbaTelegramService implements PaymentGatewayInterface
 
         if ($alternateRoom) {
             // Auto-reassign to the alternate room. Guest is unaffected.
-            $booking->update([
-                'room_id'        => $alternateRoom->id,
-                'booking_status' => \App\Models\Booking::STATUS_BOOKED,
-            ]);
+            // Update the booking_room row to point to the alternate room.
+            if ($bookingRoom) {
+                $bookingRoom->update(['room_id' => $alternateRoom->id]);
+            } else {
+                \App\Models\BookingRoom::create([
+                    'booking_id'       => $booking->id,
+                    'room_type_id'     => $alternateRoom->room_type_id,
+                    'room_id'          => $alternateRoom->id,
+                    'price_at_booking' => $alternateRoom->roomType->price_per_night,
+                ]);
+            }
+            $booking->update(['booking_status' => \App\Models\Booking::STATUS_BOOKED]);
 
             Log::info('AbaTelegramService: room snatched, auto-reassigned to alternate', [
                 'booking_id'       => $booking->id,
@@ -359,7 +368,6 @@ class AbaTelegramService implements PaymentGatewayInterface
         $booking->update([
             'check_out_date'           => $transaction->extension_new_checkout,
             'total_price'              => (float) $booking->total_price + $extraCost,
-            'number_of_stay_extension' => $booking->number_of_stay_extension + 1,
         ]);
 
         Log::info('AbaTelegramService: stay extension applied to booking', [

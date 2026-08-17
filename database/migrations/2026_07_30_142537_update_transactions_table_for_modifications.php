@@ -17,7 +17,7 @@ return new class extends Migration
         });
 
         // Safely alter ENUM using DB statement to avoid Doctrine DBAL issues
-        if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+        if (DB::getDriverName() !== 'sqlite') {
             DB::statement("ALTER TABLE transactions MODIFY COLUMN payment_for ENUM('booking', 'stay_extension', 'modification_charge', 'modification_refund') NOT NULL");
         }
     }

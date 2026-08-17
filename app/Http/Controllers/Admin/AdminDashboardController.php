@@ -40,7 +40,7 @@ class AdminDashboardController extends Controller
         $occupancyRate  = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0;
 
         // All rooms for the room status board modal
-        $allRooms = Room::with(['roomType', 'activeBooking.guest'])
+        $allRooms = Room::with(['roomType', 'activeBookings.guest'])
             ->orderBy('room_number')
             ->get();
 
@@ -55,13 +55,13 @@ class AdminDashboardController extends Controller
 
         // ── Today's Arrivals List (with guest name + room) ─────────────────
         $arrivalsToday = Booking::arrivingToday()
-            ->with(['guest', 'room.roomType'])
+            ->with(['guest', 'bookingRooms.roomType'])
             ->orderBy('check_in_date')
             ->get();
 
         // ── Today's Departures List (with guest name + room) ───────────────
         $departuresToday = Booking::departingToday()
-            ->with(['guest', 'room.roomType'])
+            ->with(['guest', 'bookingRooms.roomType'])
             ->orderBy('check_out_date')
             ->get();
 
@@ -168,7 +168,7 @@ class AdminDashboardController extends Controller
         $applyBookingFilters = function($query) use ($fGuestType, $fNationality, $fRoomType) {
             if ($fGuestType) $query->where('bookings.booking_origin', $fGuestType);
             if ($fNationality) $query->whereHas('guest', fn($q) => $q->where('nationality', $fNationality));
-            if ($fRoomType) $query->whereHas('room.roomType', fn($q) => $q->where('display_name', $fRoomType));
+            if ($fRoomType) $query->whereHas('bookingRooms.roomType', fn($q) => $q->where('display_name', $fRoomType));
         };
 
         $applyTxnFilters = function($query) use ($fGuestType, $fNationality, $fRoomType) {
@@ -176,7 +176,7 @@ class AdminDashboardController extends Controller
                 $query->whereHas('booking', function($bQuery) use ($fGuestType, $fNationality, $fRoomType) {
                     if ($fGuestType) $bQuery->where('booking_origin', $fGuestType);
                     if ($fNationality) $bQuery->whereHas('guest', fn($q) => $q->where('nationality', $fNationality));
-                    if ($fRoomType) $bQuery->whereHas('room.roomType', fn($q) => $q->where('display_name', $fRoomType));
+                    if ($fRoomType) $bQuery->whereHas('bookingRooms.roomType', fn($q) => $q->where('display_name', $fRoomType));
                 });
             }
         };
@@ -271,7 +271,8 @@ class AdminDashboardController extends Controller
         $revTypeQuery = Transaction::successful()
             ->whereBetween('transactions.created_at', [$start, $end])
             ->join('bookings', 'bookings.id', '=', 'transactions.booking_id')
-            ->join('rooms', 'rooms.id', '=', 'bookings.room_id')
+            ->join('booking_room', 'booking_room.booking_id', '=', 'bookings.id')
+            ->join('rooms', 'rooms.id', '=', 'booking_room.room_id')
             ->join('room_types', 'room_types.id', '=', 'rooms.room_type_id')
             ->leftJoin('room_type_settings', 'room_type_settings.room_type_id', '=', 'room_types.id');
         

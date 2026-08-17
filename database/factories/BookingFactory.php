@@ -39,12 +39,11 @@ class BookingFactory extends Factory
         return [
             // Auto-creates a linked Guest if not supplied.
             'guest_id'                 => Guest::factory(),
-            // Auto-creates a linked Room if not supplied.
-            'room_id'                  => Room::factory(),
+
             'handled_by_staff_id'      => null,
             'check_in_date'            => $checkIn->toDateString(),
             'check_out_date'           => $checkOut->toDateString(),
-            'number_of_stay_extension' => 0,
+
             // total_price is calculated from a base rate; actual tests should override this.
             'total_price'              => $nights * 40.00,
             'booking_status'           => Booking::STATUS_BOOKED,

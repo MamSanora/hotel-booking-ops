@@ -337,7 +337,7 @@
                         @foreach($rooms as $room)
                         @php
                             $status = $room->current_status;
-                            $guest = $room->activeBooking?->guest;
+                            $guest = $room->activeBookings->first()?->guest;
                             
                             $isCleaningStale = false;
                             if ($status === \App\Models\Room::STATUS_CLEANING && $room->status_updated_at) {

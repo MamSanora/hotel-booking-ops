@@ -74,7 +74,7 @@ class BookingsList extends Component
 
     protected function buildQuery()
     {
-        $query = Booking::with(['guest', 'room', 'handledBy', 'transactions', 'bookingRooms.roomType']);
+        $query = Booking::with(['guest', 'handledBy', 'transactions', 'bookingRooms.roomType', 'bookingRooms.room']);
 
         // 1. Search by Booking Reference or Guest Name/Email/Phone
         if ($this->search) {

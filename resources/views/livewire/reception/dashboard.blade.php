@@ -143,7 +143,7 @@
 
                 {{-- Tab: Upcoming Arrivals --}}
                 <button type="button" @click="activeTab = 'arrivals'"
-                    x-data="{ count: {{ $upcomingArrivals->count() }} }"
+                    x-data="{ count: {{ $upcomingArrivalsCount }} }"
                     @update-arrivals-count.window="count = $event.detail.count"
                     :class="activeTab === 'arrivals'
                         ? 'bg-hotel-gold text-white shadow-sm shadow-hotel-gold/30 font-bold'
@@ -233,15 +233,15 @@
                  x-transition:enter-start="opacity-0 translate-y-1"
                  x-transition:enter-end="opacity-100 translate-y-0">
                 @if($todayDepartures->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-500 text-[0.75rem] uppercase tracking-wider">
-                                    <th class="px-4 py-3 font-semibold rounded-tl-xl rounded-bl-xl">Ref</th>
+                    <div class="overflow-y-auto max-h-[600px] border border-gray-100 rounded-xl">
+                        <table class="w-full text-left relative">
+                            <thead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
+                                <tr class="text-gray-500 text-[0.75rem] uppercase tracking-wider">
+                                    <th class="px-4 py-3 font-semibold rounded-tl-xl">Ref</th>
                                     <th class="px-4 py-3 font-semibold">Guest</th>
                                     <th class="px-4 py-3 font-semibold">Room</th>
                                     <th class="px-4 py-3 font-semibold">Balance</th>
-                                    <th class="px-4 py-3 font-semibold rounded-tr-xl rounded-br-xl text-right">Action</th>
+                                    <th class="px-4 py-3 font-semibold rounded-tr-xl text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -357,15 +357,15 @@
                                              if ($booking->bookingRooms->isNotEmpty()) {
                                                  $depFolioLines = $booking->bookingRooms->map(fn($br) => [
                                                      'name'      => ($br->roomType?->display_name ?? 'Room') . ($br->room ? ' (Rm ' . $br->room->room_number . ')' : ''),
-                                                     'qty'       => $br->quantity,
+                                                     'qty'       => 1,
                                                      'unitPrice' => (float) $br->price_at_booking,
-                                                     'lineTotal' => (float) $br->price_at_booking * $br->quantity * $depNights,
+                                                     'lineTotal' => (float) $br->price_at_booking * $depNights,
                                                  ])->values()->toArray();
                                              } else {
                                                  $depFolioLines = [[
-                                                     'name'      => ($booking->room?->roomType?->display_name ?? 'Room') . ($booking->room ? ' (Rm ' . $booking->room->room_number . ')' : ''),
+                                                     'name'      => 'Room Accommodation',
                                                      'qty'       => 1,
-                                                     'unitPrice' => (float) ($booking->room?->roomType?->price_per_night ?? 0),
+                                                     'unitPrice' => 0,
                                                      'lineTotal' => (float) $booking->total_price,
                                                  ]];
                                              }
@@ -535,15 +535,15 @@
                                                 if ($booking->bookingRooms->isNotEmpty()) {
                                                     $coFolioLines = $booking->bookingRooms->map(fn($br) => [
                                                         'name'      => ($br->roomType?->display_name ?? 'Room') . ($br->room ? ' (Rm ' . $br->room->room_number . ')' : ''),
-                                                        'qty'       => $br->quantity,
+                                                        'qty'       => 1,
                                                         'unitPrice' => (float) $br->price_at_booking,
-                                                        'lineTotal' => (float) $br->price_at_booking * $br->quantity * $coNights,
+                                                        'lineTotal' => (float) $br->price_at_booking * $coNights,
                                                     ])->values()->toArray();
                                                 } else {
                                                     $coFolioLines = [[
-                                                        'name'      => ($booking->room?->roomType?->display_name ?? 'Room') . ($booking->room ? ' (Rm ' . $booking->room->room_number . ')' : ''),
+                                                        'name'      => 'Room Accommodation',
                                                         'qty'       => 1,
-                                                        'unitPrice' => (float) ($booking->room?->roomType?->price_per_night ?? 0),
+                                                        'unitPrice' => (float) $booking->total_price / ($coNights ?: 1),
                                                         'lineTotal' => (float) $booking->total_price,
                                                     ]];
                                                 }

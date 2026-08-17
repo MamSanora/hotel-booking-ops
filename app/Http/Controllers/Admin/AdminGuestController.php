@@ -61,7 +61,7 @@ class AdminGuestController extends Controller
     public function show(Guest $guest): View
     {
         $guest->load(['guestAuth', 'phones', 'bookings' => function($q) {
-            $q->orderByDesc('created_at')->with(['room', 'transactions']);
+            $q->orderByDesc('created_at')->with(['bookingRooms.roomType', 'bookingRooms.room', 'transactions']);
         }]);
 
         return view('admin.guests.show', compact('guest'));

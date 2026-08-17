@@ -100,7 +100,8 @@ class PaymentCallbackController extends Controller
             ]);
 
             // Booking transitions from 'pending' → 'booked' (confirmed + paid) ONLY if room is still available
-            $room = \App\Models\Room::find($booking->room_id);
+            $bookingRoom = $booking->bookingRooms()->with('room')->first();
+            $room = $bookingRoom?->room;
             // Race condition check: pass the booking's payment_tier so that
             // existing lower-tier double-bookings don't incorrectly block this booking.
             if (!$room || !$room->isAvailableForDates(

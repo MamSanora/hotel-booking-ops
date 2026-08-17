@@ -109,8 +109,8 @@
                                     <div class="text-gray-800 text-[0.95rem] mt-0.5"><strong>Out:</strong> {{ $booking->check_out_date?->format('M d, Y') }}</div>
                                 </td>
                                 <td class="px-5 py-4">
-                                    <div class="text-gray-800 font-medium text-[0.95rem]">{{ $booking->room?->displayType() ?? 'N/A' }}</div>
-                                    <div class="text-gray-500 text-[0.8rem] mt-0.5">Room {{ $booking->room?->room_number ?? '-' }}</div>
+                                    <div class="text-gray-800 font-medium text-[0.95rem]">{{ $booking->displayRooms() ?: 'N/A' }}</div>
+                                    <div class="text-gray-500 text-[0.8rem] mt-0.5">Rooms: {{ $booking->bookingRooms->map(fn($br) => $br->room?->room_number ?? 'TBA')->implode(', ') ?: '-' }}</div>
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     @php

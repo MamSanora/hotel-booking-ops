@@ -71,7 +71,7 @@ class BookingList extends Component
         }
 
         // Upcoming bookings
-        $upcomingBookings = Booking::with(['room.roomType', 'bookingRooms.roomType'])
+        $upcomingBookings = Booking::with(['bookingRooms.roomType', 'bookingRooms.roomType'])
             ->where('guest_id', $guestId)
             ->whereNotIn('booking_status', [
                 Booking::STATUS_CHECKED_OUT,
@@ -86,7 +86,7 @@ class BookingList extends Component
             ->get();
 
         // Past bookings
-        $pastBookings = Booking::with(['room.roomType', 'bookingRooms.roomType'])
+        $pastBookings = Booking::with(['bookingRooms.roomType', 'bookingRooms.roomType'])
             ->where('guest_id', $guestId)
             ->where(function ($query) {
                 $query->whereIn('booking_status', [

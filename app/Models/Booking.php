@@ -23,11 +23,10 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int|null $guest_id
- * @property int|null $room_id
  * @property int|null $handled_by_staff_id
  * @property string|null $check_in_date
  * @property string|null $check_out_date
- * @property int $number_of_stay_extension
+
  * @property float|null $total_price
  * @property string $booking_status
  * @property string|null $booking_origin
@@ -112,13 +111,12 @@ class Booking extends Model
 
     protected $fillable = [
         'guest_id',
-        'room_id',
         'handled_by_staff_id',
         'check_in_date',
         'check_out_date',
         'actual_check_in_at',
         'actual_check_out_at',
-        'number_of_stay_extension',
+
         'total_price',
         'payment_tier',
         'booking_status',
@@ -142,7 +140,7 @@ class Booking extends Model
             'actual_check_out_at'      => 'datetime',
             'total_price'              => 'decimal:2',
             'payment_tier'             => 'integer',
-            'number_of_stay_extension' => 'integer',
+
         ];
     }
 
@@ -157,14 +155,6 @@ class Booking extends Model
         return $this->belongsTo(Guest::class);
     }
 
-    /**
-     * The room assigned to this booking.
-     * Fixed from the old model which incorrectly used hasOne instead of belongsTo.
-     */
-    public function room(): BelongsTo
-    {
-        return $this->belongsTo(Room::class);
-    }
 
     /**
      * The staff member who handled this booking (walk-in / phone proxy).
@@ -201,7 +191,7 @@ class Booking extends Model
 
     /**
      * The room type lines in this booking (multi-room support).
-     * Each pivot row carries quantity and price_at_booking.
+     * Each pivot row carries the specific room_id and price_at_booking.
      */
     public function bookingRooms(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
@@ -469,7 +459,7 @@ class Booking extends Model
     /**
      * Returns a human-readable summary of the rooms in this booking.
      *
-     * For multi-type bookings it lists each room type with its quantity,
+     * For multi-type bookings it lists each room type with its count,
      * e.g. "Standard Room ×2, Deluxe Room ×1".
      *
      * Falls back to the primary room's displayType() for simple single-room
@@ -487,15 +477,15 @@ class Booking extends Model
                 ->map(function ($rows) {
                     $first = $rows->first();
                     $name  = $first->roomType?->display_name ?? $first->roomType?->name ?? 'Room';
-                    $count = $rows->sum('quantity'); // sums to total rooms of this type
+                    $count = count($rows); // sums to total rooms of this type
                     return $count > 1 ? "{$name} ×{$count}" : $name;
                 })
                 ->values()
                 ->join(', ');
         }
 
-        // Fallback: single-room booking (no pivot rows)
-        return $this->room?->displayType() ?? 'Room';
+        // No booking_room rows — unknown room
+        return 'Room';
     }
 }
 

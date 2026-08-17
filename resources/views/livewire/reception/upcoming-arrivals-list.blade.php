@@ -1,15 +1,15 @@
 <div wire:poll.10s="refreshData">
     @if($upcomingArrivals->count() > 0)
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-gray-50 text-gray-500 text-[0.75rem] uppercase tracking-wider">
-                        <th class="px-4 py-3 font-semibold rounded-tl-xl rounded-bl-xl">Ref</th>
+        <div class="overflow-y-auto max-h-[600px] border border-gray-100 rounded-xl">
+            <table class="w-full text-left relative">
+                <thead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
+                    <tr class="text-gray-500 text-[0.75rem] uppercase tracking-wider">
+                        <th class="px-4 py-3 font-semibold rounded-tl-xl">Ref</th>
                         <th class="px-4 py-3 font-semibold">Guest</th>
                         <th class="px-4 py-3 font-semibold">Arrival</th>
                         <th class="px-4 py-3 font-semibold">Room</th>
                         <th class="px-4 py-3 font-semibold">Payment</th>
-                        <th class="px-4 py-3 font-semibold rounded-tr-xl rounded-br-xl text-right">Action</th>
+                        <th class="px-4 py-3 font-semibold rounded-tr-xl text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -166,6 +166,9 @@
                     @endforeach
                 </tbody>
             </table>
+        </div>
+        <div class="mt-4">
+            {{ $upcomingArrivals->links() }}
         </div>
     @else
         <div class="text-center py-10 text-gray-400">

@@ -46,8 +46,21 @@
                                 <div class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d') }} - {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 font-medium">Room {{ $booking->room->room_number }}</div>
-                                <div class="text-xs text-gray-500">{{ $booking->room->roomType->type_name }}</div>
+                                @php $isMulti = $booking->bookingRooms->count() > 1; @endphp
+                                <div class="text-sm text-gray-900 font-medium">
+                                    @if($isMulti)
+                                        Multiple ({{ $booking->bookingRooms->count() }})
+                                    @else
+                                        Room {{ $booking->bookingRooms->first()?->room?->room_number ?? 'TBA' }}
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    @if($isMulti)
+                                        Mixed Types
+                                    @else
+                                        {{ $booking->bookingRooms->first()?->roomType?->display_name ?? '—' }}
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -118,8 +131,21 @@
                                 <div class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d') }} - {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 font-medium">Room {{ $booking->room->room_number }}</div>
-                                <div class="text-xs text-gray-500">{{ $booking->room->roomType->type_name }}</div>
+                                @php $isMulti = $booking->bookingRooms->count() > 1; @endphp
+                                <div class="text-sm text-gray-900 font-medium">
+                                    @if($isMulti)
+                                        Multiple ({{ $booking->bookingRooms->count() }})
+                                    @else
+                                        Room {{ $booking->bookingRooms->first()?->room?->room_number ?? 'TBA' }}
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    @if($isMulti)
+                                        Mixed Types
+                                    @else
+                                        {{ $booking->bookingRooms->first()?->roomType?->display_name ?? '—' }}
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 

@@ -203,7 +203,7 @@ class RoomController extends Controller
                 // pending slot to be counted against them, triggering a false
                 // CAPACITY_EXHAUSTED error.
                 $existingBooking = Booking::where('guest_id', $guestId)
-                    ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
+                    ->whereHas('bookingRooms', fn ($q) => $q->where('room_type_id', $roomType->id))
                     ->where('booking_status', Booking::STATUS_PENDING)
                     ->latest()
                     ->first();
@@ -282,7 +282,6 @@ class RoomController extends Controller
                     // new intent. This is safe: the capacity check above already excluded this
                     // booking via $existingBooking->id, so no double-counting occurs.
                     $existingBooking->update([
-                        'room_id'          => $primaryRoom?->id,
                         'check_in_date'    => $validated['check_in_date'],
                         'check_out_date'   => $validated['check_out_date'],
                         'total_price'      => $total,
@@ -299,7 +298,6 @@ class RoomController extends Controller
                         $existingBooking->bookingRooms()->create([
                             'room_type_id'     => $roomType->id,
                             'room_id'          => $aRoom->id,
-                            'quantity'         => 1,
                             'price_at_booking' => $lockedRoomType->price_per_night,
                         ]);
                     }
@@ -342,7 +340,6 @@ class RoomController extends Controller
                 // Create the booking in 'pending' status — confirmed after payment.
                 $booking = Booking::create([
                     'guest_id'         => $guestId,
-                    'room_id'          => $primaryRoom?->id,
                     'check_in_date'    => $validated['check_in_date'],
                     'check_out_date'   => $validated['check_out_date'],
                     'total_price'      => $total,
@@ -355,12 +352,11 @@ class RoomController extends Controller
                     'view_preference'  => $validated['view_preference'] ?? null,
                 ]);
 
-                // Create one booking_room row per assigned physical room (quantity always 1).
+                // Create one booking_room row per assigned physical room.
                 foreach ($assignedRooms as $aRoom) {
                     $booking->bookingRooms()->create([
                         'room_type_id'     => $roomType->id,
                         'room_id'          => $aRoom->id,
-                        'quantity'         => 1,
                         'price_at_booking' => $lockedRoomType->price_per_night,
                     ]);
                 }
@@ -416,7 +412,7 @@ class RoomController extends Controller
 
         abort_if($booking->guest_id !== $guestId, 403);
 
-        $booking->load(['room.roomType', 'transactions', 'bookingRooms.roomType']);
+        $booking->load(['bookingRooms.roomType', 'transactions', 'bookingRooms.roomType']);
 
         $catalogItems = ItemsCatalog::orderBy('category')->get();
         $roomServices = RoomService::where('booking_id', $booking->id)
@@ -521,9 +517,9 @@ class RoomController extends Controller
         ]);
 
         $extraNights = (int) $validated['extra_nights'];
-        $room        = $booking->room;
+        $bookingRooms = $booking->bookingRooms()->with('room')->get();
 
-        if (! $room) {
+        if ($bookingRooms->isEmpty()) {
             return back()->with('error', 'No room is assigned to this booking.');
         }
 
@@ -532,12 +528,15 @@ class RoomController extends Controller
         $baseline    = $booking->check_out_date;
         $newCheckout = $baseline->copy()->addDays($extraNights);
 
-        // Conflict check — overlapping active bookings on the same room.
-        $conflict = Booking::where('room_id', $room->id)
-            ->where('id', '!=', $booking->id)
-            ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
-            ->where('check_in_date', '<', $newCheckout->toDateString())
-            ->where('check_out_date', '>', $baseline->toDateString())
+        // Conflict check — overlapping active bookings on any of the same rooms.
+        $bookedRoomIds = $bookingRooms->pluck('room_id')->filter()->all();
+        $conflict = \App\Models\BookingRoom::whereIn('room_id', $bookedRoomIds)
+            ->whereHas('booking', function ($q) use ($booking, $newCheckout, $baseline) {
+                $q->where('id', '!=', $booking->id)
+                  ->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN])
+                  ->where('check_in_date', '<', $newCheckout->toDateString())
+                  ->where('check_out_date', '>', $baseline->toDateString());
+            })
             ->exists();
 
         if ($conflict) {
@@ -546,7 +545,8 @@ class RoomController extends Controller
             );
         }
 
-        $extraCost = $extraNights * (float) $room->roomType->price_per_night;
+        $pricePerNight = $bookingRooms->sum('price_at_booking');
+        $extraCost = $extraNights * $pricePerNight;
 
         // Auto-pick the first active payment gateway (same as regular booking flow).
         $gatewayManager = app(PaymentGatewayManager::class);
@@ -635,7 +635,7 @@ class RoomController extends Controller
             abort(403, 'Invoice not available yet.');
         }
 
-        $booking->load(['room.roomType', 'guest', 'transactions', 'roomServices.requestedItems.catalog', 'bookingRooms.roomType']);
+        $booking->load(['bookingRooms.roomType', 'guest', 'transactions', 'roomServices.requestedItems.catalog', 'bookingRooms.roomType']);
 
         return view('guest.invoice', compact('booking'));
     }
@@ -659,7 +659,7 @@ class RoomController extends Controller
         $existingBooking = null;
         if ($guestId) {
             $existingBooking = Booking::where('guest_id', $guestId)
-               ->whereHas('room', fn ($q) => $q->where('room_type_id', $roomType->id))
+               ->whereHas('bookingRooms', fn ($q) => $q->where('room_type_id', $roomType->id))
                ->where('booking_status', Booking::STATUS_PENDING)
                ->latest()
                ->first();
@@ -876,7 +876,7 @@ class RoomController extends Controller
                           ->where('check_in_date', '<', $validated['check_out_date'])
                           ->where('check_out_date', '>', $validated['check_in_date']);
                     })
-                    ->sum('quantity');
+                    ->count();
 
                 if (($totalActiveBookings + $qty) > $tierBookingLimit) {
                     throw new \Exception('CAPACITY_EXHAUSTED_' . $lockedRoomType->name);
@@ -920,12 +920,11 @@ class RoomController extends Controller
 
                 $total += $nights * (float) $lockedRoomType->price_per_night * $qty;
 
-                // Build one row per physical room assigned (quantity always 1).
+                // Build one row per physical room assigned.
                 foreach ($assignedRooms as $aRoom) {
                     $bookingRoomsData[] = [
                         'room_type_id'     => $lockedRoomType->id,
                         'room_id'          => $aRoom->id,
-                        'quantity'         => 1,
                         'price_at_booking' => $lockedRoomType->price_per_night,
                     ];
                 }
@@ -956,7 +955,6 @@ class RoomController extends Controller
             // Create the booking
             $booking = Booking::create([
                 'guest_id'         => $guestId,
-                'room_id'          => $primaryRoomId,
                 'check_in_date'    => $validated['check_in_date'],
                 'check_out_date'   => $validated['check_out_date'],
                 'total_price'      => $total,

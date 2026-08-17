@@ -16,6 +16,10 @@ use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function () {
+    $this->seed();
+});
+
 // ── 1. PUBLIC MARKETING & ROOM BROWSING ────────────────────────────────────
 
 it('loads public hotel pages successfully', function () {
@@ -28,12 +32,12 @@ it('loads public hotel pages successfully', function () {
 
 it('displays room details page for an available room', function () {
     $room = Room::create([
-        'room_number'    => '101',
-        'room_type_id'   => RoomType::where('slug', 'standard_twin')->first()->id,
+        'room_number'    => '901',
+        'room_type_id'   => RoomType::where('slug', 'standard_room')->first()->id,
         'current_status' => Room::STATUS_AVAILABLE,
     ]);
 
-    get('/rooms/' . $room->id)->assertStatus(200);
+    get('/rooms/standard_room')->assertStatus(200);
 });
 
 // ── 2. GUEST AUTHENTICATION & PROFILE ──────────────────────────────────────
@@ -88,8 +92,8 @@ it('creates a pending booking and routes to the KHQR payment page', function () 
     ]);
 
     $room = Room::create([
-        'room_number'    => '201',
-        'room_type_id'   => RoomType::where('slug', 'standard_double')->first()->id,
+        'room_number'    => '902',
+        'room_type_id'   => RoomType::where('slug', 'standard_room')->first()->id,
         'current_status' => Room::STATUS_AVAILABLE,
     ]);
 
@@ -106,9 +110,9 @@ it('creates a pending booking and routes to the KHQR payment page', function () 
         'special_requests' => 'High floor please',
     ]);
 
-    $booking = Booking::first();
+    $booking = Booking::latest('id')->first();
     expect($booking)->not->toBeNull();
-    expect((float) $booking->total_price)->toBe(100.00); // 2 nights * $50
+    expect((float) $booking->total_price)->toBe(60.00); // 2 nights * $30
     expect($booking->booking_status)->toBe(Booking::STATUS_PENDING);
 
     $response->assertRedirect(route('payment.show', $booking->id));
@@ -123,8 +127,8 @@ it('prevents double booking on overlapping dates for the same room', function ()
     ]);
 
     $room = Room::create([
-        'room_number'    => '301',
-        'room_type_id'   => RoomType::where('slug', 'deluxe_double')->first()->id,
+        'room_number'    => '903',
+        'room_type_id'   => RoomType::where('slug', 'deluxe_room')->first()->id,
         'current_status' => Room::STATUS_AVAILABLE,
     ]);
 
@@ -132,14 +136,18 @@ it('prevents double booking on overlapping dates for the same room', function ()
     $checkOut = now()->addDays(8)->format('Y-m-d');
 
     // Existing booking on those dates
-    Booking::create([
+    $booking = Booking::create([
         'guest_id'       => $guest->id,
-        'room_id'        => $room->id,
         'check_in_date'  => $checkIn,
         'check_out_date' => $checkOut,
-        'total_price'    => 240.00,
+        'total_price'    => 150.00,
         'booking_status' => Booking::STATUS_BOOKED,
-        'booking_origin'     => Booking::ORIGIN_USER,
+    ]);
+    \App\Models\BookingRoom::create([
+        'booking_id' => $booking->id,
+        'room_id'    => $room->id,
+        'room_type_id' => $room->room_type_id,
+        'price_per_night' => 50.00,
     ]);
 
     actingAs($guestAuth, 'web');

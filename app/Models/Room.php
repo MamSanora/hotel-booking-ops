@@ -65,19 +65,21 @@ class Room extends Model
     /**
      * All bookings ever assigned to this room.
      */
-    public function bookings(): HasMany
+    public function bookings(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->hasMany(Booking::class);
+        return $this->belongsToMany(Booking::class, 'booking_room')
+            ->withPivot('room_type_id', 'price_at_booking')
+            ->withTimestamps();
     }
 
     /**
      * The currently active booking (checked-in), if any.
      */
-    public function activeBooking(): HasOne
+    public function activeBookings(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->hasOne(Booking::class)
-            ->where('booking_status', 'checked-in')
-            ->latest();
+        return $this->belongsToMany(Booking::class, 'booking_room')
+            ->where('bookings.booking_status', 'checked-in')
+            ->orderByDesc('bookings.created_at');
     }
 
     /**

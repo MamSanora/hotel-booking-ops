@@ -198,9 +198,6 @@
                                 </div>
                             </div>
                             <div class="text-right shrink-0">
-                                <span class="inline-block bg-hotel-gold/10 text-hotel-gold font-bold text-sm px-3 py-1 rounded-full">
-                                    &times; {{ $br->quantity }}
-                                </span>
                                 <div class="text-xs text-gray-400 mt-0.5">
                                     ${{ number_format($br->lineTotal(), 2) }} total
                                 </div>
@@ -209,40 +206,13 @@
                         @endforeach
                     </div>
                 @else
-                    {{-- Standard single-type display --}}
+                    {{-- No booking_room rows at all -- show placeholder --}}
                     <div class="flex items-start gap-5">
                         <div class="w-24 h-20 rounded-xl bg-hotel-light flex items-center justify-center flex-shrink-0 overflow-hidden">
                             <i class="bi bi-building text-hotel-gold text-4xl"></i>
                         </div>
                         <div class="flex-grow">
-                            <div class="font-playfair text-xl font-bold text-hotel-dark mb-2">
-                                {{ $booking->room?->displayType() ?? '—' }}
-                            </div>
-                            <div class="flex flex-wrap gap-3 text-sm">
-                                <span class="inline-flex items-center text-gray-600"><i class="bi bi-people mr-1.5 text-hotel-gold"></i> Up to {{ $booking->room?->roomType?->adult_capacity }} Adults, {{ $booking->room?->roomType?->child_capacity }} Children</span>
-                                <span class="inline-flex items-center text-gray-600"><i class="bi bi-cash mr-1.5 text-hotel-gold"></i> ${{ number_format($booking->room?->roomType?->price_per_night ?? 0, 2) }}/night</span>
-                            </div>
-
-                            @if($booking->booking_status === 'checked-in' && $booking->room)
-                            <div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                                <div>
-                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Room No.</div>
-                                    <div class="font-bold text-hotel-dark">{{ $booking->room->room_number }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Floor</div>
-                                    <div class="font-bold text-hotel-dark">{{ is_numeric(substr($booking->room->room_number, 0, 1)) ? substr($booking->room->room_number, 0, 1) : '—' }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">Bed Type</div>
-                                    <div class="font-bold text-hotel-dark">{{ $booking->room->displayBedConfiguration() }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-1">View</div>
-                                    <div class="font-bold text-hotel-dark">{{ $booking->room->displayViewType() }}</div>
-                                </div>
-                            </div>
-                            @endif
+                            <div class="font-playfair text-xl font-bold text-hotel-dark mb-2">Room — Pending Assignment</div>
                         </div>
                     </div>
                 @endif
@@ -291,7 +261,7 @@
                         {{-- Line-item breakdown for multi-type bookings --}}
                         @foreach($booking->bookingRooms as $br)
                         <div class="flex justify-between">
-                            <span>{{ $br->roomType?->name ?? '—' }} ×{{ $br->quantity }} &mdash; ${{ number_format($br->price_at_booking, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
+                            <span>{{ $br->roomType?->name ?? '—' }} — Rm {{ $br->room?->room_number ?? 'TBA' }} &mdash; ${{ number_format($br->price_at_booking, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
                             <span class="font-medium text-gray-800">${{ number_format($br->lineTotal(), 2) }}</span>
                         </div>
                         @endforeach

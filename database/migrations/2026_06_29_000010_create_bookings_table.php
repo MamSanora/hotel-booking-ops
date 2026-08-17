@@ -55,7 +55,7 @@ return new class extends Migration
 
             // Tracks how many times the guest has extended their stay
             // (Process 5.0 Stay Extension in the DFD).
-            $table->unsignedInteger('number_of_stay_extension')->default(0);
+
 
             // Total booking cost including any stay extensions.
             $table->decimal('total_price', 10, 2)->nullable();

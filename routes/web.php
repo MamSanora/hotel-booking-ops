@@ -168,7 +168,7 @@ Route::middleware('auth')->prefix('payment')->name('payment.')->group(function (
 
     // Success and failure landing pages.
     Route::get('/success/{booking}', function (Booking $booking) {
-        $booking->loadMissing(['room.roomType', 'bookingRooms.roomType']);
+        $booking->loadMissing(['bookingRooms.roomType', 'bookingRooms.roomType']);
         return view('payment.success', compact('booking'));
     })->name('success');
 

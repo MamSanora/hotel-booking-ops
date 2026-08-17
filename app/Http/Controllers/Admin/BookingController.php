@@ -45,7 +45,7 @@ class BookingController extends Controller
     {
         $booking->load([
             'guest',
-            'room.roomType',
+            'bookingRooms.roomType',
             'transactions',
             'bookingRooms.roomType',
             'incidentalCharges',
@@ -199,14 +199,10 @@ class BookingController extends Controller
 
         DB::transaction(function () use ($booking) {
             // Release any physically assigned rooms back to available status.
-            foreach ($booking->bookingRooms()->with('room')->get() as $bookingRoom) {
+            foreach ($booking->bookingRooms()->with('bookingRooms.room')->get() as $bookingRoom) {
                 if ($bookingRoom->room) {
                     $bookingRoom->room->update(['current_status' => 'available']);
                 }
-            }
-            // Also release the primary room on the booking record itself.
-            if ($booking->room) {
-                $booking->room->update(['current_status' => 'available']);
             }
 
             $booking->update(['booking_status' => Booking::STATUS_CANCELLED]);
