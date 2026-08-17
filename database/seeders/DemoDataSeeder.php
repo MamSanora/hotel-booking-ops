@@ -34,7 +34,7 @@ class DemoDataSeeder extends Seeder
     public function __construct()
     {
         // 3 months of realistic data for defense team demo
-        $this->periodStart = Carbon::today()->subMonths(3)->startOfMonth();
+        $this->periodStart = Carbon::today()->subMonths(2)->startOfMonth();
     }
 
     public function run(): void
@@ -200,18 +200,14 @@ class DemoDataSeeder extends Seeder
             $walkin[] = [$surname . ' ' . $given, $gender, 'Cambodia', $phone];
         }
 
-        // Walk-in guests created around June 20th, 2026 (simulating bulk data entry)
-        $bulkEntryDate = Carbon::create(2026, 6, 20, 9, 0, 0);
         foreach ($walkin as [$name, $gender, $nat, $phone]) {
-            $t = $bulkEntryDate->copy()->addMinutes(rand(1, 480)); // Spread over an 8-hour workday
+            $t = Carbon::today()->subDays(rand(30, 600))->addHours(rand(8, 20))->addMinutes(rand(0, 59));
             $g = Guest::create(['full_name' => $name, 'gender' => $gender, 'nationality' => $nat, 'created_at' => $t, 'updated_at' => $t]);
             Phone::create(['guest_id' => $g->id, 'phone_number' => $phone]);
         }
 
-        // Online guests created in the recent month
-        $recentStart = Carbon::today()->startOfMonth();
         foreach ($online as [$name, $gender, $nat, $email, $phone]) {
-            $t = $recentStart->copy()->addDays(rand(0, 25));
+            $t = Carbon::today()->subDays(rand(30, 600))->addHours(rand(8, 20))->addMinutes(rand(0, 59));
             $g = Guest::create(['full_name' => $name, 'gender' => $gender, 'nationality' => $nat, 'created_at' => $t, 'updated_at' => $t]);
             Phone::create(['guest_id' => $g->id, 'phone_number' => $phone]);
             GuestAuth::create(['guest_id' => $g->id, 'email' => $email, 'passwordhash' => Hash::make('password123'), 'email_verified_at' => $t, 'created_at' => $t, 'updated_at' => $t]);
@@ -258,7 +254,7 @@ class DemoDataSeeder extends Seeder
             $currentMonth->addMonth();
         }
 
-        $seederTime = $this->periodStart->copy()->setHour(8);
+        $generatedBookings = [];
 
         foreach ($months as [$year, $month, $count, $logic]) {
             for ($i = 0; $i < $count; $i++) {
@@ -323,93 +319,124 @@ class DemoDataSeeder extends Seeder
                 $totalPrice    = $nights * $pricePerNight * $roomCount;
                 $extensions    = ($month === 4 && $i < 3) ? rand(1, 2) : 0;
                 
-                $seederTime->addMinutes(rand(30, 90));
-                $bookedAt      = $seederTime->copy();
+                $isWalkIn = in_array($bookingOrigin, ['walk-in', 'phone']);
+                if ($isWalkIn) {
+                    $bookedAt = $checkIn->copy()->addHours(rand(10, 18))->addMinutes(rand(0, 59));
+                } else {
+                    $bookedAt = $checkIn->copy()->subDays(rand(1, 45))->addHours(rand(0, 23))->addMinutes(rand(0, 59));
+                }
                 
-                $staffId       = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;
+                $staffId = !empty($this->staffIds) ? $this->staffIds[array_rand($this->staffIds)] : null;
 
-                $booking = Booking::create([
-                    'guest_id'                 => $guest->id,
-                    'handled_by_staff_id'      => in_array($bookingOrigin, ['walk-in','phone','other','agoda']) ? $staffId : null,
-                    'check_in_date'            => $checkIn->toDateString(),
-                    'check_out_date'           => $checkOut->toDateString(),
+                $generatedBookings[] = [
+                    'bookedAt' => $bookedAt,
+                    'closure' => function() use ($guest, $bookingOrigin, $staffId, $checkIn, $checkOut, $totalPrice, $status, $bookedAt, $roomId, $pricePerNight, $allRooms, $secondRoomId, $method, $extensions, $nights, $catalogIds) {
+                        $booking = Booking::create([
+                            'guest_id'                 => $guest->id,
+                            'handled_by_staff_id'      => in_array($bookingOrigin, ['walk-in','phone','other','agoda']) ? $staffId : null,
+                            'check_in_date'            => $checkIn->toDateString(),
+                            'check_out_date'           => $checkOut->toDateString(),
 
-                    'total_price'              => $totalPrice,
-                    'booking_status'           => $status,
-                    'booking_origin'           => $bookingOrigin,
-                    'created_at'               => $bookedAt,
-                    'updated_at'               => $bookedAt,
-                ]);
-
-                // Create booking_room row(s) — one per physical room
-                $room = $allRooms[$roomId];
-                BookingRoom::create([
-                    'booking_id'       => $booking->id,
-                    'room_type_id'     => $room->room_type_id,
-                    'room_id'          => $roomId,
-                    'price_at_booking' => $pricePerNight,
-                    'created_at'       => $bookedAt,
-                    'updated_at'       => $bookedAt,
-                ]);
-
-                if ($secondRoomId) {
-                    $room2 = $allRooms[$secondRoomId];
-                    BookingRoom::create([
-                        'booking_id'       => $booking->id,
-                        'room_type_id'     => $room2->room_type_id,
-                        'room_id'          => $secondRoomId,
-                        'price_at_booking' => $pricePerNight,
-                        'created_at'       => $bookedAt,
-                        'updated_at'       => $bookedAt,
-                    ]);
-                }
-
-                // Transaction
-                if (!in_array($status, ['cancelled', 'no_show', 'pending'])) {
-                    $paymentReference = in_array($method, ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
-                    Transaction::create([
-                        'booking_id'     => $booking->id,
-                        'amount_paid'    => $totalPrice,
-                        'payment_for'    => 'booking',
-                        'payment_method' => $method,
-                        'payment_status' => 'full',
-                        'created_at'     => $bookedAt,
-                        'updated_at'     => $bookedAt,
-                        'payment_reference' => $paymentReference,
-                    ]);
-
-                    for ($e = 0; $e < $extensions; $e++) {
-                        $extNights = rand(1, 2);
-                        $extAmount = $extNights * $pricePerNight;
-                        $extDate   = $checkIn->copy()->addDays(rand(2, $nights));
-                        Transaction::create([
-                            'booking_id'     => $booking->id,
-                            'amount_paid'    => $extAmount,
-                            'payment_for'    => 'stay_extension',
-                            'payment_method' => $method,
-                            'payment_status' => 'full',
-                            'created_at'     => $extDate,
-                            'updated_at'     => $extDate,
-                            'payment_reference' => $paymentReference,
+                            'total_price'              => $totalPrice,
+                            'booking_status'           => $status,
+                            'booking_origin'           => $bookingOrigin,
+                            'created_at'               => $bookedAt,
+                            'updated_at'               => $bookedAt,
                         ]);
+
+                        // Create booking_room row(s) — one per physical room
+                        $room = $allRooms[$roomId];
+                        BookingRoom::create([
+                            'booking_id'       => $booking->id,
+                            'room_type_id'     => $room->room_type_id,
+                            'room_id'          => $roomId,
+                            'price_at_booking' => $pricePerNight,
+                            'created_at'       => $bookedAt,
+                            'updated_at'       => $bookedAt,
+                        ]);
+
+                        if ($secondRoomId) {
+                            $room2 = $allRooms[$secondRoomId];
+                            BookingRoom::create([
+                                'booking_id'       => $booking->id,
+                                'room_type_id'     => $room2->room_type_id,
+                                'room_id'          => $secondRoomId,
+                                'price_at_booking' => $pricePerNight,
+                                'created_at'       => $bookedAt,
+                                'updated_at'       => $bookedAt,
+                            ]);
+                        }
+
+                        // Transaction
+                        if (!in_array($status, ['cancelled', 'no_show', 'pending'])) {
+                            $paymentReference = in_array($method, ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
+                            Transaction::create([
+                                'booking_id'     => $booking->id,
+                                'amount_paid'    => $totalPrice,
+                                'payment_for'    => 'booking',
+                                'payment_method' => $method,
+                                'payment_status' => 'full',
+                                'created_at'     => $bookedAt,
+                                'updated_at'     => $bookedAt,
+                                'payment_reference' => $paymentReference,
+                            ]);
+
+                            for ($e = 0; $e < $extensions; $e++) {
+                                $extNights = rand(1, 2);
+                                $extAmount = $extNights * $pricePerNight;
+                                $extDate   = $checkIn->copy()->addDays(rand(2, $nights));
+                                Transaction::create([
+                                    'booking_id'     => $booking->id,
+                                    'amount_paid'    => $extAmount,
+                                    'payment_for'    => 'stay_extension',
+                                    'payment_method' => $method,
+                                    'payment_status' => 'full',
+                                    'created_at'     => $extDate,
+                                    'updated_at'     => $extDate,
+                                    'payment_reference' => $paymentReference,
+                                ]);
+                            }
+                        }
+
+                        // Room service requests
+                        if (in_array($status, ['checked-in', 'checked-out']) && rand(1, 10) <= 6 && !empty($catalogIds)) {
+                            $this->createRoomServices($booking, $catalogIds, $staffId, $status);
+                        }
                     }
-                }
-
-                // Room service requests
-                if (in_array($status, ['checked-in', 'checked-out']) && rand(1, 10) <= 6 && !empty($catalogIds)) {
-                    $this->createRoomServices($booking, $catalogIds, $staffId, $status);
-                }
-
-                $total++;
+                ];
             }
         }
 
         // ── Guaranteed Currently Checked-In (today) ──────────────────────
         // Ensures the dashboard always shows occupied rooms on any run date.
         $this->command->info('  🛎️   Adding currently occupied rooms...');
-        $this->seedCurrentlyCheckedIn($allRooms, $roomBookedDates, $online, $walkin, $catalogIds, $today, $total);
+        $this->seedCurrentlyCheckedIn($allRooms, $roomBookedDates, $online, $walkin, $catalogIds, $today, $generatedBookings);
+
+        // Sort chronologically and insert
+        $this->command->info('     Sorting and inserting bookings chronologically...');
+        usort($generatedBookings, fn($a, $b) => $a['bookedAt']->timestamp <=> $b['bookedAt']->timestamp);
+        
+        foreach ($generatedBookings as $b) {
+            $b['closure']();
+            $total++;
+        }
 
         $this->command->info("     ✓ {$total} bookings created");
+
+        // Ensure room statuses are set to occupied for all checked-in bookings
+        $checkedInRoomIds = DB::table('booking_room')
+            ->join('bookings', 'bookings.id', '=', 'booking_room.booking_id')
+            ->where('bookings.booking_status', 'checked-in')
+            ->pluck('booking_room.room_id')
+            ->unique()
+            ->all();
+
+        if (!empty($checkedInRoomIds)) {
+            Room::whereIn('id', $checkedInRoomIds)->update(['current_status' => 'occupied']);
+        }
+
+        $checkedInCount = Booking::where('booking_status', 'checked-in')->count();
+        $this->command->info("     ✓ {$checkedInCount} rooms currently occupied");
     }
 
     /**
@@ -423,7 +450,7 @@ class DemoDataSeeder extends Seeder
         \Illuminate\Support\Collection $walkin,
         array $catalogIds,
         Carbon $today,
-        int &$total
+        array &$generatedBookings
     ): void {
         // Varied stay windows all spanning today
         $windows = [
@@ -464,64 +491,53 @@ class DemoDataSeeder extends Seeder
             $isStaff       = in_array($w['bookingOrigin'], ['walk-in', 'phone', 'other', 'agoda']);
             $bookedAt      = $checkIn->copy()->subDays(rand(1, 5));
 
-            $booking = Booking::create([
-                'guest_id'                 => $guest->id,
-                'handled_by_staff_id'      => $isStaff ? $staffId : null,
-                'check_in_date'            => $checkIn->toDateString(),
-                'check_out_date'           => $checkOut->toDateString(),
+            $generatedBookings[] = [
+                'bookedAt' => $bookedAt,
+                'closure' => function() use ($guest, $isStaff, $staffId, $checkIn, $checkOut, $totalPrice, $w, $bookedAt, $allRooms, $roomId, $pricePerNight, $catalogIds) {
+                    $booking = Booking::create([
+                        'guest_id'                 => $guest->id,
+                        'handled_by_staff_id'      => $isStaff ? $staffId : null,
+                        'check_in_date'            => $checkIn->toDateString(),
+                        'check_out_date'           => $checkOut->toDateString(),
 
-                'total_price'              => $totalPrice,
-                'booking_status'           => 'checked-in',
-                'booking_origin'           => $w['bookingOrigin'],
-                'created_at'               => $bookedAt,
-                'updated_at'               => $checkIn,
-            ]);
+                        'total_price'              => $totalPrice,
+                        'booking_status'           => 'checked-in',
+                        'booking_origin'           => $w['bookingOrigin'],
+                        'created_at'               => $bookedAt,
+                        'updated_at'               => $checkIn,
+                    ]);
 
-            // Create booking_room pivot row
-            $room = $allRooms[$roomId];
-            BookingRoom::create([
-                'booking_id'       => $booking->id,
-                'room_type_id'     => $room->room_type_id,
-                'room_id'          => $roomId,
-                'price_at_booking' => $pricePerNight,
-                'created_at'       => $bookedAt,
-                'updated_at'       => $bookedAt,
-            ]);
+                    // Create booking_room pivot row
+                    $room = $allRooms[$roomId];
+                    BookingRoom::create([
+                        'booking_id'       => $booking->id,
+                        'room_type_id'     => $room->room_type_id,
+                        'room_id'          => $roomId,
+                        'price_at_booking' => $pricePerNight,
+                        'created_at'       => $bookedAt,
+                        'updated_at'       => $bookedAt,
+                    ]);
 
-            $paymentReference = in_array($w['method'], ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
-            Transaction::create([
-                'booking_id'     => $booking->id,
-                'amount_paid'    => $totalPrice,
-                'payment_for'    => 'booking',
-                'payment_method' => $w['method'],
-                'payment_status' => 'full',
-                'created_at'     => $bookedAt,
-                'updated_at'     => $bookedAt,
-                'payment_reference' => $paymentReference,
-            ]);
+                    $paymentReference = in_array($w['method'], ['khqr', 'telegram']) ? (string) rand(100000000000000, 999999999999999) : 'Cash received';
+                    Transaction::create([
+                        'booking_id'     => $booking->id,
+                        'amount_paid'    => $totalPrice,
+                        'payment_for'    => 'booking',
+                        'payment_method' => $w['method'],
+                        'payment_status' => 'full',
+                        'created_at'     => $bookedAt,
+                        'updated_at'     => $bookedAt,
+                        'payment_reference' => $paymentReference,
+                    ]);
 
-            // Add a room service request for realism
-            if (!empty($catalogIds)) {
-                $this->createRoomServices($booking, $catalogIds, $staffId, 'checked-in');
-            }
-
-            $total++;
+                    // Add a room service request for realism
+                    if (!empty($catalogIds)) {
+                        $this->createRoomServices($booking, $catalogIds, $staffId, 'checked-in');
+                    }
+                }
+            ];
         }
 
-        // Ensure room statuses are set to occupied for all checked-in bookings
-        $checkedInRoomIds = DB::table('booking_room')
-            ->join('bookings', 'bookings.id', '=', 'booking_room.booking_id')
-            ->where('bookings.booking_status', 'checked-in')
-            ->pluck('booking_room.room_id')
-            ->unique()
-            ->all();
-
-        if (!empty($checkedInRoomIds)) {
-            Room::whereIn('id', $checkedInRoomIds)->update(['current_status' => 'occupied']);
-        }
-
-        $checkedInCount = Booking::where('booking_status', 'checked-in')->count();
-        $this->command->info("     ✓ {$checkedInCount} rooms currently occupied");
     }
 
     /* ─────────────────────────── HELPERS ──────────────────────────────── */
