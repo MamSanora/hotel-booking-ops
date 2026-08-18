@@ -448,8 +448,12 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xs font-bold text-hotel-dark">Room {{ $booking->room?->room_number ?? '-' }}</div>
-                            <div class="text-[0.7rem] text-gray-400">{{ $booking->room?->roomType?->display_name ?? '' }}</div>
+                            @php
+                                $roomNumbers = $booking->bookingRooms->map(fn($br) => $br->room?->room_number)->filter()->implode(', ') ?: '-';
+                                $roomTypes = $booking->bookingRooms->map(fn($br) => $br->roomType?->display_name)->filter()->unique()->implode(', ');
+                            @endphp
+                            <div class="text-xs font-bold text-hotel-dark">Room {{ $roomNumbers }}</div>
+                            <div class="text-[0.7rem] text-gray-400">{{ $roomTypes }}</div>
                         </div>
                     </li>
                     @endforeach
@@ -482,8 +486,12 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xs font-bold text-hotel-dark">Room {{ $booking->room?->room_number ?? '-' }}</div>
-                            <div class="text-[0.7rem] text-gray-400">{{ $booking->room?->roomType?->display_name ?? '' }}</div>
+                            @php
+                                $roomNumbers = $booking->bookingRooms->map(fn($br) => $br->room?->room_number)->filter()->implode(', ') ?: '-';
+                                $roomTypes = $booking->bookingRooms->map(fn($br) => $br->roomType?->display_name)->filter()->unique()->implode(', ');
+                            @endphp
+                            <div class="text-xs font-bold text-hotel-dark">Room {{ $roomNumbers }}</div>
+                            <div class="text-[0.7rem] text-gray-400">{{ $roomTypes }}</div>
                         </div>
                     </li>
                     @endforeach

@@ -4,6 +4,13 @@
 
 @section('content')
 
+{{-- 
+    AGENT NOTE: 
+    Development is no longer needed for this offline QR code generator page. 
+    We have successfully acquired and integrated the official Bakong Payment API.
+    (This view is kept for legacy/fallback purposes only). 
+--}}
+
 <div class="min-h-[85vh] bg-[#f0f2f5] py-10 px-4">
     <div class="max-w-5xl w-full mx-auto">
 

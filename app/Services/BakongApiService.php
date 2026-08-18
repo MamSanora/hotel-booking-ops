@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\Log;
 /**
  * BakongApiService
  * 
- * [AGENT NOTE: THIS SERVICE IS CURRENTLY UNUSABLE. The hotel does not have the 
- * right regulatory requirements to obtain direct Bakong Open API credentials. Do not 
- * attempt to use or fix this API flow.]
- *
  * Communicates with the Bakong Open API to verify KHQR payment status.
  *
  * Strategy: After a KHQR is generated and shown to the guest, the frontend
@@ -106,7 +102,7 @@ class BakongApiService implements PaymentGatewayInterface
                 return false;
             }
 
-            // Extract tracking status from response (may vary by API version)
+            // Extract tracking status from response (if provided in future API versions)
             $trackingStatus = $body['data']['trackingStatus']
                 ?? $body['data']['status']
                 ?? null;
@@ -120,7 +116,9 @@ class BakongApiService implements PaymentGatewayInterface
             $responseCode = $body['responseCode'] ?? -1;
 
             if ($responseCode === self::SUCCESS_CODE) {
-                return in_array($trackingStatus, self::SUCCESS_STATUSES, true);
+                // The check_transaction_by_md5 endpoint returns responseCode 0 ONLY IF the payment exists and was successful.
+                // It returns 1 (Not Found) if it hasn't been paid yet. It does not return trackingStatus.
+                return true;
             }
 
             return false;

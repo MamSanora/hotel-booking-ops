@@ -43,8 +43,8 @@
         #clnr-clock { font-variant-numeric: tabular-nums; }
         #clnr-content { animation: fadeInUp 0.22s ease both; }
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
 
         #clnr-overlay { transition: opacity 0.25s ease; }

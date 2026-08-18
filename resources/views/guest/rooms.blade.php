@@ -328,6 +328,19 @@
                             </span>
                         </div>
 
+                        {{-- Smart Fit Badge --}}
+                        <div x-cloak x-show="autoCalcRooms({{ $roomType->adult_capacity }}, {{ $roomType->child_capacity }}) > 1" class="mb-3">
+                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex items-start shadow-sm transition-all duration-300">
+                                <i class="bi bi-stars text-amber-500 mt-0.5 mr-2"></i>
+                                <div>
+                                    <h6 class="text-amber-800 text-xs font-bold mb-0.5">Smart Fit</h6>
+                                    <p class="text-amber-700 text-[0.7rem] leading-tight">
+                                        Book <strong x-text="autoCalcRooms({{ $roomType->adult_capacity }}, {{ $roomType->child_capacity }})"></strong> of these rooms to accommodate your group.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Action Button: auto-calculates number of rooms needed from guest count --}}
                         <div>
                             @if($isAvailable)
@@ -528,13 +541,19 @@
             autoCalcRooms(adultCap, childCap) {
                 // Ensure capacities are at least 1 for division to avoid Infinity
                 const safeAdultCap = Math.max(1, adultCap);
-                const safeChildCap = childCap > 0 ? childCap : 1; 
+                const safeTotalCap = Math.max(1, adultCap + childCap); 
                 
-                // We need enough rooms to fit all adults AND all children
+                // ARCHITECTURAL NOTE: Boutique Hotel "Total Occupancy" Model
+                // Instead of strictly enforcing child capacities (which forces families into too many rooms),
+                // we relax the rules:
+                // 1. Adults still dictate the baseline (they need proper beds).
+                // 2. Children can share existing bedding, so we check if the Total Group fits in the Total Capacity.
+                // Do NOT revert this to strict silos without management approval.
+                
                 const roomsForAdults = Math.ceil(this.adults / safeAdultCap);
-                const roomsForChildren = this.children > 0 ? Math.ceil(this.children / safeChildCap) : 0;
+                const roomsForTotalGroup = Math.ceil(this.totalGuests / safeTotalCap);
                 
-                return Math.max(1, roomsForAdults, roomsForChildren);
+                return Math.max(1, roomsForAdults, roomsForTotalGroup);
             },
 
             // Navigate to room-detail with auto-calculated rooms pre-filled.

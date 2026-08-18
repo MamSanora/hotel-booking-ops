@@ -49,7 +49,9 @@
                                 <span class="text-xs text-gray-500">{{ $charge->booking->guest?->full_name ?? 'Walk-in Guest' }}</span>
                             </td>
                             <td class="px-5 py-3 text-sm text-gray-600">
-                                @if($charge->booking->bookingRooms->isNotEmpty())
+                                @if($charge->room)
+                                    <span class="font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-md">Rm {{ $charge->room->room_number }}</span>
+                                @elseif($charge->booking->bookingRooms->isNotEmpty())
                                     Rm {{ $charge->booking->bookingRooms->map(fn($br) => $br->room?->room_number)->filter()->join(', ') }}
                                 @else
                                     Rm {{ $charge->booking->room?->room_number ?? 'N/A' }}

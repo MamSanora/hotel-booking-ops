@@ -40,7 +40,7 @@ class Transaction extends Model
     public const STATUS_PENDING  = 'pending';
     public const STATUS_PARTIAL  = 'partial';
     public const STATUS_FULL     = 'full';
-    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_FAILED   = 'failed';
     public const STATUS_REFUND_PENDING = 'refund_pending';
     public const STATUS_REFUNDED = 'refunded';
 
@@ -185,6 +185,7 @@ class Transaction extends Model
             self::STATUS_PARTIAL  => 'Partial',
             self::STATUS_FULL     => 'Paid',
             self::STATUS_REFUNDED => 'Refunded',
+            self::STATUS_FAILED   => 'Failed',
             default               => ucfirst($this->payment_status),
         };
     }
@@ -200,6 +201,7 @@ class Transaction extends Model
             self::STATUS_FULL     => 'bg-green-100 text-green-800',
             self::STATUS_REFUND_PENDING => 'bg-purple-100 text-purple-800',
             self::STATUS_REFUNDED => 'bg-red-100 text-red-800',
+            self::STATUS_FAILED   => 'bg-red-100 text-red-800',
             default               => 'bg-gray-100 text-gray-600',
         };
     }

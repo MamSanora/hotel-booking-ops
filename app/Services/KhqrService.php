@@ -72,71 +72,30 @@ class KhqrService
      */
     public function generate(Booking $booking, ?float $amount = null): array
     {
-        $paymentAmount = $amount ?? $booking->total_price;
+        $paymentAmount   = $amount ?? $booking->total_price;
         $formattedAmount = number_format((float) $paymentAmount, 2, '.', '');
-        $ref    = $booking->referenceNumber();
+        $ref             = $booking->referenceNumber();
 
-        $khqr = $this->buildKhqrString($formattedAmount, $ref);
+        // The library's generateIndividual() is STATIC and takes only IndividualInfo.
+        // Amount, currency (as int), and bill number MUST be set on IndividualInfo.
+        $individualInfo = new \KHQR\Models\IndividualInfo(
+            $this->bakongAccountId,
+            $this->merchantName,
+            $this->merchantCity,
+            null,                               // acquiringBank
+            null,                               // accountInformation
+            \KHQR\Helpers\KHQRData::CURRENCY_USD, // currency as int 840
+            (float) $formattedAmount,           // amount
+            $ref,                               // billNumber = booking reference
+        );
+
+        $response = \KHQR\BakongKHQR::generateIndividual($individualInfo);
 
         return [
-            'khqr_string' => $khqr,
-            'md5_hash'    => md5($khqr),
+            'khqr_string' => $response->data['qr'],
+            'md5_hash'    => $response->data['md5'],
         ];
     }
-
-    // ── KHQR String Builder ────────────────────────────────────────────────
-
-    /**
-     * Assemble the full EMVCo TLV KHQR string and append CRC16.
-     */
-    protected function buildKhqrString(string $amount, string $billNumber): string
-    {
-        // ── Root-level tags ──────────────────────────────────────────────
-
-        // Tag 00: Payload Format Indicator (always "01")
-        $qr = $this->tlv('00', '01');
-
-        // Tag 01: Point of Initiation ("12" = Dynamic — amount is embedded)
-        $qr .= $this->tlv('01', '12');
-
-        // Tag 29: Merchant Account Info — Bakong Individual
-        $tag29 = $this->tlv('00', self::BAKONG_GUID)
-               . $this->tlv('01', $this->bakongAccountId)
-               . $this->tlv('02', $this->merchantName)
-               . $this->tlv('03', $this->merchantCity);
-        $qr .= $this->tlv('29', $tag29);
-
-        // Tag 52: Merchant Category Code
-        $qr .= $this->tlv('52', '5999');
-
-        // Tag 53: Transaction Currency ("840"=USD, "116"=KHR)
-        $qr .= $this->tlv('53', $this->currency);
-
-        // Tag 54: Transaction Amount
-        $qr .= $this->tlv('54', $amount);
-
-        // Tag 58: Country Code
-        $qr .= $this->tlv('58', 'KH');
-
-        // Tag 59: Merchant Name
-        $qr .= $this->tlv('59', $this->merchantName);
-
-        // Tag 60: Merchant City
-        $qr .= $this->tlv('60', $this->merchantCity);
-
-        // Tag 62: Additional Data Field (bill number = our booking reference)
-        $tag62 = $this->tlv('01', $billNumber);
-        $qr   .= $this->tlv('62', $tag62);
-
-        // Tag 63: CRC — 4-char CRC16/CCITT over the entire string so far,
-        // with the "6304" prefix included in the checksum calculation.
-        $qr .= '6304'; // length is always 04
-        $qr .= strtoupper(sprintf('%04X', $this->crc16($qr)));
-
-        return $qr;
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────────
 
     /**
      * Format a Tag-Length-Value (TLV) field.

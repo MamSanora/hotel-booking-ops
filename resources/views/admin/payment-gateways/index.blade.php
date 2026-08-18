@@ -117,6 +117,29 @@
         <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-gray-400 inline-block"></span> Hidden — completely removed from checkout</div>
     </div>
 
+    {{-- Receptionist Settings --}}
+    <div class="mt-8 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] overflow-hidden">
+        <div class="px-6 py-5 border-b border-[#ede8df] flex justify-between items-center">
+            <div>
+                <h3 class="text-hotel-dark font-semibold text-lg">Receptionist Offline QR Source</h3>
+                <p class="text-gray-500 text-sm mt-1">Select whose QR code should be generated for manual payments on the Receptionist Dashboard.</p>
+            </div>
+        </div>
+        <div class="px-6 py-5">
+            <form method="POST" action="{{ route('admin.payment-gateways.reception-qr') }}" class="flex items-center gap-4">
+                @csrf
+                @method('PATCH')
+                <select name="reception_qr_merchant" class="text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white text-hotel-dark focus:outline-none focus:ring-2 focus:ring-hotel-gold min-w-[250px]">
+                    <option value="keo_samnang" {{ \App\Models\Setting::get('reception_qr_merchant', 'keo_samnang') === 'keo_samnang' ? 'selected' : '' }}>Keo Samnang (Default)</option>
+                    <option value="mam_sanora" {{ \App\Models\Setting::get('reception_qr_merchant', 'keo_samnang') === 'mam_sanora' ? 'selected' : '' }}>Mam Sanora (Owner)</option>
+                </select>
+                <button type="submit" class="inline-flex items-center gap-1.5 bg-hotel-dark text-hotel-gold text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-hotel-accent transition-colors">
+                    <i class="bi bi-save"></i> Save Setting
+                </button>
+            </form>
+        </div>
+    </div>
+
 </div>
 
 @endsection

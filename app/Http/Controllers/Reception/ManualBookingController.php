@@ -79,23 +79,27 @@ class ManualBookingController extends Controller
             }
 
             // Step 2: Calculate pricing.
-            $room       = Room::with('roomType')->findOrFail($validated['room_id']);
-            $nights     = max(1, (int) Carbon::parse($validated['check_in_date'])
+            $rooms = Room::with('roomType')->whereIn('id', $validated['room_ids'])->get();
+            $nights = max(1, (int) Carbon::parse($validated['check_in_date'])
                 ->diffInDays(Carbon::parse($validated['check_out_date'])));
-            $total      = $nights * (float) $room->roomType->price_per_night;
-            $tier       = (int) $validated['payment_tier'];
+            $tier = (int) $validated['payment_tier'];
 
-            // Tier-aware availability check (receptionist may book at any tier).
-            if (!$room->isAvailableForDates(
-                $validated['check_in_date'],
-                $validated['check_out_date'],
-                null,
-                $tier
-            )) {
-                throw new \Illuminate\Validation\ValidationException(
-                    validator([], []),
-                    back()->withErrors(['room_id' => 'This room is no longer available at the selected tier for those dates.'])
-                );
+            $total = 0;
+            foreach ($rooms as $room) {
+                $total += $nights * (float) ($room->roomType->price_per_night ?? 0);
+                
+                // Tier-aware availability check (receptionist may book at any tier).
+                if (!$room->isAvailableForDates(
+                    $validated['check_in_date'],
+                    $validated['check_out_date'],
+                    null,
+                    $tier
+                )) {
+                    throw new \Illuminate\Validation\ValidationException(
+                        validator([], []),
+                        back()->withErrors(['room_ids' => "Room {$room->room_number} is no longer available at the selected tier for those dates."])
+                    );
+                }
             }
 
             // Step 3: Create the booking (no room_id — room is tracked in booking_room).
@@ -112,13 +116,15 @@ class ManualBookingController extends Controller
                 'special_requests'    => $validated['special_requests'] ?? null,
             ]);
 
-            // Step 3b: Link the physical room via booking_room pivot.
-            BookingRoom::create([
-                'booking_id'       => $booking->id,
-                'room_type_id'     => $room->room_type_id,
-                'room_id'          => $room->id,
-                'price_at_booking' => (float) $room->roomType->price_per_night,
-            ]);
+            // Step 3b: Link the physical rooms via booking_room pivot.
+            foreach ($rooms as $room) {
+                BookingRoom::create([
+                    'booking_id'       => $booking->id,
+                    'room_type_id'     => $room->room_type_id,
+                    'room_id'          => $room->id,
+                    'price_at_booking' => (float) ($room->roomType->price_per_night ?? 0),
+                ]);
+            }
 
             // Step 4: Record the payment transaction.
             $paymentStatus = match ($tier) {

@@ -55,8 +55,8 @@ class StoreManualBookingRequest extends FormRequest
             'children'     => ['nullable', 'integer', 'min:0', 'max:10'],
 
             // ── Booking Details ──────────────────────────────────────────────
-            'room_id' => [
-                'required',
+            'room_ids'   => ['required', 'array', 'min:1'],
+            'room_ids.*' => [
                 'integer',
                 Rule::exists('rooms', 'id'),
             ],
@@ -91,7 +91,8 @@ class StoreManualBookingRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'room_id.exists'                 => 'The selected room is not available.',
+            'room_ids.required'              => 'Please select at least one room.',
+            'room_ids.*.exists'              => 'One or more selected rooms are not available.',
             'check_out_date.after'           => 'Check-out must be at least one night after check-in.',
             'check_in_date.after_or_equal'   => 'Check-in date cannot be in the past.',
             'check_out_date.before_or_equal' => 'Bookings are limited to a maximum of 7 nights.',

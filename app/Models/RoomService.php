@@ -40,6 +40,7 @@ class RoomService extends Model
 
     protected $fillable = [
         'booking_id',
+        'room_id',
         'handled_by_staff_id',
         'request_type',
         'guest_notes',
@@ -55,6 +56,14 @@ class RoomService extends Model
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    /**
+     * The specific room this request is for.
+     */
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(Room::class);
     }
 
     /**

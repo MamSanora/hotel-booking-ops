@@ -96,7 +96,7 @@
                     @foreach($allRooms as $room)
                         @php
                             $isSelectable = $room->is_selectable;
-                            $isSelected   = $room->id == $selectedRoomId;
+                            $isSelected   = in_array($room->id, $selectedRoomIds);
                             // When a filter is active, hide rooms that don't match
                             $isHidden = $anyFilterActive && !$room->matches_filters;
                         @endphp
@@ -107,7 +107,7 @@
                             {{ $isSelected ? 'border-hotel-gold ring-2 ring-hotel-gold shadow-[0_4px_15px_rgba(200,169,110,0.25)] bg-[#fffbf0]' : ($isSelectable ? 'border-gray-200' : '') }}">
                             
                             @if($isSelectable)
-                                <input type="radio" name="selected_room" wire:model.live="selectedRoomId" value="{{ $room->id }}" class="sr-only">
+                                <input type="checkbox" name="selected_rooms[]" wire:model.live="selectedRoomIds" value="{{ $room->id }}" class="sr-only">
                                 @if($isSelected)
                                     <div class="absolute top-2 right-2 text-hotel-gold">
                                         <i class="bi bi-check-circle-fill text-lg"></i>
@@ -172,7 +172,9 @@
             {{-- Hidden inputs for dates & room --}}
             <input type="hidden" name="check_in_date" :value="$wire.checkInDate">
             <input type="hidden" name="check_out_date" :value="$wire.checkOutDate">
-            <input type="hidden" name="room_id" :value="$wire.selectedRoomId">
+            <template x-for="id in $wire.selectedRoomIds" :key="id">
+                <input type="hidden" name="room_ids[]" :value="id">
+            </template>
             <input type="hidden" name="adults" :value="$wire.adults">
             <input type="hidden" name="children" :value="$wire.children">
 
@@ -311,12 +313,12 @@
                     {{-- Submit --}}
                     <div class="pt-2">
                         <button type="submit" 
-                                :disabled="!$wire.selectedRoomId || $wire.availabilityError !== ''"
+                                :disabled="$wire.selectedRoomIds.length === 0 || $wire.availabilityError !== ''"
                                 class="w-full bg-gradient-to-br from-hotel-dark to-[#2a2a2a] hover:from-[#1a1a1a] hover:to-black text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="bi bi-check-circle"></i> Confirm Booking
                         </button>
-                        <p x-show="!$wire.selectedRoomId" x-cloak class="text-center text-red-500 text-xs mt-2 font-semibold">Please select a room from the board to proceed.</p>
-                        <p x-show="$wire.selectedRoomId && $wire.availabilityError !== ''" x-text="$wire.availabilityError" x-cloak class="text-center text-red-500 text-xs mt-2 font-semibold"></p>
+                        <p x-show="$wire.selectedRoomIds.length === 0" x-cloak class="text-center text-red-500 text-xs mt-2 font-semibold">Please select at least one room from the board to proceed.</p>
+                        <p x-show="$wire.selectedRoomIds.length > 0 && $wire.availabilityError !== ''" x-text="$wire.availabilityError" x-cloak class="text-center text-red-500 text-xs mt-2 font-semibold"></p>
                     </div>
                 </div>
             </div>

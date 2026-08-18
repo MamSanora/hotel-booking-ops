@@ -21,11 +21,7 @@ class ManageBookingsController extends Controller
             abort(403, 'Cannot edit a registered user booking.');
         }
 
-        // Multi-room bookings cannot be edited via this simple form.
-        if ($booking->bookingRooms->count() > 1) {
-            return redirect()->route('reception.manage-bookings.index')
-                ->with('error', 'Multi-room bookings cannot be edited manually. Please contact an administrator.');
-        }
+
 
         return view('reception.manage_bookings.edit', compact('booking'));
     }
@@ -38,11 +34,7 @@ class ManageBookingsController extends Controller
             abort(403, 'Cannot edit a registered user booking.');
         }
 
-        // Multi-room bookings cannot be updated via this simple form.
-        if ($booking->bookingRooms->count() > 1) {
-            return redirect()->route('reception.manage-bookings.index')
-                ->with('error', 'Multi-room bookings cannot be edited manually. Please contact an administrator.');
-        }
+
 
         $validated = $request->validate([
             'full_name'         => ['required', 'string', 'max:255'],
@@ -50,7 +42,8 @@ class ManageBookingsController extends Controller
             'email'             => ['nullable', 'email', 'max:255'],
             'check_in_date'     => ['required', 'date'],
             'check_out_date'    => ['required', 'date', 'after:check_in_date'],
-            'room_id'           => ['required', 'exists:rooms,id'],
+            'room_ids'          => ['required', 'array', 'min:1'],
+            'room_ids.*'        => ['integer', 'exists:rooms,id'],
             'payment_tier'      => ['required', 'in:20,50,100'],
             'amount_paid'       => ['required', 'numeric', 'min:0'],
             'payment_method'    => ['required', 'string', 'in:cash,khqr'],
@@ -68,9 +61,13 @@ class ManageBookingsController extends Controller
             }
 
             // Calculate new total and required amount based on tier
-            $room = \App\Models\Room::with('roomType')->find($validated['room_id']);
+            $rooms = \App\Models\Room::with('roomType')->whereIn('id', $validated['room_ids'])->get();
             $nights = max(1, \Carbon\Carbon::parse($validated['check_in_date'])->diffInDays(\Carbon\Carbon::parse($validated['check_out_date'])));
-            $newTotal = $nights * ($room->roomType->price_per_night ?? 0);
+            
+            $newTotal = 0;
+            foreach ($rooms as $room) {
+                $newTotal += $nights * ($room->roomType->price_per_night ?? 0);
+            }
             
             $tierMultiplier = ((float) $validated['payment_tier']) / 100;
             $requiredAmount = $newTotal * $tierMultiplier;
@@ -91,15 +88,15 @@ class ManageBookingsController extends Controller
                 'payment_tier'   => $validated['payment_tier'],
             ]);
 
-            // Update the booking_room row to the newly selected room
-            $booking->bookingRooms()->updateOrCreate(
-                ['booking_id' => $booking->id],
-                [
+            // Update the booking_room rows to the newly selected rooms
+            $booking->bookingRooms()->delete();
+            foreach ($rooms as $room) {
+                $booking->bookingRooms()->create([
                     'room_type_id'     => $room->room_type_id,
                     'room_id'          => $room->id,
-                    'price_at_booking' => (float) $room->roomType->price_per_night,
-                ]
-            );
+                    'price_at_booking' => (float) ($room->roomType->price_per_night ?? 0),
+                ]);
+            }
 
             // Handle Financial Changes
             if ($paymentDifference > 0) {
@@ -150,6 +147,12 @@ class ManageBookingsController extends Controller
         $booking->update([
             'booking_status' => 'cancelled'
         ]);
+
+        // Release any rooms assigned to this booking to prevent ghost "occupied" rooms
+        $roomIds = \App\Models\BookingRoom::where('booking_id', $bookingId)->pluck('room_id');
+        if ($roomIds->isNotEmpty()) {
+            \App\Models\Room::whereIn('id', $roomIds)->update(['current_status' => 'available']);
+        }
 
         return redirect()->route('reception.manage-bookings.index')->with('success', 'Booking cancelled successfully.');
     }

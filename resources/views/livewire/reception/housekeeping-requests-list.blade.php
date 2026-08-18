@@ -16,7 +16,7 @@
                 <div class="flex items-start justify-between gap-2">
                     <div class="min-w-0">
                         <div class="flex items-center gap-1.5 mb-0.5">
-                            <span class="text-xs font-bold text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded">Rm {{ $rs->booking->room?->room_number ?? '—' }}</span>
+                            <span class="text-xs font-bold text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded">Rm {{ $rs->room?->room_number ?? '—' }}</span>
                             <span class="text-xs text-gray-500 truncate">{{ $rs->booking->guest?->full_name ?? 'Guest' }}</span>
                         </div>
                         @if($rs->requestedItems->isNotEmpty())
@@ -35,20 +35,16 @@
                                 title="Reply">
                             <i class="bi bi-chat-left-text text-xs"></i>
                         </button>
-                        <form action="{{ route('reception.room-service.complete', $rs->id) }}" method="POST" class="inline">
-                            @csrf @method('PATCH')
-                            <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Mark as completed?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
-                                    class="w-7 h-7 rounded-lg bg-amber-100 hover:bg-emerald-100 hover:text-emerald-700 text-amber-600 flex items-center justify-center transition-colors"
-                                    title="Complete">
-                                <i class="bi bi-check2 text-sm font-bold"></i>
-                            </button>
-                        </form>
+                        <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Mark as completed?', action: () => $wire.completeRoomService({{ $rs->id }}) })"
+                                class="w-7 h-7 rounded-lg bg-amber-100 hover:bg-emerald-100 hover:text-emerald-700 text-amber-600 flex items-center justify-center transition-colors"
+                                title="Complete">
+                            <i class="bi bi-check2 text-sm font-bold"></i>
+                        </button>
                     </div>
                 </div>
                 {{-- Reply form --}}
                 <div x-show="showReply" x-cloak class="mt-2">
-                    <form action="{{ route('reception.room-service.complete', $rs->id) }}" method="POST">
-                        @csrf @method('PATCH')
+                    <form @submit.prevent="$wire.completeRoomService({{ $rs->id }}, $event.target.response.value)">
                         <input type="text" name="response" placeholder="Reply to guest (optional)"
                                class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs mb-2 focus:border-amber-400 outline-none">
                         <div class="flex gap-1.5">

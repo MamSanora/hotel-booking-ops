@@ -247,14 +247,20 @@
                 @if($room->current_status !== 'occupied' && $room->current_status !== 'maintenance')
                     <button type="button" x-data @click="$dispatch('open-confirm', { message: 'Mark Room {{ $room->room_number }} as maintenance?', action: () => Livewire.dispatch('mark-maintenance', { roomId: {{ $room->id }} }) })" 
                                 title="Mark as Maintenance"
-                                class="w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors border border-red-100">
+                                class="w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors border border-red-100 mt-2">
                             <i class="bi bi-tools text-[0.65rem]"></i>
                         </button>
                 @elseif($room->current_status === 'maintenance' || $room->current_status === 'cleaning')
                     <button type="button" x-data @click="$dispatch('open-confirm', { message: 'Mark Room {{ $room->room_number }} as available?', action: () => Livewire.dispatch('mark-available', { roomId: {{ $room->id }} }) })" 
                                 title="Mark as Available"
-                                class="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100">
+                                class="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100 mt-2">
                             <i class="bi bi-check2-circle text-[0.65rem]"></i>
+                        </button>
+                @elseif($room->current_status === 'occupied')
+                    <button type="button" x-data @click="$dispatch('open-confirm', { message: 'Mark Room {{ $room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $room->id }} }) })" 
+                                title="Mark Vacated (Request Cleaning)"
+                                class="w-6 h-6 flex items-center justify-center rounded-full bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors border border-amber-100 mt-2">
+                            <i class="bi bi-brush text-[0.65rem]"></i>
                         </button>
                 @endif
             </div>

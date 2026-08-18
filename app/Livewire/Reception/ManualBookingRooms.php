@@ -32,11 +32,11 @@ class ManualBookingRooms extends Component
     // Dates & Payment (Live/Calculated)
     public string $checkInDate  = '';
     public string $checkOutDate = '';
-    public ?int   $selectedRoomId    = null;
+    public array  $selectedRoomIds   = [];
     public float  $pricePerNight     = 0;
     public float  $totalPrice        = 0;
     public int    $nights            = 0;
-    public string $paymentTier    = '100';
+    public string $paymentTier       = '100';
     public float  $amountDue         = 0;
     public string $paymentMethod     = 'cash';
     public string $availabilityError = '';
@@ -72,23 +72,23 @@ class ManualBookingRooms extends Component
         if ($this->checkOutDate <= $this->checkInDate) {
             $this->checkOutDate = \Carbon\Carbon::parse($this->checkInDate)->addDay()->toDateString();
         }
-        $this->selectedRoomId = null;
+        $this->selectedRoomIds = [];
         $this->recalculate();
     }
 
     public function updatedCheckOutDate(): void
     {
-        $this->selectedRoomId = null;
+        $this->selectedRoomIds = [];
         $this->recalculate();
     }
 
-    public function updatedAdults(): void { $this->selectedRoomId = null; $this->recalculate(); }
-    public function updatedChildren(): void { $this->selectedRoomId = null; $this->recalculate(); }
-    public function updatedViewFilter(): void { $this->selectedRoomId = null; $this->recalculate(); }
-    public function updatedFloorFilter(): void { $this->selectedRoomId = null; $this->recalculate(); }
-    public function updatedBedFilter(): void { $this->selectedRoomId = null; $this->recalculate(); }
+    public function updatedAdults(): void { $this->recalculate(); }
+    public function updatedChildren(): void { $this->recalculate(); }
+    public function updatedViewFilter(): void { $this->recalculate(); }
+    public function updatedFloorFilter(): void { $this->recalculate(); }
+    public function updatedBedFilter(): void { $this->recalculate(); }
     public function updatedPaymentTier(): void { $this->recalculate(); }
-    public function updatedSelectedRoomId(): void { $this->recalculate(); }
+    public function updatedSelectedRoomIds(): void { $this->recalculate(); }
 
     private function recalculate(): void
     {
@@ -97,24 +97,31 @@ class ManualBookingRooms extends Component
                 ->diffInDays(\Carbon\Carbon::parse($this->checkOutDate)));
         }
         $this->availabilityError = '';
+        $this->pricePerNight = 0;
+        $this->totalPrice = 0;
 
-        if ($this->selectedRoomId) {
-            $room = Room::with('roomType')->find($this->selectedRoomId);
-            $this->pricePerNight = (float) ($room?->roomType?->price_per_night ?? 0);
-            $this->totalPrice    = $this->pricePerNight * $this->nights;
-
-            // Real-time availability check (manual bookings do not use overbooking logic, they are blocked by ANY tier)
-            if ($room && !$room->isAvailableForDates($this->checkInDate, $this->checkOutDate, null, 0)) {
-                $this->availabilityError = 'This room is already booked for these dates.';
+        if (!empty($this->selectedRoomIds)) {
+            $rooms = Room::with('roomType')->whereIn('id', $this->selectedRoomIds)->get();
+            
+            $errors = [];
+            foreach ($rooms as $room) {
+                $this->pricePerNight += (float) ($room->roomType?->price_per_night ?? 0);
+                
+                // Real-time availability check (manual bookings do not use overbooking logic, they are blocked by ANY tier)
+                if (!$room->isAvailableForDates($this->checkInDate, $this->checkOutDate, null, 0)) {
+                    $errors[] = "Room {$room->room_number} is already booked for these dates.";
+                }
             }
-        } else {
-            $this->pricePerNight = 0;
-            $this->totalPrice    = 0;
+            $this->totalPrice = $this->pricePerNight * $this->nights;
+            
+            if (!empty($errors)) {
+                $this->availabilityError = implode(' ', $errors);
+            }
         }
 
         $this->amountDue = round($this->totalPrice * ((int)$this->paymentTier / 100), 2);
         \Illuminate\Support\Facades\Log::info('ManualBookingRooms Recalculate', [
-            'roomId' => $this->selectedRoomId,
+            'roomIds' => $this->selectedRoomIds,
             'pricePerNight' => $this->pricePerNight,
             'nights' => $this->nights,
             'total' => $this->totalPrice,
@@ -130,22 +137,15 @@ class ManualBookingRooms extends Component
         // Find which ones are available for the date range (0 tier means blocked by ANY existing booking)
         $availableRoomIds = Room::availableForDates($this->checkInDate, $this->checkOutDate, null, 0)->pluck('id')->toArray();
 
-        $totalGuests = (int) $this->adults + (int) $this->children;
-
         foreach ($allRooms as $room) {
             $room->is_available_for_dates = in_array($room->id, $availableRoomIds);
             
-            // Determine if it matches capacity (adults fit, and total fits max capacity)
-            $adultCap = $room->roomType?->adult_capacity ?? 99;
-            $maxCap   = $room->roomType?->maxCapacity() ?? 99;
-            $capacityMatch = ($adultCap >= (int) $this->adults) && ($maxCap >= $totalGuests);
-            
-            // Determine if it matches preference filters
+            // Determine if it matches preference filters (Capacity filter removed for staff multi-room bookings)
             $viewMatch = empty($this->viewFilter) || $room->view_type === $this->viewFilter;
             $bedMatch = empty($this->bedFilter) || $room->bed_configuration === $this->bedFilter;
             $floorMatch = empty($this->floorFilter) || str_starts_with((string)$room->room_number, $this->floorFilter);
 
-            $room->matches_filters = $capacityMatch && $viewMatch && $bedMatch && $floorMatch;
+            $room->matches_filters = $viewMatch && $bedMatch && $floorMatch;
             
             // A room is selectable if it's available for dates AND matches filters
             $room->is_selectable = $room->is_available_for_dates && $room->matches_filters && $room->current_status !== \App\Models\Room::STATUS_MAINTENANCE;

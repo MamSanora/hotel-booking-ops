@@ -13,8 +13,8 @@
 /.zed
 /auth.json
 /node_modules
-# /public/build
-# /public/hot
+# /public/build # Need this for when launching to hostinger
+# /public/hot # Need this for hostinger too
 /public/storage
 /storage/*.key
 /storage/pail

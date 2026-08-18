@@ -302,6 +302,7 @@ Route::prefix('reception')->name('reception.')->group(function () {
 
         // Incidental charges — JSON endpoint called from the checkout modal
         Route::post('/bookings/{booking}/add-charge', [ReceptionDashboardController::class, 'addIncidentalCharge'])->name('bookings.add-charge');
+        Route::delete('/bookings/{booking}/remove-charge/{charge}', [ReceptionDashboardController::class, 'removeIncidentalCharge'])->name('bookings.remove-charge');
 
 
         // Manual bookings

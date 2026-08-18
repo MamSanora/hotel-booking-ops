@@ -131,12 +131,14 @@ class ReceptionDashboardController extends Controller
             'actual_check_out_at' => now(),
         ]);
 
-        // Return all booked rooms to cleaning so housekeeping can clean them.
+        // Return booked rooms to cleaning so housekeeping can clean them, ONLY if they are still marked as occupied.
         foreach ($booking->bookingRooms as $bRoom) {
-            $bRoom->room?->update([
-                'current_status'    => \App\Models\Room::STATUS_CLEANING,
-                'status_updated_at' => now(),
-            ]);
+            if ($bRoom->room && $bRoom->room->current_status === \App\Models\Room::STATUS_OCCUPIED) {
+                $bRoom->room->update([
+                    'current_status'    => \App\Models\Room::STATUS_CLEANING,
+                    'status_updated_at' => now(),
+                ]);
+            }
         }
 
         $guestName = $booking->guest?->full_name ?? 'Guest';
@@ -165,21 +167,28 @@ class ReceptionDashboardController extends Controller
             'description' => ['required', 'string', 'max:255'],
             'quantity'    => ['required', 'integer', 'min:1', 'max:999'],
             'amount'      => ['required', 'numeric', 'min:0.01'],
+            'room_ids'    => ['required', 'array', 'min:1'],
+            'room_ids.*'  => ['exists:rooms,id'],
         ]);
 
         $total = (float) $validated['amount'] * (int) $validated['quantity'];
+        $cumulativeTotal = $total * count($validated['room_ids']);
+        $createdCharges = [];
 
-        DB::transaction(function () use ($booking, $validated, $total) {
-            \App\Models\IncidentalCharge::create([
-                'booking_id'   => $booking->id,
-                'description'  => $validated['description'],
-                'quantity'     => $validated['quantity'],
-                'amount'       => $validated['amount'],
-                'total_amount' => $total,
-            ]);
+        DB::transaction(function () use ($booking, $validated, $total, $cumulativeTotal, &$createdCharges) {
+            foreach ($validated['room_ids'] as $roomId) {
+                $createdCharges[] = \App\Models\IncidentalCharge::create([
+                    'booking_id'   => $booking->id,
+                    'room_id'      => $roomId,
+                    'description'  => $validated['description'],
+                    'quantity'     => $validated['quantity'],
+                    'amount'       => $validated['amount'],
+                    'total_amount' => $total,
+                ]);
+            }
 
             // Bump total_price so the payment balance check in checkout() passes.
-            $booking->increment('total_price', $total);
+            $booking->increment('total_price', $cumulativeTotal);
         });
 
         // Refresh to get the updated total_price
@@ -197,8 +206,48 @@ class ReceptionDashboardController extends Controller
         }
 
         return response()->json([
-            'message'      => 'Charge added.',
-            'charge_total' => $total,
+            'message'        => 'Charge added.',
+            'booking_total'  => (float) $booking->total_price,
+            'qrDataUri'      => $qrDataUri,
+            'created_charges'=> $createdCharges,
+        ]);
+    }
+
+    /**
+     * Remove an incidental charge from a booking.
+     */
+    public function removeIncidentalCharge(Booking $booking, \App\Models\IncidentalCharge $charge): \Illuminate\Http\JsonResponse
+    {
+        if (! $booking->isCheckedIn()) {
+            return response()->json(['error' => 'Booking is not currently checked in.'], 422);
+        }
+
+        if ($charge->booking_id !== $booking->id) {
+            return response()->json(['error' => 'Charge does not belong to this booking.'], 403);
+        }
+
+        DB::transaction(function () use ($booking, $charge) {
+            // Decrement total_price by the exact amount of the charge being deleted
+            $booking->decrement('total_price', $charge->total_amount);
+            $charge->delete();
+        });
+
+        // Refresh to get the updated total_price
+        $booking = $booking->fresh();
+        
+        // Generate new QR code for the updated remaining balance
+        $remaining = max(0, (float) $booking->total_price - $booking->totalPaid());
+        $qrDataUri = '';
+        if ($remaining > 0) {
+            $useMamSanora = $booking->bookingRooms->first()?->roomType?->use_mam_sanora_qr;
+            $qrString = $useMamSanora
+                ? \App\Services\KhqrGenerator::forMamSanora($remaining, $booking->referenceNumber())
+                : \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
+            $qrDataUri = (new \chillerlan\QRCode\QRCode)->render($qrString);
+        }
+
+        return response()->json([
+            'message'      => 'Charge removed.',
             'booking_total'=> (float) $booking->total_price,
             'qrDataUri'    => $qrDataUri,
         ]);

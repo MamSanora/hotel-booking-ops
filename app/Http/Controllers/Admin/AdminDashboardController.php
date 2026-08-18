@@ -55,13 +55,13 @@ class AdminDashboardController extends Controller
 
         // ── Today's Arrivals List (with guest name + room) ─────────────────
         $arrivalsToday = Booking::arrivingToday()
-            ->with(['guest', 'bookingRooms.roomType'])
+            ->with(['guest', 'bookingRooms.roomType', 'bookingRooms.room'])
             ->orderBy('check_in_date')
             ->get();
 
         // ── Today's Departures List (with guest name + room) ───────────────
         $departuresToday = Booking::departingToday()
-            ->with(['guest', 'bookingRooms.roomType'])
+            ->with(['guest', 'bookingRooms.roomType', 'bookingRooms.room'])
             ->orderBy('check_out_date')
             ->get();
 

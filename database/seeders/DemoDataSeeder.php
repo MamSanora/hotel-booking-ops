@@ -433,6 +433,9 @@ class DemoDataSeeder extends Seeder
 
         if (!empty($checkedInRoomIds)) {
             Room::whereIn('id', $checkedInRoomIds)->update(['current_status' => 'occupied']);
+            Room::whereNotIn('id', $checkedInRoomIds)->update(['current_status' => 'available']);
+        } else {
+            Room::query()->update(['current_status' => 'available']);
         }
 
         $checkedInCount = Booking::where('booking_status', 'checked-in')->count();

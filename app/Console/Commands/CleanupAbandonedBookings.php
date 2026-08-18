@@ -32,12 +32,20 @@ class CleanupAbandonedBookings extends Command
         if ($abandonedBookings->isNotEmpty()) {
             \App\Models\Booking::whereIn('id', $abandonedBookings)
                 ->update(['booking_status' => \App\Models\Booking::STATUS_ABANDONED]);
+            
+            $this->info("Cleaned up {$abandonedBookings->count()} newly abandoned bookings.");
+        }
 
-            $cancelledTxCount = \App\Models\Transaction::whereIn('booking_id', $abandonedBookings)
-                ->where('payment_status', \App\Models\Transaction::STATUS_PENDING)
-                ->update(['payment_status' => \App\Models\Transaction::STATUS_CANCELLED]);
+        // Catch-all: Ensure ANY pending transaction related to an abandoned booking is marked as failed.
+        // This handles both newly abandoned bookings and any historical orphaned ones.
+        $failedTxCount = \App\Models\Transaction::where('payment_status', \App\Models\Transaction::STATUS_PENDING)
+            ->whereHas('booking', function ($query) {
+                $query->where('booking_status', \App\Models\Booking::STATUS_ABANDONED);
+            })
+            ->update(['payment_status' => \App\Models\Transaction::STATUS_FAILED]);
 
-            $this->info("Cleaned up {$abandonedBookings->count()} abandoned bookings and cancelled {$cancelledTxCount} pending transactions.");
+        if ($failedTxCount > 0) {
+            $this->info("Failed {$failedTxCount} pending transactions linked to abandoned bookings.");
         }
 
         // Also clear any stale payment-page locks whose 5-minute window has expired.

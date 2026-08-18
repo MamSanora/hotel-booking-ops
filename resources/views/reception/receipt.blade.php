@@ -11,26 +11,24 @@
         @media print {
             body { margin: 0; padding: 0; background: white; }
             .no-print { display: none !important; }
-            .thermal-paper { box-shadow: none; width: 604px; margin: 0 auto; }
+            .thermal-paper { box-shadow: none; width: 384px; margin: 0 auto; }
         }
-        @page { margin: 0; size: 80mm auto; }
+        @page { margin: 0; size: 58mm auto; }
         body { background-color: #f3f4f6; font-family: 'Courier New', Courier, monospace; color: #000; }
         
-        /* Conformed to exactly 604px with 30px padding (simulating 192 DPI thermal print)         *
-         * Font scale: 1pt = 2.67px at 192 DPI                                                    *
-         *   - Hotel name / grand total: 12pt = 32px                                              *
-         *   - Body text (items, labels): 9.75pt = 26px  (industry standard Font A ≈ 9–10pt)     *
-         *   - Sub-text (address, rate):  9pt    = 24px                                           */
+        /* Conformed to exactly 384px with 15px padding for 58mm thermal print (384 dots per line) */
         .thermal-paper {
-            width: 604px;
+            width: 384px;
             margin: 2rem auto;
             background: white;
-            padding: 30px;
+            padding: 15px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            font-size: 26px;   /* body base = 9.75pt */
-            line-height: 1.5;
+            font-size: 16px;   /* body base scaled for 58mm */
+            line-height: 1.3;
         }
-        .dashed-line { border-top: 2px dashed #000; margin: 20px 0; }
+        .dashed-line { border-top: 1px dashed #000; margin: 10px 0; }
+        .text-32px { font-size: 20px; font-weight: bold; }
+        .text-24px { font-size: 14px; }
     </style>
 </head>
 <body>
@@ -51,10 +49,10 @@
         <!-- Hotel Header — pulled from config/env, NOT hardcoded -->
         <div class="text-center mb-6">
             <img src="{{ asset('images/logo.png') }}" alt="{{ config('app.hotel_name', 'Dara Meas Hotel') }} Logo"
-                 style="max-height: 80px; width: auto; margin: 0 auto 12px; display: block;">
-            <h1 class="font-bold text-[32px] uppercase">{{ config('app.hotel_name', 'Dara Meas Hotel') }}</h1>
-            <p class="text-[24px] mt-2">{{ config('app.hotel_address', 'Phnom Penh, Cambodia') }}</p>
-            <p class="text-[24px] mt-1">{{ config('app.hotel_phone', '') }}{{ config('app.hotel_email') ? ' | ' . config('app.hotel_email') : '' }}</p>
+                 style="max-height: 60px; width: auto; margin: 0 auto 8px; display: block;">
+            <h1 class="font-bold text-xl uppercase">{{ config('app.hotel_name', 'Dara Meas Hotel') }}</h1>
+            <p class="text-sm mt-1">{{ config('app.hotel_address', 'Phnom Penh, Cambodia') }}</p>
+            <p class="text-xs mt-1">{{ config('app.hotel_phone', '') }}{{ config('app.hotel_email') ? ' | ' . config('app.hotel_email') : '' }}</p>
         </div>
 
         <div class="dashed-line"></div>
@@ -151,17 +149,17 @@
                 ->sum('amount_paid');
             $balance   = max(0, $booking->total_price - $totalPaid);
             $latestTx  = $booking->transactions->whereIn('payment_status', ['full', 'partial'])->last();
-            $paymentMethodStr = $latestTx ? ucfirst($latestTx->payment_method) : 'N/A';
+            $paymentMethodStr = $latestTx ? $latestTx->displayPaymentMethod() : 'N/A';
 
             // Dynamic exchange rate passed from the controller (ExchangeRate::usdToKhr())
             $khrRate = $exchangeRate ?? 4100;
         @endphp
 
-        <div class="flex justify-between font-bold text-[32px] mt-4">
+        <div class="flex justify-between font-bold text-lg mb-1">
             <span>Grand Total (USD):</span>
             <span>${{ number_format($booking->total_price, 2) }}</span>
         </div>
-        <div class="flex justify-between font-bold text-[26px] mb-4">
+        <div class="flex justify-between font-bold text-lg mb-4">
             <span>Grand Total (KHR):</span>
             <span>៛{{ number_format($booking->total_price * $khrRate, 0) }}</span>
         </div>
@@ -182,9 +180,9 @@
 
         <!-- Footer -->
         <div class="text-center mt-6">
-            <p class="mb-2 font-bold text-[26px]">Thank you for your stay!</p>
-            <p class="text-[24px]">Please come again.</p>
-            <p class="text-[24px] mt-4">Rate: 1 USD = {{ number_format($khrRate, 0) }} KHR</p>
+            <p class="mb-2 font-bold text-lg">Thank you for your stay!</p>
+            <p class="text-sm">Please come again.</p>
+            <p class="text-xs mt-4">Rate: 1 USD = {{ number_format($khrRate, 0) }} KHR</p>
         </div>
     </div>
 

@@ -30,7 +30,12 @@ use Illuminate\View\View;
  *   GET  /rooms/{room}   → show()        — Single room detail + booking form
  *   POST /rooms/{room}/book → store()    — Create a pending booking
  *   GET  /guest/bookings/{booking} → showBooking() — View booking details
- *   PATCH /guest/bookings/{booking}/cancel → cancel() — Guest cancels booking
+ *
+ * Architectural Note on Booking Pathways:
+ *   The system supports two distinct booking pathways to allow guests to scale up their room count:
+ *   1. Single-type booking: Users can book multiple quantities of the same room type directly from `room-detail.blade.php`.
+ *   2. Multi-type booking: Users can combine different room types and quantities via the global cart in `multi-room-checkout.blade.php`.
+ *   Because guests can use either pathway to meet their group's capacity needs, the global Search Bar (`rooms.index`) MUST NOT rigidly filter or hide rooms based on the "Guests" count vs. a single room's capacity limit.
  */
 class RoomController extends Controller
 {
@@ -164,6 +169,14 @@ class RoomController extends Controller
         $roomCount = (int) ($validated['rooms'] ?? 1);
         if ($requestedTier === 0 && $roomCount > 2) {
             return back()->withInput()->with('error', 'A deposit is required for group bookings of 3 or more rooms. Please select a payment option.');
+        }
+
+        // Advance booking policy: No Deposit is not allowed for bookings > 3 days in advance.
+        if ($requestedTier === 0 && !empty($validated['check_in_date'])) {
+            $checkin = \Carbon\Carbon::parse($validated['check_in_date'])->startOfDay();
+            if ($checkin->diffInDays(now()->startOfDay()) > 3) {
+                return back()->withInput()->with('error', 'A deposit is required if booking more than 3 days in advance. Please select a payment option.');
+            }
         }
 
         // GuestAuth -> guest_id (bookings are linked to Guest, not GuestAuth).
@@ -466,6 +479,7 @@ class RoomController extends Controller
         }
 
         $validated = $request->validate([
+            'room_id'     => 'required|integer|exists:booking_room,room_id,booking_id,' . $booking->id,
             'guest_notes' => 'nullable|string|max:500',
             'items'       => 'nullable|array',
             'items.*'     => 'nullable|integer|min:0|max:10',
@@ -480,6 +494,7 @@ class RoomController extends Controller
         DB::transaction(function () use ($booking, $validated, $items) {
             $service = RoomService::create([
                 'booking_id'     => $booking->id,
+                'room_id'        => $validated['room_id'],
                 'request_type'   => RoomService::TYPE_REQUEST,
                 'guest_notes'    => $validated['guest_notes'] ?? null,
                 'request_status' => RoomService::STATUS_PENDING,
@@ -824,6 +839,14 @@ class RoomController extends Controller
             return back()->withInput()->with('error', 'A deposit is required for group bookings of 3 or more rooms. Please select a payment option.');
         }
 
+        // Advance booking policy: No Deposit is not allowed for bookings > 3 days in advance.
+        if ($requestedTier === 0 && !empty($validated['check_in_date'])) {
+            $checkin = \Carbon\Carbon::parse($validated['check_in_date'])->startOfDay();
+            if ($checkin->diffInDays(now()->startOfDay()) > 3) {
+                return back()->withInput()->with('error', 'A deposit is required if booking more than 3 days in advance. Please select a payment option.');
+            }
+        }
+
         // Anti-circumvention: Prevent multiple No Deposit bookings
         if ($requestedTier === 0) {
             $hasNoDepositBooking = \App\Models\Booking::where('guest_id', $guestId)
@@ -855,6 +878,12 @@ class RoomController extends Controller
             $bookingRoomsData = [];
 
             // 1. Verify capacity for all items in the cart
+            // Find any existing pending booking for this guest to reuse it
+            $existingBooking = Booking::where('guest_id', $guestId)
+                ->where('booking_status', Booking::STATUS_PENDING)
+                ->latest()
+                ->first();
+
             foreach ($cart as $item) {
                 if (!isset($item['slug']) || !isset($item['qty'])) continue;
 
@@ -944,6 +973,7 @@ class RoomController extends Controller
                     ->where('amount_paid', $depositAmount)
                     ->where('updated_at', '>=', now()->subMinutes(1))
                     ->whereHas('booking', fn ($q) => $q->where('booking_status', Booking::STATUS_PENDING))
+                    ->where('booking_id', '!=', $existingBooking?->id ?? 0)
                     ->lockForUpdate()
                     ->first();
 
@@ -952,7 +982,48 @@ class RoomController extends Controller
                 }
             }
 
-            // Create the booking
+            if ($existingBooking) {
+                $existingBooking->update([
+                    'check_in_date'    => $validated['check_in_date'],
+                    'check_out_date'   => $validated['check_out_date'],
+                    'total_price'      => $total,
+                    'payment_tier'     => $requestedTier,
+                    'booking_status'   => ($depositAmount > 0) ? Booking::STATUS_PENDING : Booking::STATUS_BOOKED,
+                    'special_requests' => $validated['special_requests'] ?? $existingBooking->special_requests,
+                    'bed_type'         => $primaryBedType,
+                    'floor_preference' => $primaryFloor,
+                    'view_preference'  => $primaryView,
+                ]);
+
+                // Clear previous rooms and insert new cart
+                $existingBooking->bookingRooms()->delete();
+                foreach ($bookingRoomsData as $data) {
+                    $existingBooking->bookingRooms()->create($data);
+                }
+
+                $pendingTransaction = $existingBooking->transactions()->where('payment_status', Transaction::STATUS_PENDING)->first();
+                if ($depositAmount > 0) {
+                    if ($pendingTransaction) {
+                        $pendingTransaction->update([
+                            'amount_paid'    => $depositAmount,
+                            'payment_method' => $validated['payment_method'],
+                        ]);
+                    } else {
+                        Transaction::create([
+                            'booking_id'     => $existingBooking->id,
+                            'amount_paid'    => $depositAmount,
+                            'payment_for'    => Transaction::FOR_BOOKING,
+                            'payment_method' => $validated['payment_method'],
+                            'payment_status' => Transaction::STATUS_PENDING,
+                        ]);
+                    }
+                } elseif ($pendingTransaction) {
+                    $pendingTransaction->delete();
+                }
+
+                $booking = $existingBooking;
+            } else {
+                // Create the booking
             $booking = Booking::create([
                 'guest_id'         => $guestId,
                 'check_in_date'    => $validated['check_in_date'],
@@ -981,6 +1052,8 @@ class RoomController extends Controller
                     'payment_method' => $validated['payment_method'],
                     'payment_status' => Transaction::STATUS_PENDING,
                 ]);
+            }
+
             }
 
             DB::commit();

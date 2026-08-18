@@ -1,4 +1,19 @@
 <div wire:poll.10s="refreshData">
+    @if(session()->has('error'))
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm flex items-center gap-2"
+             x-data x-init="setTimeout(() => $el.remove(), 5000)">
+            <i class="bi bi-exclamation-triangle-fill text-red-500"></i>
+            {{ session('error') }}
+        </div>
+    @endif
+    @if(session()->has('success'))
+        <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm flex items-center gap-2"
+             x-data x-init="setTimeout(() => $el.remove(), 5000)">
+            <i class="bi bi-check-circle-fill text-emerald-500"></i>
+            {{ session('success') }}
+        </div>
+    @endif
+
     @if($upcomingArrivals->count() > 0)
         <div class="overflow-y-auto max-h-[600px] border border-gray-100 rounded-xl">
             <table class="w-full text-left relative">
@@ -111,22 +126,19 @@
                             @if(!$paid)
                                 @php
                                     $remaining = max(0, $booking->total_price - $booking->totalPaid());
-                                    $qrString = $booking->room?->roomType?->use_mam_sanora_qr
+                                    $useMamSanora = \App\Models\Setting::get('reception_qr_merchant', 'keo_samnang') === 'mam_sanora';
+                                    $qrString = $useMamSanora
                                         ? \App\Services\KhqrGenerator::forMamSanora($remaining, $booking->referenceNumber())
                                         : \App\Services\KhqrGenerator::forAmount($remaining, $booking->referenceNumber());
                                     $qrDataUri = (new \chillerlan\QRCode\QRCode)->render($qrString);
                                 @endphp
                                 <button type="button"
-                                        onclick="(function(el){
-                                            document.getElementById('settle-amount-display').textContent = el.dataset.settleAmount;
-                                            document.getElementById('settle-amount-input').value = el.dataset.settleAmount;
-                                            document.getElementById('settle-qr-img').src = el.dataset.settleQr;
-                                            document.getElementById('settle-form').action = el.dataset.settleAction;
-                                            window.dispatchEvent(new CustomEvent('settle-open'));
-                                        })(this)"
-                                        data-settle-amount="{{ number_format($remaining, 2, '.', '') }}"
-                                        data-settle-qr="{{ $qrDataUri }}"
-                                        data-settle-action="{{ route('reception.payment.manual', $booking->id) }}"
+                                        x-data
+                                        @click.prevent="$dispatch('settle-open', {
+                                            bookingId: {{ $booking->id }},
+                                            amount: '{{ number_format($remaining, 2, '.', '') }}',
+                                            qr: '{{ $qrDataUri }}'
+                                        })"
                                         class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
                                     <i class="bi bi-wallet2"></i> Settle
                                 </button>
@@ -139,21 +151,23 @@
                                         <i class="bi bi-check2-square"></i> Check In
                                     </button>
                                 @else
-                                    <form action="{{ route('reception.checkin', $booking->id) }}" method="POST" class="inline-block">
-                                        @csrf
-                                        <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Check in this guest?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
-                                                class="inline-flex items-center gap-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-emerald-200">
-                                            <i class="bi bi-check2-square"></i> Check In
-                                        </button>
-                                    </form>
-                                @endif
-                                <form action="{{ route('reception.bookings.walk', $booking->id) }}" method="POST" class="inline-block ml-1">
-                                    @csrf @method('PATCH')
-                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Walk this guest due to overbooking? This will mark them as Relocated and release their room.', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
-                                            class="inline-flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-purple-200">
-                                        <i class="bi bi-person-walking"></i> Walk
+                                    <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Check in this guest?', action: () => $wire.checkIn({{ $booking->id }}) })"
+                                            class="inline-flex items-center gap-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-emerald-200">
+                                        <i class="bi bi-box-arrow-in-right"></i> Check In
                                     </button>
-                                </form>
+                                @endif
+                                <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Walk this guest due to overbooking? This will mark them as Relocated and release their room.', action: () => $wire.walkGuest({{ $booking->id }}) })"
+                                        class="inline-flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-purple-200 ml-1">
+                                    <i class="bi bi-person-walking"></i> Walk
+                                </button>
+                                <button type="button" wire:click="openReassignModal({{ $booking->id }})"
+                                        wire:loading.attr="disabled"
+                                        wire:target="openReassignModal({{ $booking->id }})"
+                                        class="inline-flex items-center gap-1 bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-orange-200 ml-1 disabled:opacity-50">
+                                    <i class="bi bi-arrow-left-right" wire:loading.remove wire:target="openReassignModal({{ $booking->id }})"></i>
+                                    <i class="bi bi-hourglass-split animate-spin" wire:loading wire:target="openReassignModal({{ $booking->id }})"></i>
+                                    Reassign
+                                </button>
                             @else
                                 <button disabled
                                         class="inline-flex items-center gap-1 bg-gray-100 text-gray-400 font-semibold px-3 py-1.5 rounded-lg text-xs border border-gray-200 cursor-not-allowed"
@@ -174,6 +188,60 @@
         <div class="text-center py-10 text-gray-400">
             <i class="bi bi-inbox text-4xl block mb-3 text-gray-200"></i>
             <p class="text-sm">No upcoming arrivals scheduled.</p>
+        </div>
+    @endif
+
+    {{-- Reassign Room Modal --}}
+    @if($reassignModalOpen)
+        <div x-data="{ showModal: true }" x-show="showModal" class="fixed inset-0 z-[9000] flex items-center justify-center p-4">
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showModal = false; $wire.set('reassignModalOpen', false)"></div>
+
+            {{-- Modal Panel --}}
+            <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col" style="max-height: 90vh;">
+                {{-- Header --}}
+                <div class="flex items-start justify-between px-7 py-5 border-b border-gray-100 shrink-0">
+                    <div>
+                        <h2 class="font-playfair text-xl font-bold text-hotel-dark flex items-center gap-2">
+                            <i class="bi bi-arrow-left-right text-orange-500"></i>
+                            <span>Reassign Room</span>
+                        </h2>
+                        <p class="text-[0.8rem] text-gray-400 mt-0.5">Move guest to another available room of the same type.</p>
+                    </div>
+                    <button type="button" @click="showModal = false; $wire.set('reassignModalOpen', false)" class="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
+                {{-- Body --}}
+                <div class="p-7 overflow-y-auto custom-scrollbar flex-1 text-sm text-gray-700">
+                    @foreach($reassignData as $bRoomId => $data)
+                        <div class="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-gray-800">{{ $data['type'] }}</span>
+                                <span class="text-xs text-gray-500">Current: <strong class="text-gray-800">Rm {{ $data['current_room'] }}</strong></span>
+                            </div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">New Room Assignment</label>
+                            <select wire:model="reassignData.{{ $bRoomId }}.selected" class="w-full bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Keep current (Rm {{ $data['current_room'] }})</option>
+                                @foreach($data['options'] as $opt)
+                                    <option value="{{ $opt['id'] }}">Rm {{ $opt['number'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Footer --}}
+                <div class="px-7 py-5 border-t border-gray-100 bg-gray-50 rounded-b-3xl shrink-0 flex items-center gap-3">
+                    <button type="button" @click="showModal = false; $wire.set('reassignModalOpen', false)" class="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-100 rounded-xl text-gray-700 font-semibold text-sm transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" wire:click="submitReassign" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition-all">
+                        <i class="bi bi-check2-circle"></i> Apply Changes
+                    </button>
+                </div>
+            </div>
         </div>
     @endif
 </div>

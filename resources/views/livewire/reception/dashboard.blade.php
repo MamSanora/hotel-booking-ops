@@ -291,9 +291,12 @@
                                                     @foreach($booking->bookingRooms as $br)
                                                         <div class="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
                                                             <span class="text-gray-600 font-medium">{{ $br->roomType?->display_name ?? '—' }}</span>
-                                                            <span class="font-bold text-gray-900">
+                                                            <span class="font-bold text-gray-900 flex items-center gap-1.5">
                                                                 @if($br->room)
                                                                     Rm {{ $br->room->room_number }}
+                                                                    @if($br->room->current_status === 'occupied')
+                                                                        <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $br->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $br->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                                    @endif
                                                                 @else
                                                                     <span class="text-amber-600" title="Manage physically at front desk">TBA</span>
                                                                 @endif
@@ -304,7 +307,12 @@
                                                 </template>
                                             </div>
                                         @else
-                                            <div class="text-gray-800 font-medium text-sm">Room {{ $booking->room?->room_number ?? '—' }}</div>
+                                            <div class="text-gray-800 font-medium text-sm flex items-center gap-1.5">
+                                                Room {{ $booking->room?->room_number ?? '—' }}
+                                                @if($booking->room && $booking->room->current_status === 'occupied')
+                                                    <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $booking->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $booking->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap">
@@ -322,16 +330,12 @@
                                                 $qrDataUri = (new \chillerlan\QRCode\QRCode)->render($qrString);
                                             @endphp
                                             <button type="button"
-                                                    onclick="(function(el){
-                                                        document.getElementById('settle-amount-display').textContent = el.dataset.settleAmount;
-                                                        document.getElementById('settle-amount-input').value = el.dataset.settleAmount;
-                                                        document.getElementById('settle-qr-img').src = el.dataset.settleQr;
-                                                        document.getElementById('settle-form').action = el.dataset.settleAction;
-                                                        window.dispatchEvent(new CustomEvent('settle-open'));
-                                                    })(this)"
-                                                    data-settle-amount="{{ number_format($remaining, 2, '.', '') }}"
-                                                    data-settle-qr="{{ $qrDataUri }}"
-                                                    data-settle-action="{{ route('reception.payment.manual', $booking->id) }}"
+                                                    x-data
+                                                    @click.prevent="$dispatch('settle-open', {
+                                                        bookingId: {{ $booking->id }},
+                                                        amount: '{{ number_format($remaining, 2, '.', '') }}',
+                                                        qr: '{{ $qrDataUri }}'
+                                                    })"
                                                     class="inline-flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-blue-200">
                                                 <i class="bi bi-wallet2"></i> Settle
                                             </button>
@@ -342,52 +346,8 @@
                                            class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-gray-200">
                                             <i class="bi bi-printer"></i> Receipt
                                         </a>
-                                        @php
-                                             $depBalance  = $booking->balanceDue();
-                                             $depQr       = '';
-                                             if ($depBalance > 0) {
-                                                 $depQrStr = $booking->room?->roomType?->use_mam_sanora_qr
-                                                     ? \App\Services\KhqrGenerator::forMamSanora($depBalance, $booking->referenceNumber())
-                                                     : \App\Services\KhqrGenerator::forAmount($depBalance, $booking->referenceNumber());
-                                                 $depQr = (new \chillerlan\QRCode\QRCode)->render($depQrStr);
-                                             }
-                                             $depNights     = $booking->nightCount();
-                                             $depTotalPaid  = $booking->totalPaid();
-                                             // Build per-line folio items (multi-room aware)
-                                             if ($booking->bookingRooms->isNotEmpty()) {
-                                                 $depFolioLines = $booking->bookingRooms->map(fn($br) => [
-                                                     'name'      => ($br->roomType?->display_name ?? 'Room') . ($br->room ? ' (Rm ' . $br->room->room_number . ')' : ''),
-                                                     'qty'       => 1,
-                                                     'unitPrice' => (float) $br->price_at_booking,
-                                                     'lineTotal' => (float) $br->price_at_booking * $depNights,
-                                                 ])->values()->toArray();
-                                             } else {
-                                                 $depFolioLines = [[
-                                                     'name'      => 'Room Accommodation',
-                                                     'qty'       => 1,
-                                                     'unitPrice' => 0,
-                                                     'lineTotal' => (float) $booking->total_price,
-                                                 ]];
-                                             }
-                                         @endphp
                                          <button type="button"
-                                                 @click="$dispatch('open-checkout-modal', {
-                                                     bookingId:    {{ $booking->id }},
-                                                     reference:    '{{ $booking->referenceNumber() }}',
-                                                     guestName:    '{{ addslashes($booking->guest?->full_name ?? 'Walk-in Guest') }}',
-                                                     roomNumber:   '{{ $booking->room?->room_number ?? '' }}',
-                                                     roomNumbers:  {{ json_encode($booking->bookingRooms->map(fn($br) => $br->room?->room_number)->filter()->values()->toArray() ?: ($booking->room ? [$booking->room->room_number] : [])) }},
-                                                     addChargeUrl: '{{ route('reception.bookings.add-charge', $booking->id) }}',
-                                                     checkoutUrl:  '{{ route('reception.checkout', $booking->id) }}',
-                                                     checkInDate:  '{{ $booking->check_in_date?->format('M d, Y') }}',
-                                                     checkOutDate: '{{ $booking->check_out_date?->format('M d, Y') }}',
-                                                     nights:       {{ $depNights }},
-                                                     totalPrice:   {{ number_format($booking->total_price, 2, '.', '') }},
-                                                     totalPaid:    {{ number_format($depTotalPaid, 2, '.', '') }},
-                                                     balanceDue:   {{ $depBalance }},
-                                                     qrDataUri:    '{{ addslashes($depQr) }}',
-                                                     folioLines:   {{ json_encode($depFolioLines) }},
-                                                 })"
+                                                 @click="$dispatch('open-checkout-modal', { bookingId: {{ $booking->id }} })"
                                                 class="inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-amber-200">
                                             <i class="bi bi-door-closed"></i> Check Out
                                         </button>
@@ -464,9 +424,12 @@
                                                     @foreach($booking->bookingRooms as $br)
                                                         <div class="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
                                                             <span class="text-gray-600 font-medium">{{ $br->roomType?->display_name ?? '—' }}</span>
-                                                            <span class="font-bold text-gray-900">
+                                                            <span class="font-bold text-gray-900 flex items-center gap-1.5">
                                                                 @if($br->room)
                                                                     Rm {{ $br->room->room_number }}
+                                                                    @if($br->room->current_status === 'occupied')
+                                                                        <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $br->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $br->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                                    @endif
                                                                 @else
                                                                     <span class="text-amber-600" title="Manage physically at front desk">TBA</span>
                                                                 @endif
@@ -477,7 +440,12 @@
                                                 </template>
                                             </div>
                                         @else
-                                            <div class="text-gray-800 font-medium text-sm">Room {{ $booking->room?->room_number ?? '—' }}</div>
+                                            <div class="text-gray-800 font-medium text-sm flex items-center gap-1.5">
+                                                Room {{ $booking->room?->room_number ?? '—' }}
+                                                @if($booking->room && $booking->room->current_status === 'occupied')
+                                                    <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $booking->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $booking->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4">
@@ -511,66 +479,28 @@
                                                 </button>
                                                 --}}
                                             @else
+                                                {{-- Relocate Temporarily Disabled: Development will pause on this until explicitly mentioned.
                                                 <a href="{{ route('reception.relocate.show', $booking->id) }}"
                                                    class="inline-flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-purple-200">
                                                     <i class="bi bi-arrow-repeat"></i> Relocate
                                                 </a>
+                                                --}}
                                             @endif
                                             <a href="{{ route('reception.receipt', $booking->id) }}" target="_blank"
                                                class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-gray-200">
                                                 <i class="bi bi-printer"></i> Receipt
                                             </a>
                                             @php
-                                                $isEarly   = $booking->check_out_date && $booking->check_out_date->isFuture() && !$booking->check_out_date->isToday();
-                                                $coBalance = $booking->balanceDue();
-                                                $coQr      = '';
-                                                if ($coBalance > 0) {
-                                                    $coQrStr = $booking->room?->roomType?->use_mam_sanora_qr
-                                                        ? \App\Services\KhqrGenerator::forMamSanora($coBalance, $booking->referenceNumber())
-                                                        : \App\Services\KhqrGenerator::forAmount($coBalance, $booking->referenceNumber());
-                                                    $coQr = (new \chillerlan\QRCode\QRCode)->render($coQrStr);
-                                                }
-                                                $coNights    = $booking->nightCount();
-                                                $coTotalPaid = $booking->totalPaid();
-                                                if ($booking->bookingRooms->isNotEmpty()) {
-                                                    $coFolioLines = $booking->bookingRooms->map(fn($br) => [
-                                                        'name'      => ($br->roomType?->display_name ?? 'Room') . ($br->room ? ' (Rm ' . $br->room->room_number . ')' : ''),
-                                                        'qty'       => 1,
-                                                        'unitPrice' => (float) $br->price_at_booking,
-                                                        'lineTotal' => (float) $br->price_at_booking * $coNights,
-                                                    ])->values()->toArray();
-                                                } else {
-                                                    $coFolioLines = [[
-                                                        'name'      => 'Room Accommodation',
-                                                        'qty'       => 1,
-                                                        'unitPrice' => (float) $booking->total_price / ($coNights ?: 1),
-                                                        'lineTotal' => (float) $booking->total_price,
-                                                    ]];
-                                                }
+                                                $isEarly = $booking->check_out_date && $booking->check_out_date->isFuture() && !$booking->check_out_date->isToday();
                                             @endphp
                                             <button type="button"
-                                                    @click="$dispatch('open-checkout-modal', {
-                                                        bookingId:    {{ $booking->id }},
-                                                        reference:    '{{ $booking->referenceNumber() }}',
-                                                        guestName:    '{{ addslashes($booking->guest?->full_name ?? 'Walk-in Guest') }}',
-                                                        roomNumber:   '{{ $booking->room?->room_number ?? '' }}',
-                                                        roomNumbers:  {{ json_encode($booking->bookingRooms->map(fn($br) => $br->room?->room_number)->filter()->values()->toArray() ?: ($booking->room ? [$booking->room->room_number] : [])) }},
-                                                        addChargeUrl: '{{ route('reception.bookings.add-charge', $booking->id) }}',
-                                                        checkoutUrl:  '{{ route('reception.checkout', $booking->id) }}',
-                                                        isEarly:      {{ $isEarly ? 'true' : 'false' }},
-                                                        checkInDate:  '{{ $booking->check_in_date?->format('M d, Y') }}',
-                                                        checkOutDate: '{{ $booking->check_out_date?->format('M d, Y') }}',
-                                                        scheduledCheckout: '{{ $booking->check_out_date?->format('M d, Y') }}',
-                                                        nights:       {{ $coNights }},
-                                                        totalPrice:   {{ number_format($booking->total_price, 2, '.', '') }},
-                                                        totalPaid:    {{ number_format($coTotalPaid, 2, '.', '') }},
-                                                        balanceDue:   {{ $coBalance }},
-                                                        qrDataUri:    '{{ addslashes($coQr) }}',
-                                                        folioLines:   {{ json_encode($coFolioLines) }},
-                                                    })"
+                                                    @click="$dispatch('open-checkout-modal', { bookingId: {{ $booking->id }} })"
                                                     class="inline-flex items-center gap-1 {{ $isEarly ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200' : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border-amber-200' }} font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border">
                                                 <i class="bi bi-door-closed"></i> {{ $isEarly ? 'Early Out' : 'Check Out' }}
                                             </button>
+                                            {{-- 
+                                            Extension & Relocate warnings temporarily disabled.
+                                            Development will be paused on this until explicitly mentioned.
                                             @if($blocked && $nextBook)
                                                 <div class="absolute right-4 top-full mt-1 z-10 bg-red-50 border border-red-200 text-red-800 text-[0.75rem] rounded-xl px-3 py-2 shadow-lg w-64 text-left"
                                                      x-data x-init="setTimeout(() => $el.remove(), 8000)">
@@ -580,6 +510,7 @@
                                                     Use <strong>Relocate</strong> to move this guest.
                                                 </div>
                                             @endif
+                                            --}}
                                         </div>
                                     </td>
                                 </tr>
@@ -667,9 +598,12 @@
                                                     @foreach($booking->bookingRooms as $br)
                                                         <div class="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
                                                             <span class="text-gray-600 font-medium">{{ $br->roomType?->display_name ?? '—' }}</span>
-                                                            <span class="font-bold text-gray-900">
+                                                            <span class="font-bold text-gray-900 flex items-center gap-1.5">
                                                                 @if($br->room)
                                                                     Rm {{ $br->room->room_number }}
+                                                                    @if($br->room->current_status === 'occupied')
+                                                                        <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $br->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $br->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                                    @endif
                                                                 @else
                                                                     <span class="text-amber-600" title="Manage physically at front desk">TBA</span>
                                                                 @endif
@@ -680,7 +614,12 @@
                                                 </template>
                                             </div>
                                         @else
-                                            <div class="text-gray-800 font-medium text-sm">Room {{ $booking->room?->room_number ?? '—' }}</div>
+                                            <div class="text-gray-800 font-medium text-sm flex items-center gap-1.5">
+                                                Room {{ $booking->room?->room_number ?? '—' }}
+                                                @if($booking->room && $booking->room->current_status === 'occupied')
+                                                    <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $booking->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $booking->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
@@ -790,9 +729,12 @@
                                                     @foreach($booking->bookingRooms as $br)
                                                         <div class="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
                                                             <span class="text-gray-600 font-medium">{{ $br->roomType?->display_name ?? '—' }}</span>
-                                                            <span class="font-bold text-gray-900">
+                                                            <span class="font-bold text-gray-900 flex items-center gap-1.5">
                                                                 @if($br->room)
                                                                     Rm {{ $br->room->room_number }}
+                                                                    @if($br->room->current_status === 'occupied')
+                                                                        <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $br->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $br->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                                    @endif
                                                                 @else
                                                                     <span class="text-amber-600" title="Manage physically at front desk">TBA</span>
                                                                 @endif
@@ -803,29 +745,31 @@
                                                 </template>
                                             </div>
                                         @else
-                                            <div class="text-gray-800 font-medium text-sm">Room {{ $booking->room?->room_number ?? '—' }}</div>
+                                            <div class="text-gray-800 font-medium text-sm flex items-center gap-1.5">
+                                                Room {{ $booking->room?->room_number ?? '—' }}
+                                                @if($booking->room && $booking->room->current_status === 'occupied')
+                                                    <button type="button" @click="$dispatch('open-confirm', { message: 'Mark Room {{ $booking->room->room_number }} as Vacated? This will notify Housekeeping to inspect and clean it immediately.', action: () => Livewire.dispatch('mark-cleaning', { roomId: {{ $booking->room->id }} }) })" title="Mark Vacated" class="text-amber-500 hover:text-amber-600 transition-colors bg-amber-50 px-1 py-0.5 rounded"><i class="bi bi-brush"></i></button>
+                                                @endif
+                                            </div>
                                         @endif
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <form action="{{ route('reception.bookings.cancel', $booking->id) }}" method="POST" class="inline">
-                                        @csrf @method('PATCH')
-                                        @php
-                                            // Disable cancellation after 1 day past the expected arrival date
-                                            $isTooLate = $booking->check_in_date->copy()->addDays(1)->isPast();
-                                        @endphp
-                                        @if($isTooLate)
-                                            <button type="button" disabled
-                                                    class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-400 font-semibold px-3 py-1.5 rounded-lg text-xs border border-gray-200 cursor-not-allowed"
-                                                    title="Cancellation period expired">
-                                                <i class="bi bi-x-circle"></i> Cancel
-                                            </button>
-                                        @else
-                                            <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Cancel no-show booking {{ $booking->referenceNumber() }} and release the room?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
-                                                    class="inline-flex items-center gap-1.5 bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-red-200">
-                                                <i class="bi bi-x-circle"></i> Cancel
-                                            </button>
-                                        @endif
-                                    </form>
+                                    @php
+                                        // Disable cancellation after 1 day past the expected arrival date
+                                        $isTooLate = $booking->check_in_date->copy()->addDays(1)->isPast();
+                                    @endphp
+                                    @if($isTooLate)
+                                        <button type="button" disabled
+                                                class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-400 font-semibold px-3 py-1.5 rounded-lg text-xs border border-gray-200 cursor-not-allowed"
+                                                title="Cancellation period expired">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </button>
+                                    @else
+                                        <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Cancel no-show booking {{ $booking->referenceNumber() }} and release the room?', action: () => $wire.cancelNoShow({{ $booking->id }}) })"
+                                                class="inline-flex items-center gap-1.5 bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors border border-red-200">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -962,20 +906,35 @@
 
     {{-- =====================================================
          SETTLE BALANCE MODAL
-         Uses window.settleModal — decoupled from tabbed panel.
          ===================================================== --}}
-    <div x-data="{ open: false, settle_method: 'khqr_aba' }"
-         wire:ignore
-         x-show="open"
-         @settle-open.window="open = true"
-         class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"
-         x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
+    <div x-data="{ 
+            open: false, 
+            settle_method: 'khqr_aba',
+            bookingId: null,
+            amountDue: 0,
+            qrData: '',
+            paymentRef: ''
+        }"
+         @settle-open.window="
+            open = true;
+            bookingId = $event.detail.bookingId;
+            amountDue = parseFloat($event.detail.amount).toFixed(2);
+            qrData = $event.detail.qr;
+            paymentRef = '';
+         "
+         @close-settle-modal.window="open = false">
+         
+         <template x-teleport="body">
+            <div wire:ignore
+                 x-show="open"
+                 class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-left mx-4" @click.outside="open = false">
             <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
                 <h3 class="text-xl font-bold font-playfair text-hotel-dark flex items-center gap-2">
@@ -989,19 +948,15 @@
             <p class="text-gray-500 mb-4 text-center text-sm">Scan the QR code below or collect cash for the remaining balance.</p>
             <div class="text-center mb-5">
                 <span class="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Amount Due</span>
-                <span class="text-3xl font-bold text-red-600">$<span id="settle-amount-display"></span></span>
+                <span class="text-3xl font-bold text-red-600">$<span x-text="amountDue"></span></span>
             </div>
 
             <!-- QR Code -->
             <div class="flex justify-center mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <img id="settle-qr-img" src="" alt="QR Code" class="w-48 h-48 rounded-lg shadow-sm border border-gray-200 object-contain bg-white p-2">
+                <img :src="qrData" alt="QR Code" class="w-48 h-48 rounded-lg shadow-sm border border-gray-200 object-contain bg-white p-2">
             </div>
 
-            <form id="settle-form" action="" method="POST">
-                @csrf
-                <input type="hidden" id="settle-amount-input" name="amount_paid" value="">
-                <input type="hidden" name="payment_for" value="booking">
-
+            <form wire:submit.prevent="markAsPaid(bookingId, amountDue, settle_method, paymentRef)">
                 <div class="mb-4">
                     <label class="block text-xs font-semibold mb-2 uppercase tracking-wide text-gray-500">Payment Method Received</label>
                     <select id="settle-payment-method" name="payment_method" x-model="settle_method" class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none bg-white font-medium text-gray-700">
@@ -1014,7 +969,7 @@
                     <label class="block text-xs font-semibold mb-2 uppercase tracking-wide text-gray-500">Payment Reference 
                         <span x-show="settle_method !== 'cash'" class="text-red-500">*</span>
                     </label>
-                    <input type="text" id="settle-payment-reference" name="payment_reference" 
+                    <input type="text" id="settle-payment-reference" x-model="paymentRef" 
                            x-bind:placeholder="settle_method === 'cash' ? 'e.g., Cash note (Optional)' : 'e.g., ABA Txn # (Required)'"
                            x-bind:required="settle_method !== 'cash'"
                            class="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-hotel-gold focus:ring-[3px] focus:ring-hotel-gold/15 transition-all outline-none">
@@ -1028,6 +983,8 @@
                 </div>
             </form>
         </div>
+            </div>
+        </template>
     </div>
 
 {{-- ═══════════════════════════════════════════════════════════
@@ -1037,20 +994,20 @@
        2. Add incidental charges (optional)
        3. Payment settlement (only when charges exist)
      ══════════════════════════════════════════════════════════ --}}
-<div
-    x-data="{
+<div x-data="{
         open: false,
+        loadingData: false,
 
         // Booking identity
         bookingId:    null,
         reference:    '',
         guestName:    '',
         roomNumber:   '',
-        roomNumbers:  [],
+        rooms:        [],
 
         // URLs
         addChargeUrl: '',
-        checkoutUrl:  '',
+        removeChargeUrl: '',
 
         // Folio data
         checkInDate:  '',
@@ -1077,10 +1034,21 @@
         description: '',
         quantity:    1,
         amount:      '',
-        selectedRooms: [],
+        selectedRoomIds: [],
         charges:     [],
         saving:      false,
         error:       '',
+
+        // When a catalog item is selected, auto-fill description and amount.
+        selectedCatalogId: '',
+        onCatalogSelect(event) {
+            if (!this.selectedCatalogId) { return; }
+            const option = event.target.options[event.target.selectedIndex];
+            if (option && option.dataset.amount) {
+                this.description = option.text.split(' ($')[0];
+                this.amount      = parseFloat(option.dataset.amount).toFixed(2);
+            }
+        },
 
         get chargesTotal() {
             return this.charges.reduce((sum, c) => sum + c.line_total, 0);
@@ -1096,13 +1064,15 @@
 
         async addCharge() {
             if (!this.description.trim() || !this.amount || !this.quantity) return;
+            if (!this.selectedRoomIds || this.selectedRoomIds.length === 0) {
+                this.error = 'Please select at least one room for this charge.';
+                return;
+            }
+
             this.saving = true;
             this.error  = '';
             try {
                 let finalDesc = this.description;
-                if (this.selectedRooms && this.selectedRooms.length > 0) {
-                    finalDesc = '[Rm ' + this.selectedRooms.join(', ') + '] ' + finalDesc;
-                }
 
                 const res = await fetch(this.addChargeUrl, {
                     method: 'POST',
@@ -1115,21 +1085,32 @@
                         description: finalDesc,
                         quantity:    Number(this.quantity),
                         amount:      Number(this.amount),
+                        room_ids:    this.selectedRoomIds,
                     }),
                 });
                 const data = await res.json();
-                if (!res.ok) { this.error = data.message || data.error || 'Failed to save charge.'; return; }
-                this.charges.push({
-                    description: finalDesc,
-                    quantity:    Number(this.quantity),
-                    unit_price:  Number(this.amount),
-                    line_total:  Number(this.quantity) * Number(this.amount),
+                if (!res.ok) throw new Error(data.error || 'Failed');
+
+                this.totalPrice = data.booking_total;
+                this.qrDataUri  = data.qrDataUri || '';
+                
+                const newCharges = data.created_charges.map(c => {
+                    const rmObj = this.rooms.find(r => r.id == c.room_id);
+                    const rmStr = rmObj ? rmObj.number : c.room_id;
+                    return {
+                        id:          c.id,
+                        description: c.description + (data.created_charges.length > 1 ? ` (Rm ${rmStr})` : ''),
+                        quantity:    c.quantity,
+                        unit_price:  Number(c.amount),
+                        line_total:  Number(c.total_amount),
+                    };
                 });
-                if (data.qrDataUri) { this.qrDataUri = data.qrDataUri; }
+                this.charges.push(...newCharges);
+
                 this.description = '';
                 this.quantity    = 1;
                 this.amount      = '';
-                this.selectedRooms = [];
+                this.selectedRoomIds = this.rooms.length === 1 ? [this.rooms[0].id] : [];
             } catch (e) {
                 this.error = 'Network error. Please try again.';
             } finally {
@@ -1137,24 +1118,52 @@
             }
         },
 
+        async removeCharge(chargeId) {
+            if (!chargeId) return;
+            if (!confirm('Are you sure you want to remove this charge?')) return;
+            try {
+                const url = this.removeChargeUrl.replace('__CHARGE_ID__', chargeId);
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to remove charge');
+                
+                this.totalPrice = data.booking_total;
+                this.qrDataUri  = data.qrDataUri || '';
+                this.charges = this.charges.filter(c => c.id !== chargeId);
+            } catch(e) {
+                alert(e.message);
+            }
+        },
+
         submitCheckout() {
             this.payRefError = '';
-            if (this.chargesTotal > 0 && this.paymentMethod !== 'cash' && !this.paymentRef.trim()) {
+            if (this.totalDue > 0 && this.paymentMethod !== 'cash' && !this.paymentRef.trim()) {
                 this.payRefError = 'A payment reference is required for KHQR / ABA transfers.';
                 return;
             }
-            this.$refs.checkoutForm.submit();
+            this.$wire.checkOut(
+                this.bookingId, 
+                this.totalDue > 0 ? this.paymentMethod : null, 
+                this.totalDue > 0 ? this.totalDue.toFixed(2) : null, 
+                this.paymentRef
+            );
         },
     }"
-    @open-checkout-modal.window="
+    @checkout-open.window="
         open          = true;
         bookingId     = $event.detail.bookingId;
         reference     = $event.detail.reference    ?? '';
         guestName     = $event.detail.guestName;
         roomNumber    = $event.detail.roomNumber   ?? '';
-        roomNumbers   = $event.detail.roomNumbers  ?? [];
+        rooms         = $event.detail.rooms  ?? [];
         addChargeUrl  = $event.detail.addChargeUrl;
-        checkoutUrl   = $event.detail.checkoutUrl;
+        removeChargeUrl = $event.detail.removeChargeUrl;
         checkInDate   = $event.detail.checkInDate  ?? '';
         checkOutDate  = $event.detail.checkOutDate ?? '';
         nights        = parseInt($event.detail.nights ?? 0);
@@ -1169,17 +1178,56 @@
         paymentRef    = '';
         payRefError   = '';
         charges       = [];
-        selectedRooms = [];
+        selectedRoomIds = rooms.length === 1 ? [rooms[0].id] : [];
         description   = '';
         quantity      = 1;
         amount        = '';
         error         = '';
+        selectedCatalogId = '';
+    "
+    @close-checkout-modal.window="open = false"
+    @open-checkout-modal.window="
+        open          = true;
+        bookingId     = $event.detail.bookingId;
+        loadingData   = true;
+        
+        $wire.fetchCheckoutData(bookingId).then(data => {
+            reference     = data.reference;
+            guestName     = data.guestName;
+            roomNumber    = data.roomNumber;
+            rooms         = data.rooms || [];
+            addChargeUrl  = data.addChargeUrl;
+            removeChargeUrl = data.removeChargeUrl;
+            checkInDate   = data.checkInDate;
+            checkOutDate  = data.checkOutDate;
+            nights        = data.nights;
+            totalPrice    = data.totalPrice;
+            totalPaid     = data.totalPaid;
+            balanceDue    = data.balanceDue;
+            folioLines    = data.folioLines;
+            isEarly           = data.isEarly;
+            scheduledCheckout = data.scheduledCheckout;
+            qrDataUri         = data.qrDataUri;
+            
+            // Map existing charges from backend to Alpine array
+            charges       = data.existingCharges || [];
+            
+            paymentMethod = 'cash';
+            paymentRef    = '';
+            payRefError   = '';
+            selectedRoomIds = rooms.length === 1 ? [rooms[0].id] : [];
+            description   = '';
+            quantity      = 1;
+            amount        = '';
+            error         = '';
+            loadingData   = false;
+        });
     "
     x-show="open"
     x-cloak
     class="fixed inset-0 z-[9000] flex items-center justify-center p-4"
-    @keydown.escape.window="open = false"
->
+    @keydown.escape.window="open = false">
+             
     {{-- Backdrop --}}
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
 
@@ -1207,9 +1255,16 @@
             </button>
         </div>
 
-        {{-- ── BODY (scrollable) ───────────────────────────────────────────── --}}
+        {{-- BODY (scrollable) --}}
         <div class="overflow-y-auto flex-1 px-7 py-5 space-y-5">
 
+            {{-- ── LOADING OVERLAY ─────────────────────────────────────────── --}}
+            <div x-show="loadingData" class="flex flex-col items-center justify-center py-10 space-y-3">
+                <i class="bi bi-arrow-repeat animate-spin text-3xl text-amber-500"></i>
+                <p class="text-sm font-semibold text-gray-500">Fetching latest folio...</p>
+            </div>
+
+            <div x-show="!loadingData" class="space-y-5">
             {{-- ── SECTION 1: Early-departure warning ──────────────────────── --}}
             <div x-show="isEarly"
                  class="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 text-sm">
@@ -1289,19 +1344,35 @@
                     <span x-text="error"></span>
                 </div>
 
-                <div x-show="roomNumbers && roomNumbers.length > 1" class="mb-3">
-                    <label class="block text-[0.7rem] text-gray-500 font-bold uppercase tracking-wide mb-1">Apply to Rooms</label>
+                <div x-show="rooms && rooms.length > 0" class="mb-3">
+                    <label class="block text-[0.7rem] text-gray-500 font-bold uppercase tracking-wide mb-1">
+                        Apply to Rooms <span class="text-red-500">*</span>
+                    </label>
                     <div class="flex flex-wrap gap-2">
-                        <template x-for="rm in roomNumbers" :key="rm">
-                            <label class="flex items-center gap-1.5 bg-white border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-gray-50 transition-colors">
-                                <input type="checkbox" :value="rm" x-model="selectedRooms" class="rounded text-amber-500 focus:ring-amber-500 border-gray-300 w-3.5 h-3.5">
-                                <span class="font-medium text-gray-700" x-text="'Rm ' + rm"></span>
+                        <template x-for="rm in rooms" :key="rm.id">
+                            <label class="flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-gray-50 transition-colors"
+                                   :class="selectedRoomIds.includes(rm.id) ? 'border-amber-400 bg-amber-50/50' : ''">
+                                <input type="checkbox" :value="rm.id" x-model="selectedRoomIds" class="rounded text-amber-500 focus:ring-amber-500 border-gray-300 w-3.5 h-3.5">
+                                <span class="font-medium text-gray-700" x-text="'Rm ' + rm.number"></span>
                             </label>
                         </template>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-5 gap-2 items-end">
+                    {{-- Quick-select from incidental items catalog --}}
+                    <div class="col-span-5 mb-1">
+                        <label class="block text-[0.7rem] text-gray-500 font-bold uppercase tracking-wide mb-1">Quick Select</label>
+                        <select x-model="selectedCatalogId" @change="onCatalogSelect($event)"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all bg-white text-gray-600">
+                            <option value="">— Standard damage types —</option>
+                            @foreach(\App\Models\IncidentalItem::active()->orderBy('name')->get() as $item)
+                                <option value="{{ $item->id }}" data-amount="{{ $item->default_amount }}">
+                                    {{ $item->name }} (${{ number_format($item->default_amount, 2) }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-span-5">
                         <label class="block text-[0.7rem] text-gray-500 font-bold uppercase tracking-wide mb-1">Description</label>
                         <input type="text" x-model="description"
@@ -1333,14 +1404,20 @@
                     <div class="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden text-sm">
                         <template x-for="(c, i) in charges" :key="i">
                             <div class="flex items-center justify-between px-4 py-3 bg-white">
-                                <div>
+                                <div class="flex-1">
                                     <span class="font-semibold text-gray-800" x-text="c.description"></span>
                                     <span class="text-gray-400 text-xs ml-2" x-show="c.quantity > 1">
                                         × <span x-text="c.quantity"></span>
                                         @ $<span x-text="c.unit_price.toFixed(2)"></span>
                                     </span>
                                 </div>
-                                <span class="font-bold text-amber-700" x-text="'$' + c.line_total.toFixed(2)"></span>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-bold text-amber-700" x-text="'$' + c.line_total.toFixed(2)"></span>
+                                    <button type="button" @click="removeCharge(c.id)" x-show="c.id" title="Remove charge"
+                                            class="text-gray-400 hover:text-red-500 transition-colors">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </template>
                         <div class="flex justify-between px-4 py-3 bg-amber-50 font-bold text-sm">
@@ -1403,6 +1480,8 @@
                 <i class="bi bi-check-circle-fill text-emerald-500"></i>
                 Account fully settled — ready to check out.
             </div>
+            
+            </div>{{-- end not loading wrap --}}
 
         </div>{{-- end scrollable body --}}
 
@@ -1413,24 +1492,16 @@
                 Cancel
             </button>
 
-            {{-- Hidden form used to submit check-out --}}
-            <form :action="checkoutUrl" method="POST" x-ref="checkoutForm" class="hidden">
-                @csrf
-                <template x-if="totalDue > 0">
-                    <span>
-                        <input type="hidden" name="payment_method"    :value="paymentMethod">
-                        <input type="hidden" name="amount_paid"       :value="totalDue.toFixed(2)">
-                        <input type="hidden" name="payment_reference" :value="paymentRef">
-                        <input type="hidden" name="payment_for"       value="booking">
-                    </span>
-                </template>
-            </form>
-
-            <button type="button" @click="submitCheckout()"
-                    class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition-all">
-                <i class="bi bi-door-closed"></i>
-                Finalize Check-Out
-                <span x-show="charges.length > 0"
+            <button type="button" @click="if(!loadingData) submitCheckout()"
+                    :disabled="loadingData"
+                    wire:loading.attr="disabled"
+                    wire:target="checkOut"
+                    class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition-all">
+                <i class="bi bi-door-closed" wire:loading.remove wire:target="checkOut"></i>
+                <i class="bi bi-hourglass-split animate-spin" wire:loading wire:target="checkOut"></i>
+                <span wire:loading.remove wire:target="checkOut">Finalize Check-Out</span>
+                <span wire:loading wire:target="checkOut">Processing...</span>
+                <span x-show="charges.length > 0 && !loadingData"
                       class="ml-1 bg-white/20 text-white text-xs rounded-full px-2 py-0.5"
                       x-text="'+$' + chargesTotal.toFixed(2)"></span>
             </button>

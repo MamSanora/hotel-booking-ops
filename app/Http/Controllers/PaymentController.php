@@ -77,9 +77,6 @@ class PaymentController extends Controller
         Transaction::acquireLock($transaction->id);
         // ----------------------------------------------------------------
 
-        if ($booking->bookingRooms->first()?->roomType?->use_mam_sanora_qr) {
-            return $this->showMamSanoraStatic($booking, $transaction);
-        }
 
         return match ($transaction->payment_method) {
             Transaction::METHOD_ABA      => $this->showPayWay($booking, $transaction),
@@ -245,16 +242,47 @@ class PaymentController extends Controller
         // Refresh the booking from DB so we get the latest status set by the webhook.
         $booking->refresh();
 
-        // If there is still a pending transaction, payment has not been received yet.
-        // This covers both regular bookings AND stay extensions (which don't change
-        // booking_status — the booking stays as 'checked-in' while payment is pending).
+        // If there is still a pending transaction, check if it's a Bakong KHQR transaction
+        // that we should poll the official API for.
         $pendingTransaction = $booking->transactions()
             ->where('payment_status', Transaction::STATUS_PENDING)
             ->latest()
             ->first();
 
         if ($pendingTransaction) {
-            return response()->json(['paid' => false]);
+            // -- BAKONG OPEN API INTEGRATION --
+            if ($pendingTransaction->payment_method === Transaction::METHOD_KHQR) {
+                // Poll the official Bakong API using the transaction's md5_hash
+                $isPaid = $this->bakongApiService->checkPayment($pendingTransaction);
+
+                if ($isPaid) {
+                    // Update transaction status based on amount paid vs total price
+                    $newStatus = ((float) $pendingTransaction->amount_paid + 0.01 >= (float) $booking->total_price)
+                        ? Transaction::STATUS_FULL
+                        : Transaction::STATUS_PARTIAL;
+
+                    $pendingTransaction->update([
+                        'payment_status' => $newStatus,
+                    ]);
+
+                    // Release global payment lock so queue frees up
+                    Transaction::releaseLock($pendingTransaction->id);
+
+                    // Execute promotion/extension logic using existing AbaTelegramService logic
+                    if ($pendingTransaction->payment_for === Transaction::FOR_STAY_EXTENSION) {
+                        $this->abaTelegramService->applyStayExtension($booking, $pendingTransaction);
+                    } elseif ($booking->booking_status === Booking::STATUS_PENDING) {
+                        $this->abaTelegramService->promoteBookingAfterPayment($booking);
+                    }
+
+                    // Payment confirmed! Proceed to redirect logic below.
+                } else {
+                    return response()->json(['paid' => false]);
+                }
+            } else {
+                // Non-Bakong transactions (e.g. Telegram) wait for webhook push.
+                return response()->json(['paid' => false]);
+            }
         }
 
         // Payment was received but the room type was fully sold out — refund required.

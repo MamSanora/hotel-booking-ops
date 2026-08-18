@@ -47,10 +47,10 @@
         #rcpt-clock { font-variant-numeric: tabular-nums; }
 
         /* Page-level transitions */
-        #rcpt-content { animation: fadeInUp 0.22s ease both; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
+        #rcpt-content { animation: fadeIn 0.22s ease both; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
 
         /* Mobile overlay */

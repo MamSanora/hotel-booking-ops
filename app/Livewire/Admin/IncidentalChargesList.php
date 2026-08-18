@@ -19,7 +19,7 @@ class IncidentalChargesList extends Component
 
     public function render()
     {
-        $charges = IncidentalCharge::with(['booking.guest', 'booking.bookingRooms.room'])
+        $charges = IncidentalCharge::with(['booking.guest', 'booking.bookingRooms.room', 'room'])
             ->where('description', 'like', '%' . $this->search . '%')
             ->orderBy('created_at', 'desc')
             ->paginate(15);

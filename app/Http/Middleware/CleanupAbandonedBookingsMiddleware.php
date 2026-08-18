@@ -34,7 +34,7 @@ class CleanupAbandonedBookingsMiddleware
 
             Transaction::whereIn('booking_id', $abandonedBookings)
                 ->where('payment_status', Transaction::STATUS_PENDING)
-                ->update(['payment_status' => Transaction::STATUS_CANCELLED]);
+                ->update(['payment_status' => Transaction::STATUS_FAILED]);
         }
 
         // 2. Clear any expired payment locks on transactions (5-minute window)

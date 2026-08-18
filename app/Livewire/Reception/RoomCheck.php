@@ -70,6 +70,24 @@ class RoomCheck extends Component
         $this->flashType = 'success';
     }
 
+    #[On('mark-cleaning')]
+    public function markCleaning($roomId)
+    {
+        $room = Room::findOrFail($roomId);
+        
+        if ($room->current_status === Room::STATUS_CLEANING) {
+            $this->flashMessage = "Room {$room->room_number} is already marked for cleaning.";
+            $this->flashType = 'error';
+            return;
+        }
+
+        $previousStatus = $room->current_status;
+        $room->update(['current_status' => Room::STATUS_CLEANING, 'status_updated_at' => now()]);
+
+        $this->flashMessage = "Room {$room->room_number} marked as vacated and requires cleaning.";
+        $this->flashType = 'success';
+    }
+
     public function render()
     {
         $cleaningRooms = Room::with('roomType')->cleaning()->orderBy('room_number')->get();

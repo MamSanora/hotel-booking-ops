@@ -57,4 +57,20 @@ class PaymentGatewayController extends Controller
 
         return back()->with('success', "Gateway \"{$gateway->name}\" updated to \"{$validated['admin_status']}\".");
     }
+
+    /**
+     * Update the global setting for the receptionist offline QR merchant.
+     */
+    public function updateReceptionQr(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reception_qr_merchant' => ['required', 'in:keo_samnang,mam_sanora'],
+        ]);
+
+        \App\Models\Setting::set('reception_qr_merchant', $validated['reception_qr_merchant']);
+
+        $merchantName = $validated['reception_qr_merchant'] === 'mam_sanora' ? 'Mam Sanora (Owner)' : 'Keo Samnang (Default)';
+        
+        return back()->with('success', "Receptionist offline QR merchant updated to $merchantName.");
+    }
 }

@@ -492,8 +492,12 @@
                             @enderror
                         </div>
 
-                        {{-- Payment Method (forced to khqr_aba; hidden from guest) --}}
-                        <input type="hidden" name="payment_method" value="khqr_aba">
+                        {{-- 
+                            Payment Method (forced to khqr_aba; hidden from guest) 
+                            Development for the payment method toggle is currently paused 
+                            because Credit Card integration is currently unimplementable.
+                        --}}
+                        <input type="hidden" name="payment_method" value="khqr">
 
 
                         {{-- Terms and Conditions --}}
@@ -561,16 +565,61 @@
 
     function calculatePrice() {
         if (!checkInEl || !checkOutEl) return;
+        
+        // Prevent typing past dates
+        if (checkInEl.value) {
+            const todayStr = '{{ date('Y-m-d') }}';
+            if (checkInEl.value < todayStr) {
+                checkInEl.value = todayStr;
+            }
+        }
+
         const ci = new Date(checkInEl.value);
         const co = new Date(checkOutEl.value);
         const rooms = getRoomCount();
         if (roomCountEl) roomCountEl.textContent = rooms + (rooms === 1 ? ' room' : ' rooms');
 
+        // Check if advance booking > 3 days
+        let isAdvanceBooking = false;
+        if (checkInEl.value) {
+            let today = new Date('{{ date('Y-m-d') }}');
+            let diffTime = ci.getTime() - today.getTime();
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            isAdvanceBooking = diffDays > 3;
+        }
+
+        // Group & Advance booking policy: Disable "No Deposit" (tier_0)
+        const tier0 = document.getElementById('tier_0');
+        if (tier0) {
+            const label = tier0.closest('label');
+            const hasNoDepositBooking = {{ isset($hasNoDepositBooking) && $hasNoDepositBooking ? 'true' : 'false' }};
+            if (rooms > 2 || hasNoDepositBooking || isAdvanceBooking) {
+                tier0.disabled = true;
+                label.classList.add('opacity-50', 'cursor-not-allowed');
+                if (rooms > 2) {
+                    label.title = 'A deposit is required for 3 or more rooms';
+                } else if (hasNoDepositBooking) {
+                    label.title = 'You already have an active No Deposit booking';
+                } else {
+                    label.title = 'A deposit is required if booking > 3 days in advance';
+                }
+                
+                if (tier0.checked) {
+                    const tier20 = document.getElementById('tier_20');
+                    if (tier20) tier20.checked = true;
+                }
+            } else {
+                tier0.disabled = false;
+                label.classList.remove('opacity-50', 'cursor-not-allowed');
+                label.title = '';
+            }
+        }
+
         if (checkInEl.value && checkOutEl.value && co > ci) {
             const nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
             const total  = nights * pricePerNight * rooms;
             const khrTotal = Math.round(total * khrRate);
-            const tier   = getSelectedTier();
+            const tier   = getSelectedTier(); // Call after potential fallback
             const deposit = Math.round(total * tier) / 100;
             const balance = total - deposit;
 
@@ -593,27 +642,6 @@
             if (khrEl) khrEl.textContent = '—';
             depositRow.style.setProperty('display', 'none', 'important');
             balanceRow.style.setProperty('display', 'none', 'important');
-        }
-
-        // Group booking policy: Disable "No Deposit" (tier_0) if rooms > 2
-        const tier0 = document.getElementById('tier_0');
-        if (tier0) {
-            const label = tier0.closest('label');
-            if (rooms > 2) {
-                tier0.disabled = true;
-                label.classList.add('opacity-50', 'cursor-not-allowed');
-                label.title = 'A deposit is required for 3 or more rooms';
-                if (tier0.checked) {
-                    const tier20 = document.getElementById('tier_20');
-                    if (tier20) tier20.checked = true;
-                    // Recalculate with new tier
-                    calculatePrice();
-                }
-            } else {
-                tier0.disabled = false;
-                label.classList.remove('opacity-50', 'cursor-not-allowed');
-                label.title = '';
-            }
         }
     }
 

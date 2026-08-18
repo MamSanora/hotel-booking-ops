@@ -357,6 +357,36 @@
             <div class="p-6">
                 <form method="POST" action="{{ route('guest.booking.room-service.store', $booking) }}">
                     @csrf
+
+                    @if($booking->bookingRooms->count() > 1)
+                        <div class="mb-5">
+                            <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-2">Select Room <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                @foreach($booking->bookingRooms as $pivot)
+                                    <label class="relative flex cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm focus:outline-none hover:border-hotel-gold has-[:checked]:border-hotel-gold has-[:checked]:ring-1 has-[:checked]:ring-hotel-gold has-[:checked]:bg-hotel-gold/5 transition-colors">
+                                        <input type="radio" name="room_id" value="{{ $pivot->room_id }}" class="sr-only" required {{ old('room_id') == $pivot->room_id ? 'checked' : '' }}>
+                                        <div class="flex flex-col">
+                                            <span class="block text-sm font-medium text-gray-900">Room {{ $pivot->room->room_number }}</span>
+                                            <span class="block text-xs text-gray-500">{{ $pivot->roomType->display_name }}</span>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('room_id')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    @else
+                        <input type="hidden" name="room_id" value="{{ $booking->bookingRooms->first()->room_id }}">
+                        <div class="mb-5">
+                            <label class="block font-semibold text-[0.85rem] uppercase text-gray-500 tracking-wider mb-2">Room</label>
+                            <div class="text-sm font-medium text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 inline-flex items-center">
+                                <i class="bi bi-door-closed mr-2 opacity-50"></i>
+                                Room {{ $booking->bookingRooms->first()->room->room_number }} 
+                                <span class="ml-2 text-xs text-gray-500 font-normal">({{ $booking->bookingRooms->first()->roomType->display_name }})</span>
+                            </div>
+                        </div>
+                    @endif
                     
                     @if(isset($catalogItems) && $catalogItems->isNotEmpty())
                     <div class="mb-5">

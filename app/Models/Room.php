@@ -157,7 +157,7 @@ class Room extends Model
                 ->where('check_in_date', '<', $checkOut)
                 ->where('check_out_date', '>', $checkIn)
                 ->where('payment_tier', '>=', $effectiveTier)
-                ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId));
+                ->when($excludeBookingId, fn ($q) => $q->where('bookings.id', '!=', $excludeBookingId));
         });
     }
 
@@ -196,7 +196,7 @@ class Room extends Model
             ->where('check_in_date', '<', $checkOut)
             ->where('check_out_date', '>', $checkIn)
             ->where('payment_tier', '>=', $effectiveTier)
-            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            ->when($excludeBookingId, fn ($q) => $q->where('bookings.id', '!=', $excludeBookingId))
             ->exists();
     }
 
