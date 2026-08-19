@@ -16,15 +16,17 @@ class MultiRoomCheckout extends Component
     public $selectedTier = 100;
     public $khrRate = 4100;
     public $hasNoDepositBooking = false;
+    public $existingBookingId = null;
 
     // Cache to display available room types below
     public $availableRoomTypes = [];
     public $allRoomTypes = [];
 
-    public function mount($initialCart, $checkin, $checkout, $allRoomTypes, $khrRate, $hasNoDepositBooking)
+    public function mount($initialCart, $checkin, $checkout, $allRoomTypes, $khrRate, $hasNoDepositBooking, $existingBookingId = null)
     {
         $this->checkin = $checkin;
         $this->checkout = $checkout;
+        $this->existingBookingId = $existingBookingId;
         
         $this->allRoomTypes = collect($allRoomTypes)->map(function ($rt) {
             $arr = $rt->toArray();
@@ -47,6 +49,7 @@ class MultiRoomCheckout extends Component
             ];
         }
 
+        $this->validateCartAvailability();
         $this->recalculateTotal();
         $this->refreshAvailableRoomTypes();
     }
@@ -102,23 +105,48 @@ class MultiRoomCheckout extends Component
         }
     }
 
+    public function updatedCart()
+    {
+        $this->validateCartAvailability();
+        $this->recalculateTotal();
+    }
+
     public function validateCartAvailability()
     {
-        // For each item in cart, verify availability. If unavailable, remove it and flash error.
         $newCart = [];
         $removedRooms = [];
+        $clampedRooms = [];
+        $totalCartQty = collect($this->cart)->sum('qty');
+        $isBulkBooking = $totalCartQty > 1;
+        
         foreach ($this->cart as $item) {
-            // Need to fetch fresh from DB because $allRoomTypes is just a collection of original models, and we need to run hasAvailableVirtualCapacity
             $roomType = RoomType::find($item['id']);
-            if ($roomType && $roomType->hasAvailableVirtualCapacity($this->checkin, $this->checkout, 100)) {
-                $newCart[] = $item;
-            } else {
+            if (!$roomType) continue;
+
+            $qty = (int) $item['qty'];
+            
+            // Dial down quantity until it is within available virtual capacity
+            while ($qty > 0 && !$roomType->hasAvailableVirtualCapacity($this->checkin, $this->checkout, 100, $this->existingBookingId, $qty, $isBulkBooking)) {
+                $qty--;
+            }
+
+            if ($qty === 0) {
                 $removedRooms[] = $item['name'];
+            } else {
+                if ($qty < (int)$item['qty']) {
+                    $clampedRooms[] = $item['name'];
+                    $item['qty'] = $qty;
+                }
+                $newCart[] = $item;
             }
         }
+        
         if (!empty($removedRooms)) {
             session()->flash('error', implode(", ", $removedRooms) . " no longer available for the selected dates and have been removed from your cart.");
+        } elseif (!empty($clampedRooms)) {
+            session()->flash('error', "The quantity for " . implode(", ", $clampedRooms) . " was reduced due to limited availability.");
         }
+        
         $this->cart = $newCart;
         $this->recalculateTotal();
         $this->refreshAvailableRoomTypes();

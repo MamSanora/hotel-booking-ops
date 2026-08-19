@@ -17,7 +17,8 @@
     'checkout' => $checkout,
     'allRoomTypes' => $allRoomTypes,
     'khrRate' => $exchangeRate ?? 4100,
-    'hasNoDepositBooking' => $hasNoDepositBooking
+    'hasNoDepositBooking' => $hasNoDepositBooking,
+    'existingBookingId' => $existingBookingId ?? null
 ])
 
 <div class="container mx-auto px-4 md:px-6 mb-12">

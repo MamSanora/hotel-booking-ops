@@ -236,7 +236,9 @@ class RoomType extends Model
         string $checkIn,
         string $checkOut,
         int $requestedTier = Booking::TIER_FULL,
-        ?int $excludeBookingId = null
+        ?int $excludeBookingId = null,
+        int $requestedQuantity = 1,
+        bool $isBulkBooking = false
     ): bool {
         // Physical rooms of this type that are not in maintenance.
         $physicalCount = $this->rooms()->where('current_status', '!=', 'maintenance')->count();
@@ -245,8 +247,13 @@ class RoomType extends Model
         $virtualCapacity = (int) floor($physicalCount * $this->overbooking_multiplier);
 
         // Nested booking limit for the requested tier.
+        // BYPASS: If the guest is booking multiple rooms at once, waive the 
+        // protection limits to secure the bulk booking, BUT cap them strictly at 
+        // PHYSICAL capacity to prevent bulk overbooking.
         $bookingLimits    = $this->computeBookingLimits($virtualCapacity);
-        $tierBookingLimit = $bookingLimits[$requestedTier] ?? $virtualCapacity;
+        $tierBookingLimit = ($requestedQuantity > 1 || $isBulkBooking) 
+            ? $physicalCount 
+            : ($bookingLimits[$requestedTier] ?? $virtualCapacity);
 
         // Count ALL active room quantities for this type on the overlapping date range.
         // OVERSTAY FAILSAFE: A booking that is currently Checked In always blocks capacity
@@ -268,7 +275,7 @@ class RoomType extends Model
             })
             ->count();
 
-        return $totalActiveBookings < $tierBookingLimit;
+        return ($totalActiveBookings + $requestedQuantity) <= $tierBookingLimit;
     }
 
     /**

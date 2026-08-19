@@ -77,8 +77,8 @@
                 @if($booking->bookingRooms->count() > 1)
                     Multiple Rooms
                 @else
-                    {{ $booking->room?->room_number ?? 'N/A' }}
-                    ({{ $booking->room?->roomType?->display_name ?? $booking->room?->roomType?->name ?? 'N/A' }})
+                    {{ $booking->bookingRooms->first()?->room?->room_number ?? 'N/A' }}
+                    ({{ $booking->bookingRooms->first()?->roomType?->display_name ?? $booking->bookingRooms->first()?->roomType?->name ?? 'N/A' }})
                 @endif
             </div>
             <div class="mb-1"><strong>Check-in:</strong> {{ $checkInDisplay }}</div>

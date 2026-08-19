@@ -214,7 +214,14 @@
                                     <strong class="font-playfair text-hotel-gold text-lg">{{ $booking->referenceNumber() }}</strong>
                                 </td>
                                 <td class="px-5 py-4">
-                                    <div class="font-semibold text-gray-800 text-[0.95rem]">
+                                    <div class="font-semibold text-gray-800 text-[0.95rem] flex items-center gap-1.5">
+                                        @if($booking->booking_origin === 'walk-in')
+                                            <i class="bi bi-person-walking text-gray-400" title="Walk-in"></i>
+                                        @elseif($booking->booking_origin === 'phone')
+                                            <i class="bi bi-telephone text-gray-400" title="Phone"></i>
+                                        @else
+                                            <i class="bi bi-globe text-gray-400" title="Online"></i>
+                                        @endif
                                         {{ $booking->guest?->full_name ?? 'Walk-in Guest' }}
                                     </div>
                                     <div class="text-gray-500 text-[0.8rem] mt-0.5">
@@ -233,6 +240,11 @@
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="text-gray-800 text-[0.95rem]"><strong>In:</strong> {{ $booking->check_in_date?->format('M d, Y') }}</div>
                                     <div class="text-gray-800 text-[0.95rem] mt-0.5"><strong>Out:</strong> {{ $booking->check_out_date?->format('M d, Y') }}</div>
+                                    <div class="mt-1.5">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.7rem] font-semibold bg-gray-100 text-gray-700">
+                                            <i class="bi bi-moon-fill text-gray-400 mr-1"></i> {{ $booking->nightCount() }} Night(s)
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="px-5 py-4">
                                     @if($booking->bookingRooms->isNotEmpty())
@@ -253,6 +265,14 @@
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="font-bold text-gray-800">${{ number_format($booking->total_price, 2) }}</div>
+                                    @php
+                                        $balance = $booking->balanceDue();
+                                    @endphp
+                                    @if($balance > 0)
+                                        <div class="text-[0.75rem] font-bold text-red-600 mt-0.5">Bal: ${{ number_format($balance, 2) }}</div>
+                                    @else
+                                        <div class="text-[0.75rem] font-bold text-green-600 mt-0.5">Paid in Full</div>
+                                    @endif
                                     {{-- Transaction payment status badge --}}
                                     @if($latestTxn)
                                         <div class="mt-1 flex flex-col gap-1 mb-1.5">
@@ -278,6 +298,14 @@
                                 <td class="px-5 py-4 whitespace-nowrap text-right">
                                     <div class="flex justify-end gap-2">
 
+                                        {{-- View Receipt --}}
+                                        <a href="{{ route('admin.bookings.receipt', $booking->id) }}"
+                                           target="_blank"
+                                           class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors"
+                                           title="View Receipt">
+                                            <i class="bi bi-receipt"></i>
+                                        </a>
+
                                         {{-- Approve (pending only) --}}
                                         @if($booking->booking_status === 'pending')
                                             <form action="{{ route('admin.bookings.approve', $booking->id) }}" method="POST">
@@ -301,18 +329,6 @@
                                                 </button>
                                             </form>
                                         @endif
-
-
-
-                                        {{-- Delete (always available) --}}
-                                        <form action="{{ route('admin.bookings.destroy', $booking->id) }}" method="POST">
-                                            @csrf @method('DELETE')
-                                            <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Permanently delete this booking?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
-                                                    class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors"
-                                                    title="Delete booking">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
                                     </div>
                                 </td>
                             </tr>

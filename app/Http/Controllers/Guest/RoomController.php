@@ -221,17 +221,18 @@ class RoomController extends Controller
                     ->latest()
                     ->first();
 
-                // ── Step 1: Predictive overbooking check (Thread-Safe) ────────────────────────────
+                $requestedRooms = max(1, (int) $validated['rooms']);
+
+                // 🚀 Step 1: Predictive overbooking check (Thread-Safe) 🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
                 if (!$lockedRoomType->hasAvailableVirtualCapacity(
                     $validated['check_in_date'],
                     $validated['check_out_date'],
                     $requestedTier,
-                    $existingBooking?->id
+                    $existingBooking?->id,
+                    $requestedRooms
                 )) {
                     throw new \Exception('CAPACITY_EXHAUSTED');
                 }
-
-                $requestedRooms = max(1, (int) $validated['rooms']);
 
                 // ── Step 2: Auto-assign distinct physical rooms (one per requested room) ──
                 $assignedRooms = $lockedRoomType->pickAvailableRooms(
@@ -665,6 +666,7 @@ class RoomController extends Controller
             'check_in_date'    => 'required|date|after_or_equal:today',
             'check_out_date'   => 'required|date|after:check_in_date',
             'payment_tier'     => 'required|integer',
+            'rooms'            => 'nullable|integer|min:1',
             'bed_type'         => 'nullable|string',
             'floor_preference' => 'nullable|string',
             'view_preference'  => 'nullable|string',
@@ -680,6 +682,7 @@ class RoomController extends Controller
                ->first();
         }
 
+        $requestedRooms = $request->input('rooms', 1);
 
         // 1. Is there ANY room available? If not, even without preferences it fails.
         // We do this to ensure we don't say "preferences available" when the hotel is full.
@@ -687,9 +690,26 @@ class RoomController extends Controller
             $request->check_in_date,
             $request->check_out_date,
             $request->payment_tier,
-            $existingBooking?->id
+            $existingBooking?->id,
+            $requestedRooms
         )) {
-            return response()->json(['available' => false, 'reason' => 'fully_booked']);
+            // Calculate max available for clamping on the frontend
+            $maxAvailable = $requestedRooms - 1;
+            while ($maxAvailable > 0 && !$roomType->hasAvailableVirtualCapacity(
+                $request->check_in_date,
+                $request->check_out_date,
+                $request->payment_tier,
+                $existingBooking?->id,
+                $maxAvailable
+            )) {
+                $maxAvailable--;
+            }
+            
+            return response()->json([
+                'available' => false, 
+                'reason' => 'fully_booked',
+                'max_available' => $maxAvailable
+            ]);
         }
 
         // 2. Check if there is a physical room that meets the preferences AND is available
@@ -804,7 +824,18 @@ class RoomController extends Controller
             ->whereIn('booking_status', [\App\Models\Booking::STATUS_PENDING, \App\Models\Booking::STATUS_BOOKED, \App\Models\Booking::STATUS_CHECKED_IN])
             ->exists() : false;
 
-        return view('guest.multi-room-checkout', compact('cartItems', 'checkin', 'checkout', 'nights', 'totalPrice', 'cartJson', 'allRoomTypes', 'exchangeRate', 'hasNoDepositBooking'));
+        $existingBookingId = null;
+        if ($guestId) {
+            $existingPending = \App\Models\Booking::where('guest_id', $guestId)
+                ->where('booking_status', \App\Models\Booking::STATUS_PENDING)
+                ->latest()
+                ->first();
+            if ($existingPending) {
+                $existingBookingId = $existingPending->id;
+            }
+        }
+
+        return view('guest.multi-room-checkout', compact('cartItems', 'checkin', 'checkout', 'nights', 'totalPrice', 'cartJson', 'allRoomTypes', 'exchangeRate', 'hasNoDepositBooking', 'existingBookingId'));
     }
 
     /**
@@ -884,6 +915,9 @@ class RoomController extends Controller
                 ->latest()
                 ->first();
 
+            $totalCartQty = collect($cart)->sum('qty');
+            $isBulkBooking = $totalCartQty > 1;
+
             foreach ($cart as $item) {
                 if (!isset($item['slug']) || !isset($item['qty'])) continue;
 
@@ -893,21 +927,15 @@ class RoomController extends Controller
                 $qty = (int) $item['qty'];
                 if ($qty <= 0) continue;
 
-                // Capacity check logic
-                $physicalCount = $lockedRoomType->rooms()->where('current_status', '!=', 'maintenance')->count();
-                $virtualCapacity = (int) floor($physicalCount * $lockedRoomType->overbooking_multiplier);
-                $bookingLimits = $lockedRoomType->computeBookingLimits($virtualCapacity);
-                $tierBookingLimit = $bookingLimits[$requestedTier] ?? $virtualCapacity;
-                
-                $totalActiveBookings = (int) \App\Models\BookingRoom::where('room_type_id', $lockedRoomType->id)
-                    ->whereHas('booking', function ($q) use ($validated) {
-                        $q->whereIn('booking_status', [Booking::STATUS_BOOKED, Booking::STATUS_CHECKED_IN, Booking::STATUS_PENDING])
-                          ->where('check_in_date', '<', $validated['check_out_date'])
-                          ->where('check_out_date', '>', $validated['check_in_date']);
-                    })
-                    ->count();
-
-                if (($totalActiveBookings + $qty) > $tierBookingLimit) {
+                // Capacity check logic using single source of truth
+                if (!$lockedRoomType->hasAvailableVirtualCapacity(
+                    $validated['check_in_date'],
+                    $validated['check_out_date'],
+                    $requestedTier,
+                    $existingBooking?->id, // Exclude the user's existing pending booking
+                    $qty,
+                    $isBulkBooking
+                )) {
                     throw new \Exception('CAPACITY_EXHAUSTED_' . $lockedRoomType->name);
                 }
 

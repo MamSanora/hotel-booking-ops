@@ -261,7 +261,7 @@
                         {{-- Line-item breakdown for multi-type bookings --}}
                         @foreach($booking->bookingRooms as $br)
                         <div class="flex justify-between">
-                            <span>{{ $br->roomType?->name ?? '—' }} — Rm {{ $br->room?->room_number ?? 'TBA' }} &mdash; ${{ number_format($br->price_at_booking, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
+                            <span>{{ $br->roomType?->name ?? '—' }} — Rm {{ in_array($booking->booking_status, ['checked_in', 'checked_out', 'completed']) ? ($br->room?->room_number ?? 'TBA') : 'TBA' }} &mdash; ${{ number_format($br->price_at_booking, 2) }}/night × {{ $booking->nightCount() }} night{{ $booking->nightCount() !== 1 ? 's' : '' }}</span>
                             <span class="font-medium text-gray-800">${{ number_format($br->lineTotal(), 2) }}</span>
                         </div>
                         @endforeach

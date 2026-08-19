@@ -399,8 +399,8 @@
                             </div>
                         </div>
 
-                        {{-- Fully Booked Warning Container --}}
-                        <div id="fullyBookedWarning" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                        {{-- Fully Booked Warning Container (Floating Toast) --}}
+                        <div id="fullyBookedWarning" class="hidden fixed bottom-6 right-6 z-[100] shadow-2xl max-w-sm bg-red-50 border border-red-200 rounded-xl p-4 transition-all duration-300 transform translate-y-0 opacity-100">
                             <div class="flex items-start gap-3">
                                 <i class="bi bi-x-circle-fill text-red-500 mt-0.5"></i>
                                 <div>
@@ -700,6 +700,7 @@
                         check_in_date: checkInEl.value,
                         check_out_date: checkOutEl.value,
                         payment_tier: tierValue,
+                        rooms: roomsEl ? roomsEl.value : 1,
                         bed_type: bedSelect ? bedSelect.value : null,
                         floor_preference: floorSelect ? floorSelect.value : null,
                         view_preference: viewSelect ? viewSelect.value : null
@@ -711,7 +712,21 @@
                 const data = await response.json();
                 
                 if (data.available === false && data.reason === 'fully_booked') {
-                    if (fullyBookedBox) fullyBookedBox.classList.remove('hidden');
+                    if (data.max_available !== undefined && data.max_available > 0) {
+                        if (roomsEl && parseInt(roomsEl.value) > data.max_available) {
+                            roomsEl.value = data.max_available;
+                            checkPreferences();
+                            return;
+                        }
+                    }
+                    
+                    if (fullyBookedBox) {
+                        fullyBookedBox.classList.remove('hidden');
+                        if (window.fullyBookedTimeout) clearTimeout(window.fullyBookedTimeout);
+                        window.fullyBookedTimeout = setTimeout(() => {
+                            fullyBookedBox.classList.add('hidden');
+                        }, 5000);
+                    }
                     if (warningBox) warningBox.classList.add('hidden');
                     if (submitBtn) {
                         submitBtn.disabled = true;
@@ -747,6 +762,10 @@
         // Attach listeners to dates, tiers, and preferences
         checkInEl.addEventListener('change', checkPreferences);
         checkOutEl.addEventListener('change', checkPreferences);
+        if (roomsEl) {
+            roomsEl.addEventListener('change', checkPreferences);
+            roomsEl.addEventListener('input', checkPreferences);
+        }
         if (bedSelect) bedSelect.addEventListener('change', checkPreferences);
         if (floorSelect) floorSelect.addEventListener('change', checkPreferences);
         if (viewSelect) viewSelect.addEventListener('change', checkPreferences);

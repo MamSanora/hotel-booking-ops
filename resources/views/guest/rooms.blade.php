@@ -421,7 +421,7 @@
                     </div>
                     @if($avail2 && $maxQty2 > 0)
                         <div class="text-emerald-400 text-[0.68rem] mt-0.5 font-medium">
-                            <i class="bi bi-check-circle-fill mr-1"></i>{{ $maxQty2 }} available
+                            <i class="bi bi-check-circle-fill mr-1"></i>Available
                         </div>
                     @else
                         <div class="text-red-400 text-[0.68rem] mt-0.5 font-medium">
@@ -611,7 +611,7 @@
                 this.quantities[slug] = val;
 
                 if (val > max && max > 0) {
-                    this.errors[slug] = `Max ${max} available`;
+                    this.errors[slug] = `Cannot exceed maximum capacity`;
                 } else {
                     this.errors[slug] = null;
                 }

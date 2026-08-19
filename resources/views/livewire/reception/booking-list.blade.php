@@ -72,9 +72,22 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ route('reception.manage-bookings.edit', $booking->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-semibold">
-                                    <i class="bi bi-pencil-square"></i> Edit
-                                </a>
+                                <div class="flex justify-end gap-2">
+                                    <a href="{{ route('reception.manage-bookings.edit', $booking->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-semibold">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </a>
+                                    
+                                    @if(in_array($booking->booking_status, ['pending', 'booked']))
+                                        <form action="{{ route('reception.manage-bookings.cancel', $booking->id) }}" method="POST">
+                                            @csrf @method('PUT')
+                                            <button type="button" x-data @click.prevent="$dispatch('open-confirm', { message: 'Cancel this booking?', action: (function(f) { return () => f.submit(); })($el.closest('form')) })"
+                                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors font-semibold"
+                                                    title="Cancel booking">
+                                                <i class="bi bi-x-circle"></i> Cancel
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

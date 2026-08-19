@@ -27,7 +27,7 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
 
     public function query()
     {
-        return $this->query->with(['guest', 'bookingRooms.roomType', 'transactions', 'bookingRooms.roomType']);
+        return $this->query->with(['guest.guestAuth', 'guest.phones', 'bookingRooms.roomType', 'transactions', 'bookingRooms.room']);
     }
 
     public function headings(): array
@@ -36,12 +36,19 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             'Booking ID',
             'Reference',
             'Guest Name',
-            'Room',
+            'Email',
+            'Phone',
+            'Origin',
+            'Room(s)',
             'Check-In',
             'Check-Out',
-            'Total Price (USD)',
+            'Nights',
             'Status',
             'Payment Status',
+            'Total Charges (USD)',
+            'Total Paid (USD)',
+            'Balance Due (USD)',
+            'Payment Methods',
             'Created At'
         ];
     }
@@ -54,10 +61,22 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
         $latestTxn = $booking->transactions->sortByDesc('created_at')->first();
         $paymentStatus = $latestTxn ? $latestTxn->displayStatus() : 'Unpaid';
         
+        $paymentMethods = $booking->transactions
+            ->whereIn('payment_status', ['full', 'partial'])
+            ->map(fn($t) => $t->displayPaymentMethod())
+            ->filter()
+            ->unique()
+            ->implode(', ');
+            
+        $paymentMethods = $paymentMethods ?: '';
+        
         return [
             $booking->id,
             $booking->referenceNumber(),
             $booking->guest?->full_name ?? 'Walk-in Guest',
+            $booking->guest?->guestAuth?->email ?? '',
+            $booking->guest?->phones?->first()?->phone_number ?? '',
+            ucfirst($booking->booking_origin),
             $booking->bookingRooms->isNotEmpty()
                 ? $booking->bookingRooms
                     ->groupBy('room_type_id')
@@ -67,12 +86,16 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
                         return count($rows) > 1 ? count($rows) . 'x ' . $type . ' (Rm ' . $roomNumbers . ')' : $type . ' (Rm ' . $roomNumbers . ')';
                     })
                     ->implode(', ')
-                : 'N/A',
+                : '',
             $booking->check_in_date?->format('Y-m-d'),
             $booking->check_out_date?->format('Y-m-d'),
-            (float) $booking->total_price,
+            $booking->nightCount(),
             ucfirst($booking->booking_status),
             $paymentStatus,
+            (float) $booking->total_price,
+            (float) $booking->totalPaid(),
+            (float) $booking->balanceDue(),
+            $paymentMethods,
             $booking->created_at->format('Y-m-d H:i')
         ];
     }
@@ -87,8 +110,10 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
     public function columnFormats(): array
     {
         return [
-            // Format column G (Total Price) as accounting format with USD symbol
-            'G' => '"$"#,##0.00_-',
+            // Format column M (Total Charges), N (Total Paid), O (Balance Due) as accounting format with USD symbol
+            'M' => '"$"#,##0.00_-',
+            'N' => '"$"#,##0.00_-',
+            'O' => '"$"#,##0.00_-',
         ];
     }
 }
